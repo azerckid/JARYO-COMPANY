@@ -1,4 +1,6 @@
 # JARYO Company Product Baseline
+> Created: 2026-07-01 17:55
+> Last Updated: 2026-07-01 17:55
 
 ## Purpose
 

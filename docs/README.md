@@ -1,4 +1,6 @@
 # JARYO Company Docs
+> Created: 2026-07-01 17:50
+> Last Updated: 2026-07-01 17:50
 
 This documentation set defines JARYO Company, the company-facing version of
 JARYO.
