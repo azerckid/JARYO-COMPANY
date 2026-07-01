@@ -5,6 +5,7 @@ import {
   GENERAL_VAT_DEFAULT_CRITERIA,
 } from '@/lib/review/default-criteria-data'
 import {
+  buildFileItemGroupMap,
   buildSourceCollectionCompleteness,
   buildSourceCollectionImportRow,
   buildSourceCollectionMissingItems,
@@ -181,6 +182,38 @@ describe('buildSourceCollectionMissingItems', () => {
   })
 })
 
+describe('buildFileItemGroupMap', () => {
+  it('is deterministic regardless of input row order (P2)', () => {
+    const rowsA = [
+      { uploadFileId: 'file-1', itemGroup: 'sales_tax_invoice', contribution: 'satisfied', createdAt: '2026-06-01T00:00:00.000Z' },
+      { uploadFileId: 'file-1', itemGroup: 'other_evidence', contribution: 'uncertain', createdAt: '2026-06-02T00:00:00.000Z' },
+    ]
+    const rowsB = [...rowsA].reverse()
+
+    expect(buildFileItemGroupMap(rowsA).get('file-1')).toBe('sales_tax_invoice')
+    expect(buildFileItemGroupMap(rowsB).get('file-1')).toBe('sales_tax_invoice')
+  })
+
+  it('prefers satisfied contribution over uncertain or non_compliant', () => {
+    const rows = [
+      { uploadFileId: 'file-2', itemGroup: 'other_evidence', contribution: 'non_compliant', createdAt: '2026-06-01T00:00:00.000Z' },
+      { uploadFileId: 'file-2', itemGroup: 'bank_statement', contribution: 'satisfied', createdAt: '2026-06-05T00:00:00.000Z' },
+      { uploadFileId: 'file-2', itemGroup: 'card_statement', contribution: 'uncertain', createdAt: '2026-06-03T00:00:00.000Z' },
+    ]
+
+    expect(buildFileItemGroupMap(rows).get('file-2')).toBe('bank_statement')
+  })
+
+  it('falls back to earliest createdAt when contribution ties', () => {
+    const rows = [
+      { uploadFileId: 'file-3', itemGroup: 'cash_receipt', contribution: 'satisfied', createdAt: '2026-06-10T00:00:00.000Z' },
+      { uploadFileId: 'file-3', itemGroup: 'sales_tax_invoice', contribution: 'satisfied', createdAt: '2026-06-01T00:00:00.000Z' },
+    ]
+
+    expect(buildFileItemGroupMap(rows).get('file-3')).toBe('sales_tax_invoice')
+  })
+})
+
 describe('source collection loader boundaries', () => {
   const source = readFileSync(new URL('./summary.ts', import.meta.url), 'utf8')
 
@@ -211,5 +244,10 @@ describe('source collection loader boundaries', () => {
   it('derives per-file sourceType via request_item_validation_file instead of always unknown (P2)', () => {
     expect(source).toContain('requestItemValidationFile')
     expect(source).not.toContain('buildSourceCollectionImportRow(file))')
+  })
+
+  it('scopes the file-item-group join by tenant and excludes excluded reviews (P3)', () => {
+    expect(source).toContain("eq(requestItemValidation.tenantId, tenantId)")
+    expect(source).toContain("ne(requestItemValidation.reviewStatus, 'excluded')")
   })
 })

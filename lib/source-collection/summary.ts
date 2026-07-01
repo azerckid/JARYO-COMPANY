@@ -287,6 +287,41 @@ export function buildSourceCollectionMissingItems(
   return items
 }
 
+type FileItemGroupLinkRow = {
+  uploadFileId: string
+  itemGroup: string | null
+  contribution: string | null
+  createdAt: string
+}
+
+// request_item_validation_file은 파일 하나가 여러 validation에 기여할 수 있는
+// 구조다(예: 세금계산서+기타증빙). DB 반환 순서에 의존하면 safeTitle/sourceType이
+// 비결정적으로 흔들리므로, contribution 우선순위(만족 > 부분만족 > 불확실 > 불일치 >
+// 무관) → createdAt 오름차순으로 정렬해 파일당 하나의 itemGroup만 결정적으로 고른다.
+const CONTRIBUTION_RANK: Record<string, number> = {
+  satisfied: 0,
+  partial: 1,
+  uncertain: 2,
+  non_compliant: 3,
+  unrelated: 4,
+}
+
+export function buildFileItemGroupMap(rows: FileItemGroupLinkRow[]): Map<string, string | null> {
+  const sorted = [...rows].sort((a, b) => {
+    const rankA = a.contribution ? CONTRIBUTION_RANK[a.contribution] ?? 5 : 5
+    const rankB = b.contribution ? CONTRIBUTION_RANK[b.contribution] ?? 5 : 5
+    return rankA - rankB || a.createdAt.localeCompare(b.createdAt)
+  })
+
+  const map = new Map<string, string | null>()
+  for (const row of sorted) {
+    if (!map.has(row.uploadFileId)) {
+      map.set(row.uploadFileId, row.itemGroup)
+    }
+  }
+  return map
+}
+
 export async function loadSourceCollectionSummary({
   tenantId,
   periodKey,
@@ -367,27 +402,28 @@ export async function loadSourceCollectionSummary({
   // 파일별 자료유형은 request_item_validation_file(uploadFileId ↔ validationId)을 통해
   // request_item_validation.itemGroup과 연결한다. 승인 Preview의 "수집 상태 표"가
   // 파일마다 자료유형을 보여주므로, 항상 unknown으로 두지 않고 실제 연결을 조회한다.
+  // 한 파일이 여러 validation에 기여할 수 있어(예: 세금계산서+기타증빙), DB 반환
+  // 순서에 의존하지 않도록 contribution 우선순위 + createdAt으로 결정적으로 고른다.
   const fileIds = fileRows.map((file) => file.id)
   const fileItemGroupRows = fileIds.length > 0
     ? await db
       .select({
         uploadFileId: requestItemValidationFile.uploadFileId,
         itemGroup: requestItemValidation.itemGroup,
+        contribution: requestItemValidationFile.contribution,
+        createdAt: requestItemValidationFile.createdAt,
       })
       .from(requestItemValidationFile)
       .innerJoin(requestItemValidation, eq(requestItemValidationFile.validationId, requestItemValidation.id))
       .where(and(
         eq(requestItemValidationFile.tenantId, tenantId),
+        eq(requestItemValidation.tenantId, tenantId),
+        ne(requestItemValidation.reviewStatus, 'excluded'),
         inArray(requestItemValidationFile.uploadFileId, fileIds),
       ))
     : []
 
-  const fileItemGroupMap = new Map<string, string | null>()
-  for (const row of fileItemGroupRows) {
-    if (!fileItemGroupMap.has(row.uploadFileId)) {
-      fileItemGroupMap.set(row.uploadFileId, row.itemGroup)
-    }
-  }
+  const fileItemGroupMap = buildFileItemGroupMap(fileItemGroupRows)
 
   return {
     ...baseSummary,
