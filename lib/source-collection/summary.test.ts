@@ -185,8 +185,8 @@ describe('buildSourceCollectionMissingItems', () => {
 describe('buildFileItemGroupMap', () => {
   it('is deterministic regardless of input row order (P2)', () => {
     const rowsA = [
-      { uploadFileId: 'file-1', itemGroup: 'sales_tax_invoice', contribution: 'satisfied', createdAt: '2026-06-01T00:00:00.000Z' },
-      { uploadFileId: 'file-1', itemGroup: 'other_evidence', contribution: 'uncertain', createdAt: '2026-06-02T00:00:00.000Z' },
+      { uploadFileId: 'file-1', validationId: 'riv-1', itemGroup: 'sales_tax_invoice', contribution: 'satisfied', createdAt: '2026-06-01T00:00:00.000Z' },
+      { uploadFileId: 'file-1', validationId: 'riv-2', itemGroup: 'other_evidence', contribution: 'uncertain', createdAt: '2026-06-02T00:00:00.000Z' },
     ]
     const rowsB = [...rowsA].reverse()
 
@@ -196,9 +196,9 @@ describe('buildFileItemGroupMap', () => {
 
   it('prefers satisfied contribution over uncertain or non_compliant', () => {
     const rows = [
-      { uploadFileId: 'file-2', itemGroup: 'other_evidence', contribution: 'non_compliant', createdAt: '2026-06-01T00:00:00.000Z' },
-      { uploadFileId: 'file-2', itemGroup: 'bank_statement', contribution: 'satisfied', createdAt: '2026-06-05T00:00:00.000Z' },
-      { uploadFileId: 'file-2', itemGroup: 'card_statement', contribution: 'uncertain', createdAt: '2026-06-03T00:00:00.000Z' },
+      { uploadFileId: 'file-2', validationId: 'riv-3', itemGroup: 'other_evidence', contribution: 'non_compliant', createdAt: '2026-06-01T00:00:00.000Z' },
+      { uploadFileId: 'file-2', validationId: 'riv-4', itemGroup: 'bank_statement', contribution: 'satisfied', createdAt: '2026-06-05T00:00:00.000Z' },
+      { uploadFileId: 'file-2', validationId: 'riv-5', itemGroup: 'card_statement', contribution: 'uncertain', createdAt: '2026-06-03T00:00:00.000Z' },
     ]
 
     expect(buildFileItemGroupMap(rows).get('file-2')).toBe('bank_statement')
@@ -206,11 +206,22 @@ describe('buildFileItemGroupMap', () => {
 
   it('falls back to earliest createdAt when contribution ties', () => {
     const rows = [
-      { uploadFileId: 'file-3', itemGroup: 'cash_receipt', contribution: 'satisfied', createdAt: '2026-06-10T00:00:00.000Z' },
-      { uploadFileId: 'file-3', itemGroup: 'sales_tax_invoice', contribution: 'satisfied', createdAt: '2026-06-01T00:00:00.000Z' },
+      { uploadFileId: 'file-3', validationId: 'riv-6', itemGroup: 'cash_receipt', contribution: 'satisfied', createdAt: '2026-06-10T00:00:00.000Z' },
+      { uploadFileId: 'file-3', validationId: 'riv-7', itemGroup: 'sales_tax_invoice', contribution: 'satisfied', createdAt: '2026-06-01T00:00:00.000Z' },
     ]
 
     expect(buildFileItemGroupMap(rows).get('file-3')).toBe('sales_tax_invoice')
+  })
+
+  it('falls back to validationId when contribution and createdAt both tie (P3 follow-up)', () => {
+    const rowsA = [
+      { uploadFileId: 'file-4', validationId: 'riv-b', itemGroup: 'bank_statement', contribution: 'satisfied', createdAt: '2026-06-01T00:00:00.000Z' },
+      { uploadFileId: 'file-4', validationId: 'riv-a', itemGroup: 'sales_tax_invoice', contribution: 'satisfied', createdAt: '2026-06-01T00:00:00.000Z' },
+    ]
+    const rowsB = [...rowsA].reverse()
+
+    expect(buildFileItemGroupMap(rowsA).get('file-4')).toBe('sales_tax_invoice')
+    expect(buildFileItemGroupMap(rowsB).get('file-4')).toBe('sales_tax_invoice')
   })
 })
 

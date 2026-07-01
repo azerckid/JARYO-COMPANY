@@ -289,6 +289,7 @@ export function buildSourceCollectionMissingItems(
 
 type FileItemGroupLinkRow = {
   uploadFileId: string
+  validationId: string
   itemGroup: string | null
   contribution: string | null
   createdAt: string
@@ -297,7 +298,8 @@ type FileItemGroupLinkRow = {
 // request_item_validation_file은 파일 하나가 여러 validation에 기여할 수 있는
 // 구조다(예: 세금계산서+기타증빙). DB 반환 순서에 의존하면 safeTitle/sourceType이
 // 비결정적으로 흔들리므로, contribution 우선순위(만족 > 부분만족 > 불확실 > 불일치 >
-// 무관) → createdAt 오름차순으로 정렬해 파일당 하나의 itemGroup만 결정적으로 고른다.
+// 무관) → createdAt 오름차순 → validationId 오름차순(동시 생성 tie-break)으로 정렬해
+// 파일당 하나의 itemGroup만 완전히 결정적으로 고른다.
 const CONTRIBUTION_RANK: Record<string, number> = {
   satisfied: 0,
   partial: 1,
@@ -310,7 +312,7 @@ export function buildFileItemGroupMap(rows: FileItemGroupLinkRow[]): Map<string,
   const sorted = [...rows].sort((a, b) => {
     const rankA = a.contribution ? CONTRIBUTION_RANK[a.contribution] ?? 5 : 5
     const rankB = b.contribution ? CONTRIBUTION_RANK[b.contribution] ?? 5 : 5
-    return rankA - rankB || a.createdAt.localeCompare(b.createdAt)
+    return rankA - rankB || a.createdAt.localeCompare(b.createdAt) || a.validationId.localeCompare(b.validationId)
   })
 
   const map = new Map<string, string | null>()
@@ -409,6 +411,7 @@ export async function loadSourceCollectionSummary({
     ? await db
       .select({
         uploadFileId: requestItemValidationFile.uploadFileId,
+        validationId: requestItemValidationFile.validationId,
         itemGroup: requestItemValidation.itemGroup,
         contribution: requestItemValidationFile.contribution,
         createdAt: requestItemValidationFile.createdAt,
