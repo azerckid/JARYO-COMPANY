@@ -143,7 +143,7 @@ export function ClientManager({
 
     if (!res.ok) {
       const data = await res.json().catch(() => null)
-      setFormError(data?.error ?? '클라이언트 생성에 실패했습니다')
+      setFormError(data?.error ?? '사업장 생성에 실패했습니다')
       setSaving(false)
       return
     }
@@ -207,7 +207,7 @@ export function ClientManager({
 
     if (!res.ok) {
       const data = await res.json().catch(() => null)
-      setEditError(data?.error ?? '클라이언트 수정에 실패했습니다')
+      setEditError(data?.error ?? '사업장 수정에 실패했습니다')
       setUpdatingClientId(null)
       return
     }
@@ -215,7 +215,7 @@ export function ClientManager({
     if (editForm.templateId && editForm.templateId !== (client.templateId ?? '')) {
       const assigned = await handleTemplateAssign(client.id, editForm.templateId)
       if (!assigned) {
-        setEditError('고객사 정보는 저장됐지만 자료관리기준 배정에 실패했습니다')
+        setEditError('사업장 정보는 저장됐지만 자료관리기준 배정에 실패했습니다')
         setUpdatingClientId(null)
         return
       }
@@ -235,7 +235,7 @@ export function ClientManager({
     try {
       const res = await fetch(`/api/clients/${deleteTarget.id}`, { method: 'DELETE' })
       if (!res.ok) {
-        setEditError('클라이언트 삭제에 실패했습니다')
+        setEditError('사업장 삭제에 실패했습니다')
         return
       }
 
@@ -253,7 +253,7 @@ export function ClientManager({
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <div className="mb-2 flex items-center gap-2">
-            <h1 className="text-xl font-semibold text-gray-900">고객사 관리</h1>
+            <h1 className="text-xl font-semibold text-gray-900">사업장 관리</h1>
             <Badge variant="info">Workspace</Badge>
           </div>
         </div>
@@ -261,7 +261,7 @@ export function ClientManager({
           onClick={() => setShowForm(true)}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
         >
-          + 고객사 추가
+          + 사업장 추가
         </button>
       </div>
 
@@ -272,7 +272,7 @@ export function ClientManager({
               type="search"
               name="q"
               defaultValue={query}
-              placeholder="고객사명, 고객사 담당자, 이메일, 전화번호 검색"
+              placeholder="사업장명, 사업장 담당자, 이메일, 전화번호 검색"
               className="h-10 min-w-0 flex-1 rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
             {statusFilter !== 'all' ? <input type="hidden" name="status" value={statusFilter} /> : null}
@@ -340,15 +340,15 @@ export function ClientManager({
             <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
               <div>
                 <h2 id="create-client-title" className="text-base font-semibold text-gray-900">
-                  새 고객사 추가
+                  새 사업장 추가
                 </h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  고객사 기본 정보와 자료 제출 담당자를 등록합니다.
+                  사업장 기본 정보와 자료 제출 담당자를 등록합니다.
                 </p>
               </div>
               <button
                 type="button"
-                aria-label="새 고객사 추가 닫기"
+                aria-label="새 사업장 추가 닫기"
                 onClick={closeCreateForm}
                 disabled={saving}
                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
@@ -482,15 +482,15 @@ export function ClientManager({
         {initialClients.length === 0 ? (
           <div className="px-5 py-12 text-center text-sm text-gray-400">
             {query || statusFilter !== 'all'
-              ? '조건에 맞는 고객사가 없습니다.'
-              : '아직 고객사가 없습니다. 위 버튼으로 추가해 주세요.'}
+              ? '조건에 맞는 사업장가 없습니다.'
+              : '아직 사업장가 없습니다. 위 버튼으로 추가해 주세요.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-160 text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  {(['번호', '고객사', '담당자', '고객사 담당자', '이메일', '전화번호', '주소'] as const).map((h) => (
+                  {(['번호', '사업장', '담당자', '사업장 담당자', '이메일', '전화번호', '주소'] as const).map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500">{h}</th>
                   ))}
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">수정</th>
@@ -659,7 +659,7 @@ export function ClientManager({
         <div className="flex min-h-12 flex-col gap-2 border-t border-gray-100 px-4 py-3 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
           <div>
             {totalClients === 0
-              ? '고객사 0곳'
+              ? '사업장 0곳'
               : `페이지 ${page.toLocaleString('ko-KR')} / ${lastPage.toLocaleString('ko-KR')}`}
           </div>
           <div className="flex gap-2">
@@ -689,8 +689,8 @@ export function ClientManager({
 
       <DeleteConfirmDialog
         open={deleteTarget !== null}
-        title={`${deleteTarget?.name ?? '고객사'} 클라이언트를 삭제할까요?`}
-        description={`관련 세션, 업로드 파일, 메일 기록도 함께 삭제됩니다.\n삭제 후 고객사 목록에서 이 클라이언트를 볼 수 없습니다.`}
+        title={`${deleteTarget?.name ?? '사업장'} 사업장를 삭제할까요?`}
+        description={`관련 세션, 업로드 파일, 메일 기록도 함께 삭제됩니다.\n삭제 후 사업장 목록에서 이 사업장를 볼 수 없습니다.`}
         loading={deleteTarget !== null && deletingClientId === deleteTarget.id}
         onCancel={() => {
           if (deletingClientId === null) setDeleteTarget(null)

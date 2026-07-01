@@ -355,12 +355,12 @@ export function SettingsPanel({
           <form onSubmit={handleTenantSave} className="space-y-4 max-w-xl">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">회계법인 정보</CardTitle>
-                <CardDescription>고객 안내 메일과 토큰 만료 계산에 쓰이는 사무소 기본 설정입니다.</CardDescription>
+                <CardTitle className="text-base">회사 정보</CardTitle>
+                <CardDescription>표시 이름과 기간 계산 등에 쓰이는 회사 기본 설정입니다.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-5">
                 <div className="grid gap-1.5">
-                  <label htmlFor="tenant-name" className="text-sm font-medium text-foreground">회계법인명</label>
+                  <label htmlFor="tenant-name" className="text-sm font-medium text-foreground">회사명</label>
                   <Input
                     id="tenant-name"
                     value={tenantName}

@@ -25,7 +25,7 @@ export default function OnboardingPage() {
 
       if (!res.ok) {
         const data = await res.json()
-        setError(data.error ?? '회계법인 생성에 실패했습니다')
+        setError(data.error ?? '회사 등록에 실패했습니다')
         setLoading(false)
         return
       }
@@ -42,19 +42,19 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-sm bg-white rounded-xl border border-gray-200 p-8">
-        <h1 className="text-xl font-semibold text-gray-900 mb-2">회계법인 등록</h1>
-        <p className="text-sm text-gray-500 mb-6">서비스를 시작하려면 회계법인 정보를 입력하세요.</p>
+        <h1 className="text-xl font-semibold text-gray-900 mb-2">회사 등록</h1>
+        <p className="text-sm text-gray-500 mb-6">서비스를 시작하려면 회사 정보를 입력하세요.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">회계법인명</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">회사명</label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="예: 세종 회계법인"
+              placeholder="예: 샘플컴퍼니(주)"
             />
           </div>
 
