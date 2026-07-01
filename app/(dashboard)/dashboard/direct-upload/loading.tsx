@@ -4,12 +4,12 @@ function SkeletonLine({ className = '' }: { readonly className?: string }) {
 
 export default function SourceCollectionLoading() {
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-full flex-col bg-company-bg">
       <div className="sticky top-0 z-10 border-b border-company-border bg-company-surface px-7 py-3.5">
         <SkeletonLine className="w-24" />
         <SkeletonLine className="mt-2 h-5 w-32" />
       </div>
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-7 pt-6 pb-12">
+      <div className="flex w-full max-w-[1200px] flex-col gap-5 px-7 pt-6 pb-12">
         <div className="grid gap-5 rounded-xl border border-company-border bg-company-surface p-6 md:grid-cols-[minmax(0,1fr)_auto]">
           <div className="grid gap-3">
             <SkeletonLine className="w-28" />

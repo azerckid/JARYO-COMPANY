@@ -10,7 +10,7 @@ interface SourceCollectionErrorProps {
 
 export default function SourceCollectionError({ reset }: SourceCollectionErrorProps) {
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4 p-6">
+    <div className="mx-auto flex min-h-full max-w-3xl flex-col gap-4 bg-company-bg p-6">
       <Card>
         <CardHeader>
           <div className="flex size-10 items-center justify-center rounded-full bg-red-50 text-red-700">
