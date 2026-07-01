@@ -1,7 +1,14 @@
-import { and, desc, eq, gte, isNull, lte, ne } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, isNull, lte, ne } from 'drizzle-orm'
 import type { DateTime } from 'luxon'
 import { buildCompanyHomePeriod, type CompanyHomePeriod } from '@/lib/company-home/summary'
-import { client, requestItemValidation, tenant, uploadFile, uploadSession } from '@/lib/db/schema'
+import {
+  client,
+  requestItemValidation,
+  requestItemValidationFile,
+  tenant,
+  uploadFile,
+  uploadSession,
+} from '@/lib/db/schema'
 import { resolveUploadedFileDisplay } from '@/lib/upload/file-display'
 import { fromISO } from '@/lib/time'
 
@@ -114,17 +121,23 @@ const SOURCE_TYPE_TILES: Array<{ id: SourceCollectionSourceType; title: string }
   { id: 'receipt_other', title: '영수증·기타' },
 ]
 
-// item_group은 자유 텍스트라 완전한 표준화가 아직 없다(초안 매핑, JC-009 Open Item).
-// 매핑되지 않는 값은 전부 receipt_other 타일로 합산한다.
+// item_group은 lib/review/default-criteria-data.ts의 기본 항목(bookkeeping/vat)
+// 실제 값 기준으로 매핑한다. 매핑되지 않는 값은 전부 receipt_other 타일로 합산한다.
 const ITEM_GROUP_SOURCE_TYPE_MAP: Record<string, SourceCollectionSourceType> = {
-  tax_invoice: 'tax_invoice',
-  sales: 'tax_invoice',
-  purchase: 'tax_invoice',
   bank_statement: 'bank_statement',
   card_statement: 'card_purchase',
-  card_purchase: 'card_purchase',
-  receipt: 'receipt_other',
-  other: 'receipt_other',
+  vat_business_card_purchase: 'card_purchase',
+  sales_tax_invoice: 'tax_invoice',
+  purchase_tax_invoice: 'tax_invoice',
+  vat_sales_tax_invoice: 'tax_invoice',
+  vat_purchase_tax_invoice: 'tax_invoice',
+  cash_receipt: 'receipt_other',
+  online_sales_pg_settlement: 'receipt_other',
+  journal_entry_workbook: 'receipt_other',
+  other_evidence: 'receipt_other',
+  vat_card_sales: 'receipt_other',
+  vat_cash_receipt_sales: 'receipt_other',
+  vat_other_evidence: 'receipt_other',
 }
 
 const FILE_STATUS_PROGRESS: Record<string, number> = {
@@ -351,11 +364,39 @@ export async function loadSourceCollectionSummary({
       .orderBy(desc(uploadFile.uploadedAt)),
   ])
 
+  // 파일별 자료유형은 request_item_validation_file(uploadFileId ↔ validationId)을 통해
+  // request_item_validation.itemGroup과 연결한다. 승인 Preview의 "수집 상태 표"가
+  // 파일마다 자료유형을 보여주므로, 항상 unknown으로 두지 않고 실제 연결을 조회한다.
+  const fileIds = fileRows.map((file) => file.id)
+  const fileItemGroupRows = fileIds.length > 0
+    ? await db
+      .select({
+        uploadFileId: requestItemValidationFile.uploadFileId,
+        itemGroup: requestItemValidation.itemGroup,
+      })
+      .from(requestItemValidationFile)
+      .innerJoin(requestItemValidation, eq(requestItemValidationFile.validationId, requestItemValidation.id))
+      .where(and(
+        eq(requestItemValidationFile.tenantId, tenantId),
+        inArray(requestItemValidationFile.uploadFileId, fileIds),
+      ))
+    : []
+
+  const fileItemGroupMap = new Map<string, string | null>()
+  for (const row of fileItemGroupRows) {
+    if (!fileItemGroupMap.has(row.uploadFileId)) {
+      fileItemGroupMap.set(row.uploadFileId, row.itemGroup)
+    }
+  }
+
   return {
     ...baseSummary,
     completeness: buildSourceCollectionCompleteness(validationRows),
     sourceTypeTiles: buildSourceCollectionSourceTypeTiles(validationRows),
-    importRows: fileRows.map((file) => buildSourceCollectionImportRow(file)),
+    importRows: fileRows.map((file) => buildSourceCollectionImportRow(
+      file,
+      mapItemGroupToSourceType(fileItemGroupMap.get(file.id)),
+    )),
     missingItems: buildSourceCollectionMissingItems(validationRows),
   }
 }

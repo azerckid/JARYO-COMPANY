@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
+  GENERAL_BOOKKEEPING_DEFAULT_CRITERIA,
+  GENERAL_VAT_DEFAULT_CRITERIA,
+} from '@/lib/review/default-criteria-data'
+import {
   buildSourceCollectionCompleteness,
   buildSourceCollectionImportRow,
   buildSourceCollectionMissingItems,
@@ -39,19 +43,33 @@ describe('buildSourceCollectionCompleteness', () => {
 describe('mapItemGroupToSourceType', () => {
   it('maps known item groups to source types', () => {
     expect(mapItemGroupToSourceType('bank_statement')).toBe('bank_statement')
-    expect(mapItemGroupToSourceType('card_purchase')).toBe('card_purchase')
-    expect(mapItemGroupToSourceType('sales')).toBe('tax_invoice')
+    expect(mapItemGroupToSourceType('card_statement')).toBe('card_purchase')
+    expect(mapItemGroupToSourceType('vat_business_card_purchase')).toBe('card_purchase')
+    expect(mapItemGroupToSourceType('sales_tax_invoice')).toBe('tax_invoice')
+    expect(mapItemGroupToSourceType('vat_sales_tax_invoice')).toBe('tax_invoice')
   })
 
   it('falls back to unknown for unmapped or missing groups', () => {
     expect(mapItemGroupToSourceType('some_new_group')).toBe('unknown')
     expect(mapItemGroupToSourceType(null)).toBe('unknown')
   })
+
+  it('maps every real default bookkeeping/VAT criterion item_group to a canonical source type (P1)', () => {
+    const allItemGroups = [
+      ...GENERAL_BOOKKEEPING_DEFAULT_CRITERIA,
+      ...GENERAL_VAT_DEFAULT_CRITERIA,
+    ].map((criterion) => criterion.itemGroup)
+
+    expect(allItemGroups.length).toBeGreaterThan(0)
+    for (const itemGroup of allItemGroups) {
+      expect(mapItemGroupToSourceType(itemGroup)).not.toBe('unknown')
+    }
+  })
 })
 
 describe('buildSourceCollectionSourceTypeTiles', () => {
   it('marks a fully satisfied group as ok (S-30)', () => {
-    const rows = Array.from({ length: 8 }, () => ({ itemGroup: 'tax_invoice', validationStatus: 'satisfied' }))
+    const rows = Array.from({ length: 8 }, () => ({ itemGroup: 'sales_tax_invoice', validationStatus: 'satisfied' }))
     const tiles = buildSourceCollectionSourceTypeTiles(rows)
 
     expect(tiles.find((tile) => tile.id === 'tax_invoice')).toMatchObject({
@@ -63,9 +81,9 @@ describe('buildSourceCollectionSourceTypeTiles', () => {
 
   it('marks a group with missing rows as warn (S-31)', () => {
     const rows = [
-      { itemGroup: 'card_purchase', validationStatus: 'satisfied' },
-      { itemGroup: 'card_purchase', validationStatus: 'satisfied' },
-      { itemGroup: 'card_purchase', validationStatus: 'missing' },
+      { itemGroup: 'card_statement', validationStatus: 'satisfied' },
+      { itemGroup: 'card_statement', validationStatus: 'satisfied' },
+      { itemGroup: 'card_statement', validationStatus: 'missing' },
     ]
     const tiles = buildSourceCollectionSourceTypeTiles(rows)
 
@@ -188,5 +206,10 @@ describe('source collection loader boundaries', () => {
   it('filters sessions by the selected accounting period (S-10, S-82)', () => {
     expect(source).toContain('gte(uploadSession.accountingPeriod, period.startMonth)')
     expect(source).toContain('lte(uploadSession.accountingPeriod, period.endMonth)')
+  })
+
+  it('derives per-file sourceType via request_item_validation_file instead of always unknown (P2)', () => {
+    expect(source).toContain('requestItemValidationFile')
+    expect(source).not.toContain('buildSourceCollectionImportRow(file))')
   })
 })
