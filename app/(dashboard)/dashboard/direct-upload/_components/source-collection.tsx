@@ -125,9 +125,9 @@ export function SourceCollectionView({
   const accountingPeriod = `${summary.period.startMonth}~${summary.period.endMonth}`
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-full flex-col bg-company-bg">
       <SourceCollectionTopbar summary={summary} />
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-7 pt-6 pb-12">
+      <div className="flex w-full max-w-[1200px] flex-col gap-5 px-7 pt-6 pb-12">
         <CompletenessHeader completeness={summary.completeness} period={summary.period} />
         <SourceCollectionUploadDropzone
           businessEntityId={summary.businessEntity!.id}
@@ -460,7 +460,7 @@ interface BusinessEntityEmptyStateProps {
 
 export function SourceCollectionBusinessEntityEmptyState({ tenantName }: BusinessEntityEmptyStateProps) {
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4 p-6">
+    <div className="mx-auto flex min-h-full max-w-3xl flex-col gap-4 bg-company-bg p-6">
       <div className={cn(panelClass, 'grid gap-3 p-6')}>
         <h2 className="text-lg font-semibold text-foreground">아직 등록된 사업장이 없습니다</h2>
         <p className="text-sm text-company-fg-muted">

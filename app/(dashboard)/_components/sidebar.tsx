@@ -33,7 +33,7 @@ function userInitial(userName: string) {
 
 export function Sidebar({ userName, tenantName }: SidebarProps) {
   return (
-    <aside className="flex h-full w-[248px] shrink-0 flex-col gap-1 border-r border-company-border bg-company-surface px-3.5 py-5 text-foreground">
+    <aside className="sticky top-0 flex h-screen w-[248px] shrink-0 flex-col gap-1 border-r border-company-border bg-company-surface px-3.5 py-5 text-foreground">
       <div className="flex items-center gap-2.5 px-2 pb-[18px]">
         <div className="flex size-[30px] items-center justify-center rounded-lg bg-[#18181b] text-[15px] font-bold text-white">
           자

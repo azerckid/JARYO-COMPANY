@@ -51,9 +51,9 @@ export function CompanyHomeView({ summary }: CompanyHomeViewProps) {
   }
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-full flex-col bg-company-bg">
       <CompanyHomeTopbar summary={summary} />
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-7 pt-6 pb-12">
+      <div className="flex w-full max-w-[1200px] flex-col gap-5 px-7 pt-6 pb-12">
         <PeriodHero summary={summary} />
         <ActionItemsSection items={summary.actionItems} />
         <WorkspaceCardsSection cards={summary.workspaceCards} />
@@ -71,7 +71,7 @@ interface NoTenantCompanyStateProps {
 
 export function NoTenantCompanyState({ userName }: NoTenantCompanyStateProps) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-company-bg px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-blue-50 text-blue-700">
