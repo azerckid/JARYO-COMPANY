@@ -179,3 +179,10 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - Document Sync Check: Screen Flow 4f / UI Design 4.6 / Prototype Review / Preview 상호 링크됨 (2026-07-01 기준 일치)
 
 > 현재 여섯 항목 모두 **UI-First Gate 통과 (UI 6/6 완료)**. JC-006/JC-009는 Component & Library Plan 완료, JC-010(Confidence Bar·Journal Entry Preview)·JC-011(Tax Summary·Deduction Review·잠금 버튼 래퍼)·JC-012(Payroll Register·Deduction Breakdown·마감 잠금 래퍼)·JC-013(Filing Item Card·Input Guide·Receipts·Checklist)은 전용 컴포넌트 계획 반영 필요. 남은 공통 구현 착수 전제조건은 **Pre-Code Technical Brief**(데이터 소스·최소 필드·mutation·acceptance), tenant/기간·전표·직원 데이터 모델(JC-005), 업로드 라우트 재검토(JC-004, JC-009 한정), 개인정보 마스킹 방침(JC-012 한정), **Layer 5 QA 테스트 시나리오 작성**이다. 이들이 채워지기 전에는 코드 구현을 시작하지 않는다.
+
+## Related Documents
+- **Concept_Design**: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md) - 제품 목적 및 MVP 범위
+- **UI_Screens**: [Screen Flow](../02_UI_Screens/00_SCREEN_FLOW.md) · [UI Design](../02_UI_Screens/01_UI_DESIGN.md) - 화면 흐름·컴포넌트(Context Lock 참조 대상)
+- **UI_Screens**: [HTML Preview 폴더](../02_UI_Screens/previews/) - 승인된 화면 프로토타입(6화면)
+- **Technical_Specs**: [Development Setup](../03_Technical_Specs/01_DEVELOPMENT_SETUP.md) · [Component & Library Plan](../03_Technical_Specs/02_COMPONENT_LIBRARY_PLAN.md) - 스택 및 컴포넌트 계획
+- **QA_Validation**: [MVP QA Baseline](../05_QA_Validation/01_MVP_QA_BASELINE.md) - 검증 기준(Acceptance 연계)
