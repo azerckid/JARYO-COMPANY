@@ -333,7 +333,7 @@ export function SettingsPanel({
     { key: 'staff', label: '담당자 관리' },
     { key: 'mail', label: '업무메일 설정' },
     { key: 'cc', label: 'CC 참조메일 설정' },
-    { key: 'clients', label: '클라이언트 관리' },
+    { key: 'clients', label: '사업장 관리' },
   ]
 
   return (
@@ -355,12 +355,12 @@ export function SettingsPanel({
           <form onSubmit={handleTenantSave} className="space-y-4 max-w-xl">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">회계법인 정보</CardTitle>
-                <CardDescription>고객 안내 메일과 토큰 만료 계산에 쓰이는 사무소 기본 설정입니다.</CardDescription>
+                <CardTitle className="text-base">회사 정보</CardTitle>
+                <CardDescription>표시 이름과 기간 계산 등에 쓰이는 회사 기본 설정입니다.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-5">
                 <div className="grid gap-1.5">
-                  <label htmlFor="tenant-name" className="text-sm font-medium text-foreground">회계법인명</label>
+                  <label htmlFor="tenant-name" className="text-sm font-medium text-foreground">회사명</label>
                   <Input
                     id="tenant-name"
                     value={tenantName}
@@ -441,7 +441,7 @@ export function SettingsPanel({
                       <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">이메일</th>
                       <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">전화번호</th>
                       <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">역할</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">클라이언트</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">사업장</th>
                       <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">업무 메일함</th>
                       <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">상태</th>
                       <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500">액션</th>
@@ -581,7 +581,7 @@ export function SettingsPanel({
                                     handleStaffAction(s.id, s.active ? 'deactivate' : 'activate')
                                   }
                                   disabled={!!actionLoading || (s.clientCount > 0 && s.active)}
-                                  title={s.clientCount > 0 && s.active ? `클라이언트 ${s.clientCount}명 배정됨 — 먼저 재배정 필요` : ''}
+                                  title={s.clientCount > 0 && s.active ? `사업장 ${s.clientCount}곳 배정됨 — 먼저 재배정 필요` : ''}
                                   className="text-xs px-2 py-1 border border-gray-200 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50"
                                 >
                                   {isLoadingToggle ? '…' : s.active ? '비활성화' : '활성화'}
@@ -829,19 +829,19 @@ export function SettingsPanel({
           </div>
         )}
 
-        {/* ── 클라이언트 관리 탭 */}
+        {/* ── 사업장 관리 탭 */}
         {tab === 'clients' && (
           <Card className="max-w-2xl">
             <CardHeader>
-              <CardTitle className="text-base">클라이언트 관리</CardTitle>
-              <CardDescription>클라이언트 추가, 담당자 배정, 회사별 분석 기준 입력은 클라이언트 관리 화면에서 처리합니다.</CardDescription>
+              <CardTitle className="text-base">사업장 관리</CardTitle>
+              <CardDescription>사업장 추가, 담당자 배정, 회사별 분석 기준 입력은 사업장 관리 화면에서 처리합니다.</CardDescription>
             </CardHeader>
             <CardContent>
               <Link
                 href="/dashboard/clients"
                 className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
-                클라이언트 관리 화면으로 이동 →
+                사업장 관리 화면으로 이동 →
               </Link>
             </CardContent>
           </Card>
