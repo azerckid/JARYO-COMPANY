@@ -1,8 +1,8 @@
 # Test Scenarios: Company Home
 > Created: 2026-07-01 23:05
-> Last Updated: 2026-07-01 23:05
+> Last Updated: 2026-07-01 23:15
 
-회사 홈(JC-006) 구현 착수 전 Layer 5 QA 시나리오. [Company Home Pre-Code Brief](../03_Technical_Specs/04_COMPANY_HOME_PRE_CODE_BRIEF.md)의
+회사 홈(JC-006) Layer 5 QA 시나리오와 구현 검증 기록. [Company Home Pre-Code Brief](../03_Technical_Specs/04_COMPANY_HOME_PRE_CODE_BRIEF.md)의
 Data Contract·Derivation Rules·Acceptance Criteria를 검증 가능한 케이스로 옮긴다. 회사 홈은 **읽기 전용**이므로
 DB mutation은 없고, 데이터 파생·범위 격리·상태·제외 테이블 미참조가 핵심 검증 대상이다.
 
@@ -10,12 +10,12 @@ DB mutation은 없고, 데이터 파생·범위 격리·상태·제외 테이블
 
 | Criterion | Status (Pass/Fail) | Evidence |
 |:---|:---:|:---|
-| Functionality | 구현 후 판정 | 로그인 직후 회사 홈 렌더, 5개 영역 표시, 린트/타입 에러 부재 |
-| Potential Impact | 구현 후 판정 | 6개 워크스페이스 진입점 집약, 회사 셀프운영 대시보드 |
-| Novelty | 구현 후 판정 | 세무사무소용이 아닌 회사 자가운영 첫 화면(마케팅 아님) |
-| UX | 구현 후 판정 | 읽기 전용 SSR, 400ms 내 초기 표시, 로딩·빈·오류 상태 |
-| Open-source | 구현 후 판정 | 순수 파생 함수 분리(`lib/company-home/summary.ts`), 재사용 가능 |
-| Business Plan | 구현 후 판정 | 신고 마감·blocker 노출로 회사 세무운영 리텐션 기여 |
+| Functionality | Pass | `/dashboard` 회사 홈 구현, `npx tsc --noEmit`, `npm test`, `npm run build` 통과 |
+| Potential Impact | Pass | 6개 워크스페이스 진입점 집약, 회사 셀프운영 대시보드 |
+| Novelty | Pass | 세무사무소용이 아닌 회사 자가운영 첫 화면(마케팅 아님) |
+| UX | Pass | 읽기 전용 SSR, Hero/Action/Status/Recent/State 구조, loading/error 경계 구현 |
+| Open-source | Pass | 순수 파생 함수 분리(`lib/company-home/summary.ts`), 재사용 가능 |
+| Business Plan | Pass | 신고 마감·blocker 노출로 회사 세무운영 리텐션 기여 |
 
 ## 2. Test Scenarios & Results
 
@@ -87,7 +87,15 @@ DB mutation은 없고, 데이터 파생·범위 격리·상태·제외 테이블
 - `lib/company-home/summary.test.ts`: 기간 파생(S-10~12), 우선순위 정렬(S-20), 소스 카운트(S-30~33), tenant/business entity scope(S-41~42), 제외 테이블 미사용(S-50) — 순수 함수/로더 단위 테스트.
 - 컴포넌트/E2E(선택): 구조 순서(S-01), 상태(S-60~63), 권한(S-70~71).
 
-## 4. Related Documents
+## 4. Implementation Verification
+
+- 구현 파일: `lib/company-home/summary.ts`, `app/(dashboard)/dashboard/page.tsx`, `app/(dashboard)/dashboard/_components/company-home.tsx`, `app/(dashboard)/dashboard/loading.tsx`, `app/(dashboard)/dashboard/error.tsx`.
+- 자동화 완료: `lib/company-home/summary.test.ts` 10개 테스트.
+- 검증 완료: `npx vitest run lib/company-home/summary.test.ts`, `npx tsc --noEmit`, `npx eslint ...`, `npm test`, `npm run build`.
+- 런타임 확인: 기존 dev server `http://localhost:3000`에서 `/dashboard` 미인증 접근이 `/sign-in`으로 redirect, `/sign-in` 200 응답.
+- 축소 구현: 부가세/신고지원 전용 React 라우트는 JC-011/JC-013 범위라 회사 홈 섹션 앵커로 연결.
+
+## 5. Related Documents
 - **UI_Screens**: [Company Home Prototype Review](../02_UI_Screens/02_COMPANY_HOME_PROTOTYPE_REVIEW.md) - 승인된 화면·상태
 - **UI_Screens**: [HTML Preview](../02_UI_Screens/previews/00_company_home.html) - 검증 기준 화면
 - **Technical_Specs**: [Company Home Pre-Code Brief](../03_Technical_Specs/04_COMPANY_HOME_PRE_CODE_BRIEF.md) - Data Contract·Derivation·Acceptance
