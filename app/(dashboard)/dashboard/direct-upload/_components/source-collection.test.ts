@@ -23,4 +23,11 @@ describe('source collection UI boundaries (JC-004 slice)', () => {
       expect(source).not.toContain(identifier)
     }
   })
+
+  it('uses preview-aligned section labels and table columns (Phase A parity)', () => {
+    expect(source).toContain('자료유형 정규화')
+    expect(source).toContain('전체 보기')
+    expect(source).toContain('<TableHead>파일</TableHead>')
+    expect(source).toContain('<TableHead>자료유형</TableHead>')
+  })
 })

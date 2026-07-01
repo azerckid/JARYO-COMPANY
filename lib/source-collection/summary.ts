@@ -33,6 +33,7 @@ export type SourceCollectionCompleteness = {
   requiredCount: number
   missingCount: number
   progressPercent: number
+  normalizationPendingCount: number
 }
 
 export type SourceCollectionSourceTypeTile = {
@@ -140,6 +141,8 @@ const ITEM_GROUP_SOURCE_TYPE_MAP: Record<string, SourceCollectionSourceType> = {
   vat_other_evidence: 'receipt_other',
 }
 
+const NORMALIZATION_PENDING_STATUSES = ['uploaded', 'analyzing'] as const
+
 const FILE_STATUS_PROGRESS: Record<string, number> = {
   uploaded: 20,
   analyzing: 60,
@@ -167,8 +170,34 @@ export function mapItemGroupToSourceType(itemGroup: string | null | undefined): 
   return ITEM_GROUP_SOURCE_TYPE_MAP[itemGroup] ?? 'unknown'
 }
 
+type SourceCollectionTileFileRow = {
+  status: string
+  sourceType: SourceCollectionSourceType | 'unknown'
+}
+
+export function sourceCollectionSourceTypeLabel(sourceType: SourceCollectionSourceType | 'unknown') {
+  if (sourceType === 'unknown') return '분류 대기'
+  return SOURCE_TYPE_TILES.find((tile) => tile.id === sourceType)?.title ?? '분류 대기'
+}
+
+export function countNormalizationPendingFiles(
+  files: Array<Pick<SourceCollectionTileFileRow, 'status'>>,
+) {
+  return files.filter((file) => NORMALIZATION_PENDING_STATUSES.includes(
+    file.status as (typeof NORMALIZATION_PENDING_STATUSES)[number],
+  )).length
+}
+
+function fileBelongsToSourceTypeTile(
+  sourceType: SourceCollectionSourceType | 'unknown',
+  tileId: SourceCollectionSourceType,
+) {
+  return sourceType === tileId || (sourceType === 'unknown' && tileId === 'receipt_other')
+}
+
 export function buildSourceCollectionCompleteness(
   rows: Array<Pick<ValidationRow, 'validationStatus'>>,
+  files: Array<Pick<SourceCollectionTileFileRow, 'status'>> = [],
 ): SourceCollectionCompleteness {
   const requiredCount = rows.length
   const missingCount = rows.filter((row) => MATERIAL_ISSUE_STATUSES.includes(row.validationStatus as (typeof MATERIAL_ISSUE_STATUSES)[number])).length
@@ -176,35 +205,40 @@ export function buildSourceCollectionCompleteness(
   const progressPercent = requiredCount === 0
     ? 100
     : clampPercent((collectedCount / requiredCount) * 100)
+  const normalizationPendingCount = countNormalizationPendingFiles(files)
 
-  return { collectedCount, requiredCount, missingCount, progressPercent }
+  return { collectedCount, requiredCount, missingCount, progressPercent, normalizationPendingCount }
 }
 
 export function buildSourceCollectionSourceTypeTiles(
   rows: Array<Pick<ValidationRow, 'itemGroup' | 'validationStatus'>>,
+  files: SourceCollectionTileFileRow[] = [],
 ): SourceCollectionSourceTypeTile[] {
   return SOURCE_TYPE_TILES.map(({ id, title }) => {
     const groupRows = rows.filter((row) => {
       const mapped = mapItemGroupToSourceType(row.itemGroup)
-      // 미매핑(unknown) 항목은 전부 receipt_other 타일로 합산한다.
       return mapped === id || (mapped === 'unknown' && id === 'receipt_other')
     })
 
     const requiredCount = groupRows.length
-    // MATERIAL_ISSUE_STATUSES에는 'uncertain'(저신뢰 정규화)도 포함된다. 파일 단위
-    // "정규화 대기"(info)는 validationStatus만으로는 missing과 구분되지 않아 후속
-    // (파일 상태 연계) 과제로 남긴다 — 여기서는 warn/ok/muted 3단계만 파생한다.
     const missingCount = groupRows.filter((row) => MATERIAL_ISSUE_STATUSES.includes(row.validationStatus as (typeof MATERIAL_ISSUE_STATUSES)[number])).length
     const collectedCount = Math.max(0, requiredCount - missingCount)
+    const normalizationPendingCount = files.filter((file) => (
+      fileBelongsToSourceTypeTile(file.sourceType, id)
+      && NORMALIZATION_PENDING_STATUSES.includes(file.status as (typeof NORMALIZATION_PENDING_STATUSES)[number])
+    )).length
 
     let tone: SourceCollectionTone
     let statusLabel: string
-    if (requiredCount === 0) {
+    if (requiredCount === 0 && normalizationPendingCount === 0) {
       tone = 'muted'
       statusLabel = '자료 없음'
     } else if (missingCount > 0) {
       tone = 'warn'
       statusLabel = `${missingCount}건 미수집`
+    } else if (normalizationPendingCount > 0) {
+      tone = 'info'
+      statusLabel = `정규화 대기 ${normalizationPendingCount}`
     } else {
       tone = 'ok'
       statusLabel = '정규화 완료'
@@ -230,9 +264,7 @@ export function buildSourceCollectionImportRow(
 ): SourceCollectionImportRow {
   const display = resolveUploadedFileDisplay(file)
   const fileTypeLabel = FILE_TYPE_LABEL[file.fileType] ?? '기타'
-  const sourceTypeTitle = sourceType === 'unknown'
-    ? '분류 대기'
-    : SOURCE_TYPE_TILES.find((tile) => tile.id === sourceType)?.title ?? '분류 대기'
+  const sourceTypeTitle = sourceCollectionSourceTypeLabel(sourceType)
 
   return {
     id: file.id,
@@ -352,8 +384,8 @@ export async function loadSourceCollectionSummary({
   if (!businessEntity) {
     return {
       ...baseSummary,
-      completeness: { collectedCount: 0, requiredCount: 0, missingCount: 0, progressPercent: 100 },
-      sourceTypeTiles: buildSourceCollectionSourceTypeTiles([]),
+      completeness: { collectedCount: 0, requiredCount: 0, missingCount: 0, progressPercent: 100, normalizationPendingCount: 0 },
+      sourceTypeTiles: buildSourceCollectionSourceTypeTiles([], []),
       importRows: [],
       missingItems: [],
     }
@@ -428,11 +460,15 @@ export async function loadSourceCollectionSummary({
     : []
 
   const fileItemGroupMap = buildFileItemGroupMap(fileItemGroupRows)
+  const tileFiles: SourceCollectionTileFileRow[] = fileRows.map((file) => ({
+    status: file.status,
+    sourceType: mapItemGroupToSourceType(fileItemGroupMap.get(file.id)),
+  }))
 
   return {
     ...baseSummary,
-    completeness: buildSourceCollectionCompleteness(validationRows),
-    sourceTypeTiles: buildSourceCollectionSourceTypeTiles(validationRows),
+    completeness: buildSourceCollectionCompleteness(validationRows, tileFiles),
+    sourceTypeTiles: buildSourceCollectionSourceTypeTiles(validationRows, tileFiles),
     importRows: fileRows.map((file) => buildSourceCollectionImportRow(
       file,
       mapItemGroupToSourceType(fileItemGroupMap.get(file.id)),

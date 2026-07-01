@@ -9,7 +9,9 @@ import {
   ImportStatusTableSection,
   MissingChecklistSection,
   SourceCollectionBusinessEntityEmptyState,
+  SourceCollectionHeader,
   SourceTypeTilesSection,
+  StateCoverageSection,
 } from './_components/source-collection'
 import { StaffDirectUploadWorkspace } from './staff-direct-upload-workspace'
 
@@ -117,7 +119,8 @@ export default async function StaffDirectUploadPage({ searchParams }: PageProps)
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5 p-6">
-      <CompletenessHeader completeness={summary.completeness} />
+      <SourceCollectionHeader summary={summary} />
+      <CompletenessHeader completeness={summary.completeness} period={summary.period} />
       <StaffDirectUploadWorkspace
         clients={clientRows}
         initialWorkType={kind === 'payroll' ? 'payroll' : kind === 'vat' ? 'vat' : 'bookkeeping'}
@@ -137,6 +140,7 @@ export default async function StaffDirectUploadPage({ searchParams }: PageProps)
       <SourceTypeTilesSection tiles={summary.sourceTypeTiles} />
       <ImportStatusTableSection rows={summary.importRows} />
       <MissingChecklistSection items={summary.missingItems} />
+      <StateCoverageSection />
     </div>
   )
 }

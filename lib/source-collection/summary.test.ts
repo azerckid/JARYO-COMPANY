@@ -10,6 +10,7 @@ import {
   buildSourceCollectionImportRow,
   buildSourceCollectionMissingItems,
   buildSourceCollectionSourceTypeTiles,
+  countNormalizationPendingFiles,
   mapItemGroupToSourceType,
 } from './summary'
 
@@ -37,7 +38,22 @@ describe('buildSourceCollectionCompleteness', () => {
     expect(buildSourceCollectionCompleteness(rows)).toMatchObject({
       missingCount: 0,
       progressPercent: 100,
+      normalizationPendingCount: 0,
     })
+  })
+
+  it('counts normalization-pending files for completeness meta (Preview parity)', () => {
+    const rows = Array.from({ length: 4 }, () => ({ validationStatus: 'satisfied' }))
+    const files = [
+      { status: 'analyzing' },
+      { status: 'uploaded' },
+      { status: 'matched' },
+    ]
+
+    expect(buildSourceCollectionCompleteness(rows, files)).toMatchObject({
+      normalizationPendingCount: 2,
+    })
+    expect(countNormalizationPendingFiles(files)).toBe(2)
   })
 })
 
@@ -104,6 +120,34 @@ describe('buildSourceCollectionSourceTypeTiles', () => {
     expect(tiles.find((tile) => tile.id === 'receipt_other')).toMatchObject({
       requiredCount: 1,
       tone: 'ok',
+    })
+  })
+
+  it('shows normalization pending on a tile when files are still processing (Preview blue chip)', () => {
+    const rows = Array.from({ length: 9 }, () => ({ itemGroup: 'other_evidence', validationStatus: 'satisfied' }))
+    const files = [
+      { status: 'analyzing', sourceType: 'receipt_other' as const },
+      { status: 'uploaded', sourceType: 'receipt_other' as const },
+      { status: 'uploaded', sourceType: 'receipt_other' as const },
+      { status: 'matched', sourceType: 'receipt_other' as const },
+    ]
+
+    expect(buildSourceCollectionSourceTypeTiles(rows, files).find((tile) => tile.id === 'receipt_other')).toMatchObject({
+      tone: 'info',
+      statusLabel: '정규화 대기 3',
+    })
+  })
+
+  it('prefers missing warn tone over normalization pending info', () => {
+    const rows = [
+      { itemGroup: 'card_statement', validationStatus: 'satisfied' },
+      { itemGroup: 'card_statement', validationStatus: 'missing' },
+    ]
+    const files = [{ status: 'analyzing', sourceType: 'card_purchase' as const }]
+
+    expect(buildSourceCollectionSourceTypeTiles(rows, files).find((tile) => tile.id === 'card_purchase')).toMatchObject({
+      tone: 'warn',
+      statusLabel: '1건 미수집',
     })
   })
 
