@@ -1,6 +1,6 @@
 # Test Scenarios: Payroll
 > Created: 2026-07-02 14:21
-> Last Updated: 2026-07-02 15:09
+> Last Updated: 2026-07-02 15:49
 
 급여(JC-012) Layer 5 QA 시나리오. [Payroll Pre-Code Brief](../03_Technical_Specs/08_PAYROLL_PRE_CODE_BRIEF.md)의
 Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다.
@@ -17,7 +17,7 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 | Functionality | PASS·구현 | read model, 화면, 고지액 수동 입력/match, 문서 생성, 마감 API 구현 및 테스트 |
 | Potential Impact | PASS·구현 | 회사 직접 급여정산·신고지원의 핵심 워크스페이스 구현 |
 | Novelty | PASS·구현 | 계산 추정값과 공식 고지액을 분리해 고지액 우선 반영 |
-| UX | Pending | 승인 Preview 4.5와 브라우저 캡처 비교 필요 |
+| UX | PASS·구현 | 승인 Preview 4.5와 `/dashboard/payroll?period=2026-06` 브라우저 캡처 대조 완료(12명·42,600,000/5,840,000/36,760,000·마감 잠금·배경색 확인) |
 | Open-source | PASS·구현 | 기존 `lib/payroll` 파이프라인을 보존하고 회사용 `lib/payroll-workspace` read model 추가 |
 | Business Plan | PASS·구현 | 급여 마감·명세서·신고지원 산출물 상태 제공 |
 
@@ -125,8 +125,8 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 
 - **단위 테스트 완료** (`lib/payroll-workspace/summary.test.ts`): S-03, S-10, S-20~S-26, S-30, S-40~S-41, S-80 helper.
 - **정적 검증 완료** (`payroll-workspace.test.ts`): Preview 구조(S-01), route(S-02), GIWA 급여 규칙 패널 미import(S-84), 책임 경계 문구(S-83), API tenant guard.
-- **API 구현 완료**: line patch/resolve, insurance notice import/match, documents, close guard(S-42~53, S-70). 브라우저/DB E2E는 PR 검증 단계에서 확인.
-- **브라우저 수동 검증 예정**: 승인 Preview와 실제 `/dashboard/payroll?period=2026-06` 캡처 비교. 숫자/색상/간격/마감 잠금 확인.
+- **API 구현 완료**: line patch/resolve, insurance notice import/match, documents, close guard(S-42~53, S-70).
+- **브라우저 수동 검증 완료**: local dev DB QA seed로 `/dashboard/payroll?period=2026-06` 로그인 렌더 확인. 승인 Preview 대비 12명·지급 42,600,000·공제 5,840,000·실지급 36,760,000·마감 잠금·배경색 확인.
 - **후속 E2E**: 실제 EDI/사회보험 고지내역 파일 포맷별 import는 JC-014 env/fixture 준비 후 검증.
 
 ## 4. Related Documents

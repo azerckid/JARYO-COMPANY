@@ -255,9 +255,10 @@ export function buildPayrollRegisterRow(
 
 export function buildPayrollSummaryTotals(
   rows: PayrollRegisterRow[],
-  summary: Pick<PayrollPeriodSummaryInput, 'closeStatus'> = { closeStatus: 'open' },
+  summary: Partial<Pick<PayrollPeriodSummaryInput, 'employeeCount' | 'issueCount' | 'closeStatus'>> = {},
 ): PayrollSummaryTotals {
-  return rows.reduce<PayrollSummaryTotals>((acc, row) => ({
+  const closeStatus = summary.closeStatus ?? 'open'
+  const totals = rows.reduce<PayrollSummaryTotals>((acc, row) => ({
     employeeCount: acc.employeeCount + 1,
     grossPayKrw: acc.grossPayKrw + row.grossPayKrw,
     withholdingTaxKrw: acc.withholdingTaxKrw + row.withholdingTaxKrw,
@@ -265,7 +266,7 @@ export function buildPayrollSummaryTotals(
     deductionTotalKrw: acc.deductionTotalKrw + row.deductionTotalKrw,
     netPayKrw: acc.netPayKrw + row.netPayKrw,
     issueCount: acc.issueCount + (row.status === 'needs_review' ? 1 : 0),
-    closeStatus: summary.closeStatus,
+    closeStatus,
   }), {
     employeeCount: 0,
     grossPayKrw: 0,
@@ -274,8 +275,14 @@ export function buildPayrollSummaryTotals(
     deductionTotalKrw: 0,
     netPayKrw: 0,
     issueCount: 0,
-    closeStatus: summary.closeStatus,
+    closeStatus,
   })
+
+  return {
+    ...totals,
+    employeeCount: summary.employeeCount ?? totals.employeeCount,
+    issueCount: summary.issueCount ?? totals.issueCount,
+  }
 }
 
 export function buildPayrollIssueAlert(rows: PayrollRegisterRow[]): PayrollIssueAlert {
@@ -502,7 +509,11 @@ export async function loadPayrollWorkspaceSummary({
     .orderBy(asc(payrollEmployeeLine.status), asc(payrollEmployeeLine.employeeName), asc(payrollEmployeeLine.id))
 
   const registerRows = lineRows.map((row) => buildPayrollRegisterRow(row, canViewEmployeeNames))
-  const summaryTotals = buildPayrollSummaryTotals(registerRows, { closeStatus: periodSummaryRow.closeStatus })
+  const summaryTotals = buildPayrollSummaryTotals(registerRows, {
+    employeeCount: periodSummaryRow.employeeCount,
+    issueCount: periodSummaryRow.issueCount,
+    closeStatus: periodSummaryRow.closeStatus,
+  })
 
   return {
     ...base,

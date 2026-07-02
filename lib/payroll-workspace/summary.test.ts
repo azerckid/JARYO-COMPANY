@@ -146,6 +146,21 @@ describe('payroll register derivation', () => {
       netPayKrw: 36_760_000,
       issueCount: 1,
     })
+
+    expect(buildPayrollSummaryTotals(rows, {
+      employeeCount: 12,
+      issueCount: 1,
+      closeStatus: 'blocked',
+    })).toMatchObject({
+      employeeCount: 12,
+      grossPayKrw: 42_600_000,
+      withholdingTaxKrw: 2_100_000,
+      socialInsuranceKrw: 3_740_000,
+      deductionTotalKrw: 5_840_000,
+      netPayKrw: 36_760_000,
+      issueCount: 1,
+      closeStatus: 'blocked',
+    })
   })
 })
 
