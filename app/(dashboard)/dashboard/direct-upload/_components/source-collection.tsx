@@ -183,15 +183,18 @@ interface CompletenessHeaderProps {
 
 export function CompletenessHeader({ completeness, period }: CompletenessHeaderProps) {
   const metaParts: string[] = []
-  if (completeness.missingCount > 0) {
+  const hasRequiredItems = completeness.requiredCount > 0
+  if (!hasRequiredItems) {
+    metaParts.push('자료를 업로드하면 수집 기준과 정규화 상태가 채워집니다')
+  } else if (completeness.missingCount > 0) {
     metaParts.push(`필수 자료 ${completeness.missingCount}건 미수집`)
   }
-  if (completeness.normalizationPendingCount > 0) {
+  if (hasRequiredItems && completeness.normalizationPendingCount > 0) {
     metaParts.push(`정규화 대기 ${completeness.normalizationPendingCount}건`)
   }
-  if (metaParts.length === 0) {
+  if (hasRequiredItems && metaParts.length === 0) {
     metaParts.push('나머지 확정 완료')
-  } else if (completeness.collectedCount > 0) {
+  } else if (hasRequiredItems && completeness.collectedCount > 0) {
     metaParts.push('나머지 확정 완료')
   }
 
@@ -202,7 +205,9 @@ export function CompletenessHeader({ completeness, period }: CompletenessHeaderP
           수집 완결성 · {formatPeriodEyebrow(period)}
         </p>
         <h2 className="mt-1 text-[20px] font-bold tracking-[-0.02em] text-foreground">
-          자료 {completeness.collectedCount} / {completeness.requiredCount}건 수집됨
+          {hasRequiredItems
+            ? `자료 ${completeness.collectedCount} / ${completeness.requiredCount}건 수집됨`
+            : '자료 기준이 아직 없습니다'}
         </h2>
         <div className="mt-3 h-2 max-w-[460px] overflow-hidden rounded-full bg-[#ececee]">
           <div
