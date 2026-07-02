@@ -395,7 +395,7 @@ export function StaffDirectUploadWorkspace({
       .then(async (res) => {
         const data = await res.json().catch(() => null)
         if (!res.ok) throw new Error(data?.error ?? '테스트 세션 삭제에 실패했습니다')
-        router.push(session.requestKind === 'payroll' ? '/dashboard/payroll' : '/dashboard/reviews')
+        router.push(session.requestKind === 'payroll' ? '/dashboard/payroll' : '/dashboard/bookkeeping')
         router.refresh()
       })
       .catch((err) => setError(err instanceof Error ? err.message : '테스트 세션 삭제에 실패했습니다'))
@@ -405,7 +405,7 @@ export function StaffDirectUploadWorkspace({
   const resultPath = session?.resultPath ?? (
     session?.requestKind === 'payroll'
       ? '/dashboard/payroll'
-      : `/dashboard/reviews?sessionId=${session?.id ?? ''}`
+      : '/dashboard/bookkeeping'
   )
 
   return (
@@ -420,7 +420,7 @@ export function StaffDirectUploadWorkspace({
             고객 메일을 보내지 않고, 담당자가 준비한 자료를 직접 올려 기존 분석 흐름을 확인합니다.
           </p>
         </div>
-        <Link href={session?.requestKind === 'payroll' ? '/dashboard/payroll' : '/dashboard/reviews'} className={buttonVariants({ variant: 'outline' })}>
+        <Link href={session?.requestKind === 'payroll' ? '/dashboard/payroll' : '/dashboard/bookkeeping'} className={buttonVariants({ variant: 'outline' })}>
           <ArrowLeft className="size-4" />
           돌아가기
         </Link>
