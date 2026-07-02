@@ -30,7 +30,8 @@
 - Inputs: 직원 추가/수정(이름·사번·부서·직책·재직상태·입사일·업무 이메일), 급여 대상·리마인드 수신 토글, 검색/필터.
 - Displayed data: 직원 통계, 직원 목록(재직 상태·급여 대상·4대보험 확인·입사일·최근 급여·업무 이메일), 연결 화면 상태.
 - Mutations / saved data: 직원 추가/수정, 재직 상태 변경, 급여 대상 여부 변경. 주민등록번호·계좌번호·전화번호 원문은 저장하지 않는다.
-- External dependencies: `payroll_employee_line`(최근 급여), `payroll_insurance_notice_line`(4대보험 매칭 상태). 내부 리마인드(JC-016)는 후속.
+- Internal dependencies: `payroll_employee_line`(최근 급여), `payroll_insurance_notice_line`(4대보험 매칭 상태). 내부 리마인드(JC-016)는 후속.
+- External dependencies: 없음. 외부 인사/노무/보험 포털 자동 연동은 v1 범위 밖.
 
 ## 6. User Confirmation
 - 화면/UI 선확인 여부: 예
