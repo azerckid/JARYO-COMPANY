@@ -169,15 +169,15 @@
 
 ## 5. 상태 커버리지
 
-기존 6개 워크스페이스와 직원 명부 공통 상태 규약. 각 화면 Preview 하단 "화면 상태 예시"에 로딩/빈/오류를 명시한다.
+기존 6개 워크스페이스와 직원 명부·리마인드 공통 상태 규약. 각 화면 Preview 하단 "화면 상태 예시"에 로딩/빈/오류를 명시한다.
 
-| 상태 | 회사 홈 | 자료수집 | 기장검토 | 부가세 | 급여 | 신고지원 | 직원 명부 |
-|:---|:---|:---|:---|:---|:---|:---|:---|
-| Default | 대시보드 집계 | 수집 상태 | 분류 큐 | 세액·공제 검토 | 급여대장 | 신고 항목·접수증 | 직원 통계·목록 |
-| Loading | 카드·표 스켈레톤 | 동일 | 동일 | 동일 | 동일 | 동일 | 목록 스켈레톤 |
-| Empty | "첫 자료 업로드" | "첫 자료 업로드" | "확정 전표 보기" | "기장검토 먼저 확정" | "급여 자료 불러오기" | "부가세·급여 먼저 확정" | "첫 직원 추가" |
-| Error | "현황을 불러오지 못했습니다" | "파일을 처리하지 못했습니다" | "분류 큐를 불러오지 못했습니다" | "세액 집계를 불러오지 못했습니다" | "급여 계산을 불러오지 못했습니다" | "신고 항목을 불러오지 못했습니다" | "직원 명부를 불러오지 못했습니다" |
-| 권한 없음 | tenant 미소속/미인증 시 접근 차단 (구현 단계에서 확정) | 동일 | 동일 | 동일 | 동일(개인정보 마스킹) | 동일 | 동일(개인정보 마스킹) |
+| 상태 | 회사 홈 | 자료수집 | 기장검토 | 부가세 | 급여 | 신고지원 | 직원 명부 | 리마인드 |
+|:---|:---|:---|:---|:---|:---|:---|:---|:---|
+| Default | 대시보드 집계 | 수집 상태 | 분류 큐 | 세액·공제 검토 | 급여대장 | 신고 항목·접수증 | 직원 통계·목록 | 규칙·수신자·발송 로그 |
+| Loading | 카드·표 스켈레톤 | 동일 | 동일 | 동일 | 동일 | 동일 | 목록 스켈레톤 | 규칙·로그 스켈레톤 |
+| Empty | "첫 자료 업로드" | "첫 자료 업로드" | "확정 전표 보기" | "기장검토 먼저 확정" | "급여 자료 불러오기" | "부가세·급여 먼저 확정" | "첫 직원 추가" | "첫 리마인드 규칙 만들기" |
+| Error | "현황을 불러오지 못했습니다" | "파일을 처리하지 못했습니다" | "분류 큐를 불러오지 못했습니다" | "세액 집계를 불러오지 못했습니다" | "급여 계산을 불러오지 못했습니다" | "신고 항목을 불러오지 못했습니다" | "직원 명부를 불러오지 못했습니다" | "리마인드 설정을 불러오지 못했습니다" |
+| 권한 없음 | tenant 미소속/미인증 시 접근 차단 (구현 단계에서 확정) | 동일 | 동일 | 동일 | 동일(개인정보 마스킹) | 동일 | 동일(개인정보 마스킹) | 동일 |
 
 ## 6. HTML UI Preview
 
@@ -202,8 +202,11 @@
 - **UI_Screens**: [Payroll Prototype Review](./06_PAYROLL_PROTOTYPE_REVIEW.md) - 급여 확인 결과
 - **UI_Screens**: [Filing Support Prototype Review](./07_FILING_SUPPORT_PROTOTYPE_REVIEW.md) - 신고지원 확인 결과
 - **UI_Screens**: [Employee Directory Prototype Review](./08_EMPLOYEE_DIRECTORY_PROTOTYPE_REVIEW.md) - 직원 명부 확인 결과
+- **UI_Screens**: [Internal Reminder Prototype Review](./09_INTERNAL_REMINDER_PROTOTYPE_REVIEW.md) - 리마인드 확인 결과
 - **UI_Screens**: [HTML Preview 폴더](./previews/) - 브라우저 확인용 프로토타입
 - **Technical_Specs**: [Payroll Pre-Code Brief](../03_Technical_Specs/08_PAYROLL_PRE_CODE_BRIEF.md) - 급여 구현 전 데이터·mutation 계약
 - **Technical_Specs**: [Employee Directory Pre-Code Brief](../03_Technical_Specs/10_EMPLOYEE_DIRECTORY_PRE_CODE_BRIEF.md) - 직원 명부 구현 전 데이터·mutation 계약
+- **Technical_Specs**: [Internal Reminder Mail Pre-Code Brief](../03_Technical_Specs/11_INTERNAL_REMINDER_MAIL_PRE_CODE_BRIEF.md) - 내부 리마인드 구현 전 데이터·mutation 계약
 - **QA_Validation**: [Payroll Test Scenarios](../05_QA_Validation/06_PAYROLL_TEST_SCENARIOS.md) - 급여 구현 검증 시나리오
 - **QA_Validation**: [Employee Directory Test Scenarios](../05_QA_Validation/08_EMPLOYEE_DIRECTORY_TEST_SCENARIOS.md) - 직원 명부 구현 검증 시나리오
+- **QA_Validation**: [Internal Reminder Mail Test Scenarios](../05_QA_Validation/09_INTERNAL_REMINDER_MAIL_TEST_SCENARIOS.md) - 내부 리마인드 구현 검증 시나리오
