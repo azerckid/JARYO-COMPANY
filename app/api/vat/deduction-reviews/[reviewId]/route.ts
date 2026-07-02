@@ -63,7 +63,7 @@ export async function PATCH(
         .select({
           id: vatPeriodSummary.id,
           outputTaxKrw: vatPeriodSummary.outputTaxKrw,
-          packageStatus: vatPeriodSummary.packageStatus,
+          inputTaxKrw: vatPeriodSummary.inputTaxKrw,
         })
         .from(vatPeriodSummary)
         .where(and(
@@ -90,7 +90,7 @@ export async function PATCH(
     const periodSummary = summary[0]
     const recalculation = buildVatPeriodRecalculation({
       outputTaxKrw: periodSummary?.outputTaxKrw ?? 0,
-      packageStatus: periodSummary?.packageStatus ?? 'locked',
+      inputTaxKrw: periodSummary?.inputTaxKrw ?? 0,
     }, reviewRows)
 
     if (periodSummary) {

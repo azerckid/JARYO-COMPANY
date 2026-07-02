@@ -112,7 +112,7 @@ type VatSummary = {
 | 기간 | URL `period`, `buildCompanyHomePeriod` | startMonth, endMonth, deadline | 부가세 1기/2기 확정 신고 기준 |
 | 전표 집계 | `bookkeeping_journal_entry_voucher`, `bookkeeping_journal_entry_voucher_line`, `bookkeeping_journal_entry_run`, `upload_session` | status, entryDate, closePeriod, accountName/accountCode, amountKrw | 확정 전표만 집계. tenant+businessEntity+기간 제한 |
 | 매출세액 | voucher line | `부가세예수금` 또는 code `255`, credit amount | outputTaxKrw |
-| 매입세액 | voucher line + `vat_deduction_review` | `부가세대급금` 또는 code `135`, debit amount, decision | pending 제외/확정 반영 후 inputTaxDeductibleKrw |
+| 매입세액 | voucher line + `vat_deduction_review` | `부가세대급금` 또는 code `135`, debit amount, decision | 전체 매입세액을 예정 공제액으로 두고 불공제/안분 확정분만 차감 |
 | 매출 구분 | `vat_period_summary` | taxable/zero/exempt supply, output tax | 현재 voucher line만으로 영세율·면세 구분이 불완전하므로 snapshot 필수 |
 | 공제 검토 | `vat_deduction_review` | kind, decision, reason, prorationRateBps, source refs | 불공제 후보·안분 필요·공제 확정 |
 | 부속 명세 | summary + review count | tax invoice/card/non-deductible statuses | 준비됨/검토 대기 |
@@ -153,7 +153,7 @@ type VatSummary = {
 - voucher 집계는 `bookkeeping_journal_entry_voucher.status='confirmed'`만 사용한다.
 - `outputTaxKrw`는 `부가세예수금`(code `255`) credit line 합계다.
 - `inputTaxKrw`는 `부가세대급금`(code `135`) debit line 합계다.
-- `inputTaxDeductibleKrw`는 `vat_deduction_review.decision`이 `deductible` 또는 `prorated`로 확정된 금액만 반영한다. `pending`인 후보는 잠금 사유로 남긴다.
+- `inputTaxDeductibleKrw`는 전체 매입세액(`inputTaxKrw`)을 예정 공제액으로 두고, `vat_deduction_review.decision='non_deductible'`은 전액 차감, `prorated`는 비공제분만 차감한다. `pending` 후보는 아직 차감하지 않고 잠금 사유로 남긴다.
 - `payableTaxKrw = outputTaxKrw - inputTaxDeductibleKrw`.
 - 매출 구분(과세/영세율/면세)은 `vat_period_summary`의 snapshot 값을 사용한다. 현재 전표 라인만으로는 영세율·면세를 안정적으로 복원하지 않는다.
 - 불공제 후보 기본 규칙:
@@ -175,7 +175,7 @@ type VatSummary = {
 | 홈택스 제출·납부 | X | v1 범위 밖 |
 | 전표 수정·분류 승인 | X | JC-010 기장검토 화면 |
 
-- mutation 성공 후 `vat_period_summary`를 재계산하거나 서버에서 revalidate한다.
+- mutation 성공 후 `vat_period_summary`를 재계산하거나 서버에서 revalidate한다. 이미 생성된 패키지가 있더라도 공제 판정이 바뀌면 `packageStatus`는 `ready`로 되돌려 stale 패키지를 방지한다.
 - 일부 공제 검토가 남아 있으면 패키지 생성 API는 409를 반환한다.
 - Loading: `loading.tsx` 스켈레톤.
 - Empty: 확정 전표 또는 VAT summary가 없으면 "기장검토 먼저 확정하기".

@@ -141,31 +141,34 @@ export function normalizeVatDeductionDecision(value: string): VatDeductionDecisi
   return 'pending'
 }
 
-export function calculateDeductibleInputTax(reviews: Array<Pick<VatDeductionReviewInput, 'decision' | 'inputTaxKrw' | 'prorationRateBps'>>) {
+export function calculateDeductibleInputTax(
+  inputTaxKrw: number,
+  reviews: Array<Pick<VatDeductionReviewInput, 'decision' | 'inputTaxKrw' | 'prorationRateBps'>>,
+) {
   return reviews.reduce((sum, review) => {
     const decision = normalizeVatDeductionDecision(review.decision)
-    if (decision === 'deductible') return sum + review.inputTaxKrw
+    if (decision === 'deductible' || decision === 'pending') return sum
+    if (decision === 'non_deductible') return sum - review.inputTaxKrw
     if (decision === 'prorated') {
       const rateBps = review.prorationRateBps ?? 0
-      return sum + Math.round(review.inputTaxKrw * (rateBps / 10_000))
+      const deductibleAmount = Math.round(review.inputTaxKrw * (rateBps / 10_000))
+      return sum - (review.inputTaxKrw - deductibleAmount)
     }
     return sum
-  }, 0)
+  }, inputTaxKrw)
 }
 
 export function buildVatPeriodRecalculation(
-  summary: Pick<VatPeriodSummaryInput, 'outputTaxKrw' | 'packageStatus'>,
+  summary: Pick<VatPeriodSummaryInput, 'outputTaxKrw' | 'inputTaxKrw'>,
   reviews: Array<Pick<VatDeductionReviewInput, 'decision' | 'inputTaxKrw' | 'prorationRateBps'>>,
 ) {
   const pendingDeductionCount = reviews.filter((review) => (
     normalizeVatDeductionDecision(review.decision) === 'pending'
   )).length
-  const inputTaxDeductibleKrw = calculateDeductibleInputTax(reviews)
+  const inputTaxDeductibleKrw = calculateDeductibleInputTax(summary.inputTaxKrw, reviews)
   const packageStatus: VatPeriodSummaryInput['packageStatus'] = pendingDeductionCount > 0
     ? 'locked'
-    : summary.packageStatus === 'generated'
-      ? 'generated'
-      : 'ready'
+    : 'ready'
 
   return {
     inputTaxDeductibleKrw,
@@ -184,7 +187,7 @@ export function buildVatTaxSummary(
     ? reviews.filter((review) => normalizeVatDeductionDecision(review.decision) === 'pending').length
     : summary.pendingDeductionCount
   const inputTaxDeductibleKrw = reviews.length > 0
-    ? calculateDeductibleInputTax(reviews)
+    ? calculateDeductibleInputTax(summary.inputTaxKrw, reviews)
     : summary.inputTaxDeductibleKrw
 
   return {

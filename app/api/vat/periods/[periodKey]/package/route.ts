@@ -43,10 +43,10 @@ export async function POST(
         .select({
           id: vatPeriodSummary.id,
           outputTaxKrw: vatPeriodSummary.outputTaxKrw,
+          inputTaxKrw: vatPeriodSummary.inputTaxKrw,
           inputTaxDeductibleKrw: vatPeriodSummary.inputTaxDeductibleKrw,
           payableTaxKrw: vatPeriodSummary.payableTaxKrw,
           pendingDeductionCount: vatPeriodSummary.pendingDeductionCount,
-          packageStatus: vatPeriodSummary.packageStatus,
         })
         .from(vatPeriodSummary)
         .where(and(

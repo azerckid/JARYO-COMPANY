@@ -36,7 +36,7 @@ describe('VAT account line detection', () => {
 })
 
 describe('VAT tax derivation', () => {
-  it('derives deductible input tax from decisions and payable = output - deductible input (S-20~22)', () => {
+  it('derives provisional deductible input tax from total input VAT and review decisions (S-20~22)', () => {
     const reviews = [
       { decision: 'deductible', inputTaxKrw: 8_000_000, prorationRateBps: null },
       { decision: 'prorated', inputTaxKrw: 20_000_000, prorationRateBps: 5_000 },
@@ -44,7 +44,7 @@ describe('VAT tax derivation', () => {
       { decision: 'non_deductible', inputTaxKrw: 2_000_000, prorationRateBps: null },
     ]
 
-    expect(calculateDeductibleInputTax(reviews)).toBe(18_000_000)
+    expect(calculateDeductibleInputTax(31_000_000, reviews)).toBe(19_000_000)
     expect(buildVatTaxSummary({
       outputTaxKrw: 32_000_000,
       inputTaxKrw: 31_000_000,
@@ -54,11 +54,32 @@ describe('VAT tax derivation', () => {
     }, period, reviews)).toMatchObject({
       outputTaxKrw: 32_000_000,
       inputTaxKrw: 31_000_000,
-      inputTaxDeductibleKrw: 18_000_000,
-      payableTaxKrw: 14_000_000,
+      inputTaxDeductibleKrw: 19_000_000,
+      payableTaxKrw: 13_000_000,
       pendingDeductionCount: 1,
       filingDeadline: '2026-07-25',
       dDay: 23,
+    })
+  })
+
+  it('keeps pending deduction candidates in the hero as provisional deductible tax (S-03, S-21)', () => {
+    const previewRows = [
+      { decision: 'pending', inputTaxKrw: 120_000, prorationRateBps: null },
+      { decision: 'pending', inputTaxKrw: 90_000, prorationRateBps: null },
+      { decision: 'pending', inputTaxKrw: 200_000, prorationRateBps: null },
+      { decision: 'deductible', inputTaxKrw: 312_400, prorationRateBps: null },
+    ]
+
+    expect(buildVatTaxSummary({
+      outputTaxKrw: 32_000_000,
+      inputTaxKrw: 18_000_000,
+      inputTaxDeductibleKrw: 18_000_000,
+      pendingDeductionCount: 3,
+      isFinal: false,
+    }, period, previewRows)).toMatchObject({
+      inputTaxDeductibleKrw: 18_000_000,
+      payableTaxKrw: 14_000_000,
+      pendingDeductionCount: 3,
     })
   })
 
@@ -79,25 +100,25 @@ describe('VAT tax derivation', () => {
   it('recalculates period summary after deduction mutations (S-51, S-52, S-64)', () => {
     expect(buildVatPeriodRecalculation({
       outputTaxKrw: 32_000_000,
-      packageStatus: 'locked',
+      inputTaxKrw: 31_000_000,
     }, [
       { decision: 'deductible', inputTaxKrw: 10_000_000, prorationRateBps: null },
       { decision: 'prorated', inputTaxKrw: 16_000_000, prorationRateBps: 5_000 },
       { decision: 'non_deductible', inputTaxKrw: 2_000_000, prorationRateBps: null },
     ])).toEqual({
-      inputTaxDeductibleKrw: 18_000_000,
-      payableTaxKrw: 14_000_000,
+      inputTaxDeductibleKrw: 21_000_000,
+      payableTaxKrw: 11_000_000,
       pendingDeductionCount: 0,
       packageStatus: 'ready',
     })
 
     expect(buildVatPeriodRecalculation({
       outputTaxKrw: 32_000_000,
-      packageStatus: 'generated',
+      inputTaxKrw: 18_000_000,
     }, [
       { decision: 'deductible', inputTaxKrw: 18_000_000, prorationRateBps: null },
     ])).toMatchObject({
-      packageStatus: 'generated',
+      packageStatus: 'ready',
     })
   })
 })

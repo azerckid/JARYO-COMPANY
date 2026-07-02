@@ -1,6 +1,6 @@
 # Test Scenarios: VAT
 > Created: 2026-07-02 11:03
-> Last Updated: 2026-07-02 12:05
+> Last Updated: 2026-07-02 13:10
 
 부가세(JC-011) Layer 5 QA 시나리오. [VAT Pre-Code Brief](../03_Technical_Specs/07_VAT_PRE_CODE_BRIEF.md)의
 Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다.
@@ -29,7 +29,7 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 |:---|:---|:---|:---|:---:|
 | S-01 | 인증 tenant + 사업장 + VAT summary | `/dashboard/vat` 진입 | 세액 요약 -> 매출 구분 -> 공제 검토 -> 부속 명세 -> 패키지 순서 | PASS·단위 |
 | S-02 | 회사 홈 "부가세 열기"/사이드바 | 클릭 | `/dashboard/vat` 이동 | PASS·단위 |
-| S-03 | 승인 Preview 기준 데이터 | 렌더 | 32,000,000 - 18,000,000 = 14,000,000 흐름 재현 | Pending |
+| S-03 | 승인 Preview 기준 데이터 | 렌더 | 32,000,000 - 18,000,000 = 14,000,000 흐름 재현 | PASS·단위 |
 
 ### 2.2 기간·사업장 컨텍스트
 
@@ -45,7 +45,7 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 | # | Given | When | Then | Result |
 |:---|:---|:---|:---|:---:|
 | S-20 | outputTax=32,000,000, inputDeductible=18,000,000 | summary 파생 | payableTax=14,000,000 | PASS·단위 |
-| S-21 | inputTax 원천 18,320,000 중 pending 320,000 | summary 파생 | 공제 확정분만 inputTaxDeductible에 반영, pending은 잠금 사유 | PASS·단위 |
+| S-21 | inputTax 원천 18,000,000 중 pending 후보 3건 | summary 파생 | pending은 예정 공제액에 포함하되 패키지 잠금 사유로 유지 | PASS·단위 |
 | S-22 | `isFinal=false` | Hero 렌더 | "예정 세액" 및 검토 확정 전 안내 표시 | Pending |
 | S-23 | 마감 2026-07-25, 오늘 2026-07-01 | Hero 렌더 | D-24 표시 | Pending |
 
@@ -108,7 +108,7 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 
 ## 3. 자동화 계획
 
-- **단위 테스트 완료** (`lib/vat/summary.test.ts`, `lib/validations/vat.test.ts`): S-12~13, S-20~21, S-30~32, S-40~42, S-50~52, S-60~64.
+- **단위 테스트 완료** (`lib/vat/summary.test.ts`, `lib/validations/vat.test.ts`): S-03, S-12~13, S-20~21, S-30~32, S-40~42, S-50~52, S-60~64.
 - **정적 검증 완료** (`vat-workspace.test.ts`): Preview 구조(S-01), 라우트(S-02), reviews 미import(S-70), 책임 경계 문구(S-71~72), mutation tenant guard(S-53), package guard(S-63~64).
 - **브라우저 수동 검증 예정**: 승인 Preview와 실제 `/dashboard/vat?period=2026-H1` 캡처 비교. 숫자/색상/간격/잠금 버튼 확인.
 - **후속 E2E**: 실제 전표 생성부터 VAT summary 생성까지는 JC-014 env/seed 준비 후 검증.
