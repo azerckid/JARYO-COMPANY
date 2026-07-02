@@ -341,7 +341,11 @@ export async function loadBookkeepingReviewSummary({
       inArray(bookkeepingTransactionClassification.classificationRunId, latestRunIds),
       ne(bookkeepingTransactionClassification.status, 'excluded'),
     ))
-    .orderBy(bookkeepingTransactionClassification.transactionDate, bookkeepingTransactionClassification.createdAt)
+    .orderBy(
+      desc(bookkeepingTransactionClassification.transactionDate),
+      desc(bookkeepingTransactionClassification.createdAt),
+      desc(bookkeepingTransactionClassification.id),
+    )
 
   const rows = classificationRows.map(mapClassificationRow)
   const counts = buildBookkeepingReviewCounts(rows)
@@ -385,4 +389,78 @@ export async function loadBookkeepingReviewSummary({
   }
 
   return { ...base, counts, rows: tabRows, selected }
+}
+
+export async function loadBookkeepingReviewPendingCount(tenantId: string): Promise<number> {
+  const { db } = await import('@/lib/db')
+
+  const tenantRows = await db
+    .select({ id: tenant.id, timezone: tenant.timezone })
+    .from(tenant)
+    .where(eq(tenant.id, tenantId))
+    .limit(1)
+  const timezone = tenantRows[0]?.timezone ?? DEFAULT_TZ
+  const period = buildCompanyHomePeriod({ timezone })
+
+  const businessEntityRows = await db
+    .select({ id: client.id })
+    .from(client)
+    .where(eq(client.tenantId, tenantId))
+    .orderBy(client.createdAt)
+    .limit(1)
+  const businessEntity = businessEntityRows[0] ?? null
+  if (!businessEntity) return 0
+
+  const sessionRows = await db
+    .select({
+      id: uploadSession.id,
+      accountingPeriod: uploadSession.accountingPeriod,
+      bookkeepingPeriodStart: uploadSession.bookkeepingPeriodStart,
+      bookkeepingPeriodEnd: uploadSession.bookkeepingPeriodEnd,
+    })
+    .from(uploadSession)
+    .where(and(
+      eq(uploadSession.tenantId, tenantId),
+      eq(uploadSession.clientId, businessEntity.id),
+      eq(uploadSession.source, 'staff_direct'),
+      isNull(uploadSession.deletedAt),
+    ))
+
+  const sessionIds = sessionRows
+    .filter((session) => sessionPeriodOverlapsCompanyPeriod(session, period))
+    .map((session) => session.id)
+  if (sessionIds.length === 0) return 0
+
+  const runRows = await db
+    .select({
+      id: bookkeepingClassificationRun.id,
+      uploadSessionId: bookkeepingClassificationRun.uploadSessionId,
+      status: bookkeepingClassificationRun.status,
+      createdAt: bookkeepingClassificationRun.createdAt,
+    })
+    .from(bookkeepingClassificationRun)
+    .where(and(
+      eq(bookkeepingClassificationRun.tenantId, tenantId),
+      eq(bookkeepingClassificationRun.status, 'completed'),
+      inArray(bookkeepingClassificationRun.uploadSessionId, sessionIds),
+    ))
+    .orderBy(desc(bookkeepingClassificationRun.createdAt), desc(bookkeepingClassificationRun.id))
+
+  const latestRunIds = pickLatestCompletedRunIdsBySession(runRows)
+  if (latestRunIds.length === 0) return 0
+
+  const statusRows = await db
+    .select({ status: bookkeepingTransactionClassification.status })
+    .from(bookkeepingTransactionClassification)
+    .where(and(
+      eq(bookkeepingTransactionClassification.tenantId, tenantId),
+      inArray(bookkeepingTransactionClassification.classificationRunId, latestRunIds),
+      ne(bookkeepingTransactionClassification.status, 'excluded'),
+    ))
+
+  return statusRows.filter((row) => (
+    row.status === 'suggested' ||
+    row.status === 'needs_decision' ||
+    row.status === 'unclassified'
+  )).length
 }

@@ -9,7 +9,7 @@ const HOME_NAV = {
 
 const FLOW_NAV = [
   { href: '/dashboard/direct-upload', label: '자료수집', glyph: '↥' },
-  { href: '/dashboard/bookkeeping', label: '기장검토', glyph: '▤' },
+  { href: '/dashboard/bookkeeping', label: '기장검토', glyph: '▤', badgeKey: 'bookkeepingPending' },
   { href: '/dashboard#vat-status', label: '부가세', glyph: '％' },
   { href: '/dashboard/payroll', label: '급여', glyph: '₩' },
   { href: '/dashboard#filing-support-status', label: '신고지원', glyph: '↧' },
@@ -24,6 +24,7 @@ const SETTINGS_NAV = {
 interface SidebarProps {
   userName: string
   tenantName: string
+  bookkeepingPendingCount?: number
 }
 
 function userInitial(userName: string) {
@@ -31,7 +32,7 @@ function userInitial(userName: string) {
   return trimmed ? trimmed.slice(0, 1) : 'U'
 }
 
-export function Sidebar({ userName, tenantName }: SidebarProps) {
+export function Sidebar({ userName, tenantName, bookkeepingPendingCount = 0 }: SidebarProps) {
   return (
     <aside className="sticky top-0 flex h-screen w-[248px] shrink-0 flex-col gap-1 border-r border-company-border bg-company-surface px-3.5 py-5 text-foreground">
       <div className="flex items-center gap-2.5 px-2 pb-[18px]">
@@ -54,12 +55,21 @@ export function Sidebar({ userName, tenantName }: SidebarProps) {
           운영 흐름
         </p>
 
-        {FLOW_NAV.map((item) => (
-          <SidebarNavLink key={item.href} href={item.href}>
-            <NavGlyph>{item.glyph}</NavGlyph>
-            <span className="min-w-0 flex-1 truncate">{item.label}</span>
-          </SidebarNavLink>
-        ))}
+        {FLOW_NAV.map((item) => {
+          const badge = 'badgeKey' in item && item.badgeKey === 'bookkeepingPending' ? bookkeepingPendingCount : 0
+
+          return (
+            <SidebarNavLink key={item.href} href={item.href}>
+              <NavGlyph>{item.glyph}</NavGlyph>
+              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+              {badge > 0 ? (
+                <span className="ml-auto rounded-full border border-[#fecaca] bg-[#fef2f2] px-[7px] py-px text-[10.5px] font-bold leading-4 text-[#dc2626]">
+                  {badge}
+                </span>
+              ) : null}
+            </SidebarNavLink>
+          )
+        })}
 
         <p className="px-2 pt-3.5 pb-1.5 text-[11px] font-semibold tracking-[0.04em] text-company-fg-subtle uppercase">
           관리

@@ -304,71 +304,73 @@ function ClassificationQueueTable({
   return (
     <div className={panelClass}>
       {rows.length > 0 ? (
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b border-company-border bg-[#fafafa]">
-              <QueueHead className="w-[34px]" />
-              <QueueHead>거래일</QueueHead>
-              <QueueHead>거래내용 / 상대처</QueueHead>
-              <QueueHead className="text-right">금액</QueueHead>
-              <QueueHead>추천 계정과목</QueueHead>
-              <QueueHead>신뢰도</QueueHead>
-              <QueueHead>처리</QueueHead>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr
-                key={row.id}
-                className={cn(
-                  'border-b border-company-border last:border-b-0 hover:bg-[#fafafa]',
-                  selectedRowId === row.id && 'bg-[#eff6ff] hover:bg-[#e7f0ff]',
-                )}
-                onClick={() => onSelectRow(row)}
-              >
-                <QueueCell>
-                  <button
-                    type="button"
-                    aria-label={`${row.description} 선택`}
-                    className={cn(
-                      'inline-block size-[15px] rounded border-[1.5px] border-company-border-strong align-middle',
-                      selectedIds.has(row.id) && 'border-[#2563eb] bg-[#2563eb] text-[10px] leading-[13px] text-white',
-                    )}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      onToggleSelection(row)
-                    }}
-                  >
-                    {selectedIds.has(row.id) ? '✓' : ''}
-                  </button>
-                </QueueCell>
-                <QueueCell className="font-mono text-company-fg-muted tabular-nums">{formatTransactionDate(row.transactionDate)}</QueueCell>
-                <QueueCell>
-                  <p className="font-semibold text-foreground">{row.description}</p>
-                  <p className="text-[11.5px] text-company-fg-subtle">{formatCounterparty(row.counterparty)}</p>
-                </QueueCell>
-                <QueueCell className="text-right font-semibold tabular-nums">{formatWon(row.amountKrw)}</QueueCell>
-                <QueueCell>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="font-semibold">{formatAccount(row.finalAccount ?? row.recommendedAccount)}</span>
-                    <span className="rounded-[5px] border border-[#bfdbfe] bg-[#eff6ff] px-1.5 py-px text-[10px] font-bold text-[#2563eb]">AI</span>
-                  </span>
-                </QueueCell>
-                <QueueCell>
-                  <ConfidenceIndicator row={row} />
-                </QueueCell>
-                <QueueCell>
-                  <RowActions
-                    row={row}
-                    isPending={isPending}
-                    onApproveOne={onApproveOne}
-                    onApproveWithAccount={onApproveWithAccount}
-                  />
-                </QueueCell>
+        <div className="max-h-[350px] overflow-y-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-company-border bg-[#fafafa]">
+                <QueueHead className="w-[34px]" />
+                <QueueHead>거래일</QueueHead>
+                <QueueHead>거래내용 / 상대처</QueueHead>
+                <QueueHead className="text-right">금액</QueueHead>
+                <QueueHead>추천 계정과목</QueueHead>
+                <QueueHead>신뢰도</QueueHead>
+                <QueueHead>처리</QueueHead>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className={cn(
+                    'border-b border-company-border last:border-b-0 hover:bg-[#fafafa]',
+                    selectedRowId === row.id && 'bg-[#eff6ff] hover:bg-[#e7f0ff]',
+                  )}
+                  onClick={() => onSelectRow(row)}
+                >
+                  <QueueCell>
+                    <button
+                      type="button"
+                      aria-label={`${row.description} 선택`}
+                      className={cn(
+                        'inline-block size-[15px] rounded border-[1.5px] border-company-border-strong align-middle',
+                        selectedIds.has(row.id) && 'border-[#2563eb] bg-[#2563eb] text-[10px] leading-[13px] text-white',
+                      )}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onToggleSelection(row)
+                      }}
+                    >
+                      {selectedIds.has(row.id) ? '✓' : ''}
+                    </button>
+                  </QueueCell>
+                  <QueueCell className="font-mono text-company-fg-muted tabular-nums">{formatTransactionDate(row.transactionDate)}</QueueCell>
+                  <QueueCell>
+                    <p className="font-semibold text-foreground">{row.description}</p>
+                    <p className="text-[11.5px] text-company-fg-subtle">{formatCounterparty(row.counterparty)}</p>
+                  </QueueCell>
+                  <QueueCell className="text-right font-semibold tabular-nums">{formatWon(row.amountKrw)}</QueueCell>
+                  <QueueCell>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="font-semibold">{formatAccount(row.finalAccount ?? row.recommendedAccount)}</span>
+                      <span className="rounded-[5px] border border-[#bfdbfe] bg-[#eff6ff] px-1.5 py-px text-[10px] font-bold text-[#2563eb]">AI</span>
+                    </span>
+                  </QueueCell>
+                  <QueueCell>
+                    <ConfidenceIndicator row={row} />
+                  </QueueCell>
+                  <QueueCell>
+                    <RowActions
+                      row={row}
+                      isPending={isPending}
+                      onApproveOne={onApproveOne}
+                      onApproveWithAccount={onApproveWithAccount}
+                    />
+                  </QueueCell>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <div className="grid min-h-[260px] place-items-center p-8 text-center">
           <div>

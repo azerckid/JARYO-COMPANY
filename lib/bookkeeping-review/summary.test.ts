@@ -258,4 +258,9 @@ describe('bookkeeping review loader boundaries', () => {
     expect(source).toContain("eq(bookkeepingClassificationRun.status, 'completed')")
     expect(source).toContain('pickLatestCompletedRunIdsBySession(runRows)')
   })
+
+  it('orders the queue by latest transaction date first for Preview parity', () => {
+    expect(source).toContain('desc(bookkeepingTransactionClassification.transactionDate)')
+    expect(source).toContain('desc(bookkeepingTransactionClassification.createdAt)')
+  })
 })
