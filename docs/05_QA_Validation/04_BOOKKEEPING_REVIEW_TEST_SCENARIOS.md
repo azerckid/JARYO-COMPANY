@@ -62,7 +62,8 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 | # | Given | When | Then | Result |
 |:---|:---|:---|:---|:---:|
 | S-50 | 큐 행 "승인" | 클릭 | `PATCH .../rows/[rowId]` {status:'confirmed'} 호출, 확정 탭 이동 | Pending |
-| S-51 | 다중 선택 "일괄 승인" | 클릭 | `POST .../bulk-confirm` {rowIds} 호출 | Pending |
+| S-51 | 여러 세션 행 다중 선택 "일괄 승인" | 클릭 | `uploadSessionId`별 그룹핑 후 세션별 `bulk-confirm` 각각 호출, 결과 합산 | Pending |
+| S-51b | 일괄 승인 중 일부 세션 실패 | 응답 | 성공 건수·실패 세션 구분해 토스트 표시(전체 실패로 처리하지 않음) | Pending |
 | S-52 | low 신뢰도 행 "계정 지정" | finalAccount 지정→확정 | PATCH finalAccount + status confirmed | Pending |
 | S-53 | 각 행 mutation | 호출 | 행의 `uploadSessionId`로 올바른 세션 API 경로 사용 | Pending |
 

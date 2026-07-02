@@ -132,7 +132,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - Acceptance Criteria:
   - [ ] 정규화된 거래가 분류 큐에 AI 추천 계정과목·신뢰도와 함께 표시된다.
   - [ ] 신뢰도 낮은 거래는 승인 전 "계정 지정"으로 강제 확인된다.
-  - [ ] 개별·다중(일괄) 승인이 가능하고 승인 시 확정 전표로 이동한다.
+  - [ ] 개별·다중(일괄) 승인이 가능하고 승인 시 분류 status가 confirmed로 확정된다(전표 생성은 v1 범위 밖, 후속). 다중 승인은 세션별 그룹 호출.
   - [ ] 선택 거래의 분개 미리보기(차/대변, 부가세대급금 포함)와 기간 귀속·부가세 공제가 표시된다.
   - [ ] AI 추천은 초안이며 최종 확정 책임은 사용자에게 있다.
   - [ ] **회사 기장검토 화면은 GIWA `/dashboard/reviews` 워크스페이스 컴포넌트를 import/render하지 않는다**(Preview 계약, 정적 테스트로 강제).

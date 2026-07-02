@@ -1,18 +1,20 @@
 # Component & Library Plan
 > Created: 2026-07-01 20:05
-> Last Updated: 2026-07-02 09:15
+> Last Updated: 2026-07-02 09:25
 
 ## 1. 목적 및 범위
 
 Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사용할
 컴포넌트·라이브러리·shadcn preset 적용 방침을 확정한다.
 
-대상 화면(사용자 확인 완료):
+대상 화면(사용자 확인 완료, 화면별 매핑은 §7):
 - 회사 홈 — [00_company_home.html](../02_UI_Screens/previews/00_company_home.html)
 - 자료수집 — [01_source_collection.html](../02_UI_Screens/previews/01_source_collection.html)
+- 기장검토 — [02_bookkeeping_review.html](../02_UI_Screens/previews/02_bookkeeping_review.html)
+- 부가세·급여·신고지원은 각 화면 게이트(Pre-Code Brief) 진행 시 §7에 추가한다.
 
 원칙: **JARYO-GIWA 자산 최대 재사용 + 최소 신규 도입(YAGNI/KISS/DRY)**. 이미 설치된
-것을 우선 쓰고, 없을 때만 shadcn 표준 컴포넌트를 추가한다. 새 npm 패키지는 이 두 화면
+것을 우선 쓰고, 없을 때만 shadcn 표준 컴포넌트를 추가한다. 새 npm 패키지는 대상 화면
 범위에서 도입하지 않는다.
 
 ## 2. Project Initialization / shadcn 상태
@@ -42,7 +44,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 | `progress` | 회계기간 진행률, 수집 완결성, import 진행 바(mini-progress) | `apply progress` |
 | `skeleton` | Loading 상태(카드·표 스켈레톤) | `apply skeleton` |
 
-이 두 개 외 신규 shadcn 컴포넌트는 두 화면에서 필요 없음.
+이 두 개 외 신규 shadcn 컴포넌트는 대상 화면에서 필요 없음.
 
 ## 6. 재사용할 기존(GIWA) 컴포넌트
 
@@ -55,7 +57,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 | shadcn `card`/`badge`/`button` | `components/ui/*` | 카드·상태칩·CTA 전반 |
 
 주의: `sidebar-mail-nav.tsx`, `usage-help`, `field-test-concierge`는 GIWA 세무사무소
-문맥이므로 두 화면 범위에서는 재사용하지 않는다(별도 검토 대상).
+문맥이므로 대상 화면 범위에서는 재사용하지 않는다(별도 검토 대상).
 
 ## 7. 화면별 컴포넌트 매핑
 
@@ -83,7 +85,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 | State(로딩/빈/오류) | 공용 재사용(7.1과 동일) | `skeleton` + `button` |
 
 공용 원자 컴포넌트(`StatusChip`, 상태 `Dot`, `MiniProgress`, `LoadingState`,
-`EmptyState`, `ErrorState`)는 두 화면이 공유한다(DRY).
+`EmptyState`, `ErrorState`)는 대상 화면들이 공유한다(DRY).
 
 ### 7.3 기장검토 (UI Design 4.3)
 
@@ -123,7 +125,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 |:---|:---|
 | `react-dropzone` | 네이티브 HTML5 drag&drop + `input[type=file]`로 충분. 의존성 최소화. |
 | `@tanstack/react-table` | 홈·자료수집 표는 읽기/단순 상태 표시 수준. shadcn `table`로 충분. 정렬·가상화 요구 발생 시 재검토. |
-| `react-hook-form` | 두 화면에 복잡 폼 없음(업로드는 파일 입력 중심). 폼 복잡도 증가 시 재검토. |
+| `react-hook-form` | 대상 화면에 복잡 폼 없음(업로드는 파일 입력 중심). 폼 복잡도 증가 시 재검토. |
 | 신규 toast/date/state 라이브러리 | `sonner`/`luxon` 및 서버 컴포넌트+URL 상태로 충분. 전역 상태 매니저 불필요. |
 
 ## 9. 상태 관리 방침(요약)
@@ -141,7 +143,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 
 ## 11. Related Documents
 - **Concept_Design**: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md) - 제품 목적 및 사용자
-- **UI_Screens**: [UI Design](../02_UI_Screens/01_UI_DESIGN.md) - 컴포넌트 4.1/4.2 근거
+- **UI_Screens**: [UI Design](../02_UI_Screens/01_UI_DESIGN.md) - 컴포넌트 4.1~4.3 근거
 - **UI_Screens**: [Screen Flow](../02_UI_Screens/00_SCREEN_FLOW.md) - 화면 흐름·데이터 입출력
 - **UI_Screens**: [HTML Preview 폴더](../02_UI_Screens/previews/) - 화면 프로토타입
 - **Technical_Specs**: [Development Setup](./01_DEVELOPMENT_SETUP.md) - 런타임·패키지·스택

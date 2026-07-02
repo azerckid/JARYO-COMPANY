@@ -1,6 +1,6 @@
 # Bookkeeping Review Pre-Code Technical Brief
 > Created: 2026-07-02 09:00
-> Last Updated: 2026-07-02 09:00
+> Last Updated: 2026-07-02 09:25
 
 ## 0. Governing Principle — Preview UI가 계약이다
 
@@ -99,13 +99,15 @@ type BookkeepingReviewSummary = {
 | 액션 | 허용 | API/모듈 |
 |:---|:---:|:---|
 | 개별 승인/수정(계정 확정) | O | `PATCH /api/sessions/[id]/account-classification/rows/[rowId]` { status:'confirmed', finalAccount } |
-| 다중(일괄) 승인 | O | `POST /api/sessions/[id]/account-classification/bulk-confirm` { rowIds } |
+| 다중(일괄) 승인 | O | `POST /api/sessions/[id]/account-classification/bulk-confirm` { rowIds } — **세션 단위 API**. 아래 그룹 호출 규칙 참조 |
 | 계정 지정(low) | O | 위 PATCH로 finalAccount 지정 후 확정 |
 | 분류 run 시작/취소 | △ | 기존 start/cancel API 존재. 회사 UI에서 노출 여부는 구현 시 결정(기본: 자동/숨김) |
 | 전표 생성·확정(journal entry) | X(v1) | 별도 run. 회사 기장검토 v1은 분류 확정까지, 전표 생성은 후속/내부 |
 | adaptive structuring·material 심화 | X | 내부 `/dashboard/reviews` |
 
-- 큐 행은 **여러 세션에 걸쳐** 집계되므로, 각 행의 `uploadSessionId`로 해당 세션 API를 호출한다.
+- 큐 행은 **여러 세션에 걸쳐** 집계된다. 승인 mutation API는 모두 **단일 세션(`/api/sessions/[id]/...`) 스코프**이며, `bulk-confirm`도 URL의 한 `sessionId` + 그 세션의 `rowIds`만 받는다(`classification-service.ts`의 `bulkConfirmBookkeepingRows`는 해당 세션 최신 run 기준).
+- **Mixed-session bulk confirm 규칙**: 선택 행을 `uploadSessionId`별로 그룹핑 → 세션별로 `bulk-confirm`을 각각 호출 → 결과를 합산해 한 번의 성공/부분실패 토스트로 보고한다. 일부 세션 실패 시 성공 건수와 실패 세션을 구분해 표시한다.
+- 개별 승인/수정도 해당 행의 `uploadSessionId`로 올바른 세션 API 경로를 사용한다.
 - Loading/Empty/Error: `loading.tsx`/`error.tsx` + 빈 상태(사업장 없음 / 거래 없음 / 검토 대기 0건).
 - 승인 성공/실패 피드백은 `sonner`. 목록 갱신은 서버 재검증.
 
@@ -144,7 +146,7 @@ type BookkeepingReviewSummary = {
 
 ## 10. Open Items
 
-- Layer 5 QA: `docs/05_QA_Validation/04_BOOKKEEPING_REVIEW_TEST_SCENARIOS.md` 작성 필요.
+- Layer 5 QA: [04_BOOKKEEPING_REVIEW_TEST_SCENARIOS.md](../05_QA_Validation/04_BOOKKEEPING_REVIEW_TEST_SCENARIOS.md) 작성 완료(S-01~S-91).
 - 전표 생성(journal entry run)을 회사 UI에서 트리거할지, 분류 확정까지만 하고 전표는 후속/내부로 둘지 — v1은 후속.
 - 분류 run 시작/재실행의 회사 UI 노출 여부(기본 숨김·자동).
 - JC-005 물리 rename 시 `clientId` 참조 갱신(자료수집과 동일).
@@ -154,4 +156,5 @@ type BookkeepingReviewSummary = {
 - **Concept_Design**: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md)
 - **UI_Screens**: [Screen Flow 4c](../02_UI_Screens/00_SCREEN_FLOW.md) · [UI Design 4.3](../02_UI_Screens/01_UI_DESIGN.md) · [Bookkeeping Review Prototype Review](../02_UI_Screens/04_BOOKKEEPING_REVIEW_PROTOTYPE_REVIEW.md) · [HTML Preview](../02_UI_Screens/previews/02_bookkeeping_review.html)
 - **Technical_Specs**: [Component & Library Plan](./02_COMPONENT_LIBRARY_PLAN.md) · [DB Schema](./03_DB_SCHEMA.md) · [Source Collection Pre-Code Brief](./05_SOURCE_COLLECTION_PRE_CODE_BRIEF.md)
+- **QA_Validation**: [Bookkeeping Review Test Scenarios](../05_QA_Validation/04_BOOKKEEPING_REVIEW_TEST_SCENARIOS.md) - S-01~S-91 검증 시나리오
 - **Logic_Progress**: [Backlog](../04_Logic_Progress/00_BACKLOG.md) - JC-010 Context Lock
