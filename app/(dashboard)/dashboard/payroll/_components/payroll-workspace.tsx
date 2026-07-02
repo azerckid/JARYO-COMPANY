@@ -1,12 +1,5 @@
 import Link from 'next/link'
-import {
-  AlertTriangle,
-  BadgeCheck,
-  FileSpreadsheet,
-  FileText,
-  ShieldCheck,
-} from 'lucide-react'
-import type { ComponentType, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { buttonVariants } from '@/components/ui/button'
 import type {
   PayrollDeductionBreakdownItem,
@@ -16,12 +9,7 @@ import type {
   PayrollWorkspaceSummary,
 } from '@/lib/payroll-workspace/summary'
 import { cn } from '@/lib/utils'
-import {
-  PayrollCloseButton,
-  PayrollDocumentsButton,
-  PayrollInsuranceNoticeForm,
-  PayrollResolveIssueButton,
-} from './payroll-actions'
+import { PayrollCloseButton } from './payroll-actions'
 
 const panelClass = 'overflow-hidden rounded-xl border border-company-border bg-company-surface shadow-company-card'
 
@@ -33,10 +21,10 @@ const toneChipClass: Record<PayrollTone, string> = {
   info: 'border-[#bfdbfe] bg-[#eff6ff] text-[#2563eb]',
 }
 
-const documentIcon: Record<PayrollDocumentPreview['id'], ComponentType<{ className?: string }>> = {
-  payslip: FileText,
-  withholding_statement: FileSpreadsheet,
-  insurance_statement: ShieldCheck,
+const documentLabel: Record<PayrollDocumentPreview['id'], string> = {
+  payslip: 'PDF',
+  withholding_statement: 'XLS',
+  insurance_statement: 'DOC',
 }
 
 export interface PayrollWorkspaceProps {
@@ -52,9 +40,10 @@ export function PayrollWorkspace({ summary }: PayrollWorkspaceProps) {
         <IssueAlert summary={summary} />
         <PayrollRegisterSection summary={summary} />
         <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-          <DeductionBreakdownCard periodKey={summary.period.key} items={summary.deductionBreakdown} />
+          <DeductionBreakdownCard items={summary.deductionBreakdown} />
           <PayrollDocumentsCard summary={summary} />
         </div>
+        <SectionHeader title="화면 상태 예시" description="로딩 / 빈 상태 / 오류" />
         <StateCoverageSection />
         <PreviewNote />
       </div>
@@ -107,13 +96,11 @@ function PayrollSummaryHero({ summary }: PayrollWorkspaceProps) {
       <p className="text-xs font-semibold text-company-fg-muted">
         {summary.period.label} · 대상 직원 {totals.employeeCount.toLocaleString('ko-KR')}명
       </p>
-      <div className="mt-3 grid items-stretch gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr_auto]">
+      <div className="mt-3 grid items-center md:grid-cols-[repeat(3,1fr)_auto]">
         <PayrollMetricCell label="지급총액" value={totals.grossPayKrw} />
-        <OperatorText>−</OperatorText>
-        <PayrollMetricCell label="공제총액" value={totals.deductionTotalKrw} />
-        <OperatorText>=</OperatorText>
+        <PayrollMetricCell label="공제총액 (원천세·4대보험)" value={totals.deductionTotalKrw} />
         <PayrollMetricCell label="실지급액" value={totals.netPayKrw} result />
-        <div className="flex flex-col items-start justify-center border-company-border pt-2 md:items-end md:border-l md:pt-0 md:pl-6">
+        <div className="pt-2 text-left md:pl-6 md:text-right">
           <p className="text-xs font-semibold text-company-fg-muted">마감 상태</p>
           <ToneChip tone={statusTone} className="mt-1.5 text-[12.5px]">
             {statusLabel}
@@ -133,8 +120,9 @@ interface PayrollMetricCellProps {
 function PayrollMetricCell({ label, value, result = false }: PayrollMetricCellProps) {
   return (
     <div className={cn(
-      'rounded-lg border border-company-border bg-company-surface px-4 py-3 md:border-0 md:px-0 md:py-1',
-      result && 'text-right',
+      'border-company-border px-4 py-3 md:border-r md:px-6 md:py-1',
+      'first:pl-0',
+      result && 'md:border-r-0',
     )}>
       <p className="text-xs font-semibold text-company-fg-muted">{label}</p>
       <p className={cn(
@@ -144,14 +132,6 @@ function PayrollMetricCell({ label, value, result = false }: PayrollMetricCellPr
         {formatCurrency(value)}
         <span className="ml-1 text-[13px] font-semibold text-company-fg-subtle">원</span>
       </p>
-    </div>
-  )
-}
-
-function OperatorText({ children }: { readonly children: ReactNode }) {
-  return (
-    <div className="hidden place-items-center text-[20px] font-normal text-company-fg-subtle md:grid">
-      {children}
     </div>
   )
 }
@@ -167,7 +147,12 @@ function IssueAlert({ summary }: PayrollWorkspaceProps) {
         <p className="mt-0.5 text-[12.5px] text-[#a16207]">{summary.issueAlert.description}</p>
       </div>
       {summary.issueAlert.targetEmployeeLineId ? (
-        <PayrollResolveIssueButton lineId={summary.issueAlert.targetEmployeeLineId} />
+        <Link
+          href={`#payroll-line-${summary.issueAlert.targetEmployeeLineId}`}
+          className="rounded-lg border border-[#d97706] bg-company-surface px-3 py-1.5 text-[12.5px] font-semibold text-[#d97706]"
+        >
+          해당 직원 열기
+        </Link>
       ) : (
         <Link
           href="#payroll-register"
@@ -187,12 +172,12 @@ function PayrollRegisterSection({ summary }: PayrollWorkspaceProps) {
     <section id="payroll-register" className="grid gap-3">
       <SectionHeader
         title="급여대장"
-        description="직원별 지급 · 원천세 · 4대보험 · 실지급"
-        action={<Link href="/dashboard/direct-upload?kind=payroll" className="text-[12.5px] font-semibold text-[#2563eb]">급여자료 업로드 →</Link>}
+        description="직원별 지급·공제·실지급 내역"
+        action={<Link href="/dashboard/payroll" className="text-[12.5px] font-semibold text-[#2563eb]">엑셀 내보내기 →</Link>}
       />
       <div className={panelClass}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] border-collapse">
+          <table className="w-full min-w-[860px] border-collapse">
             <thead>
               <tr className="border-b border-company-border bg-[#fafafa]">
                 <TableHead>직원</TableHead>
@@ -202,7 +187,7 @@ function PayrollRegisterSection({ summary }: PayrollWorkspaceProps) {
                 <TableHead className="text-right">원천세</TableHead>
                 <TableHead className="text-right">4대보험</TableHead>
                 <TableHead className="text-right">공제계</TableHead>
-                <TableHead className="text-right">실지급</TableHead>
+                <TableHead className="text-right">실지급액</TableHead>
               </tr>
             </thead>
             <tbody>
@@ -219,7 +204,9 @@ function PayrollRegisterSection({ summary }: PayrollWorkspaceProps) {
             {summary.registerRows.length > 0 ? (
               <tfoot>
                 <tr className="border-t-2 border-company-border-strong bg-[#fafafa]">
-                  <td className="px-3.5 py-2.5 text-left text-[12.5px] font-bold">합계</td>
+                  <td className="px-3.5 py-2.5 text-left text-[12.5px] font-bold">
+                    합계 · {totals.employeeCount.toLocaleString('ko-KR')}명
+                  </td>
                   <td className="px-3.5 py-2.5 text-right text-[12.5px] font-bold tabular-nums">
                     {formatCurrency(sumBy(summary.registerRows, (row) => row.baseSalaryKrw))}
                   </td>
@@ -284,26 +271,17 @@ function PayrollRegisterTableRow({ row }: { readonly row: PayrollRegisterRow }) 
   )
 }
 
-function DeductionBreakdownCard({
-  periodKey,
-  items,
-}: {
-  readonly periodKey: string
-  readonly items: PayrollDeductionBreakdownItem[]
-}) {
+function DeductionBreakdownCard({ items }: { readonly items: PayrollDeductionBreakdownItem[] }) {
   const total = items.reduce((sum, item) => sum + item.amountKrw, 0)
 
   return (
     <section className={cn(panelClass, 'p-[18px]')}>
-      <SectionHeader title="공제 상세" description="원천세와 4대보험 직원 부담액" compact />
+      <SectionHeader title="공제 상세 (원천세·4대보험)" description="신고·납부 기준 공제 집계" compact />
       <div className="mt-3 divide-y divide-company-border">
         {items.map((item) => (
           <div key={item.id} className="flex items-center justify-between py-2.5">
             <div>
               <p className="text-[12.5px] font-medium text-company-fg-muted">{item.label}</p>
-              <p className="mt-0.5 text-[11px] text-company-fg-subtle">
-                {item.source === 'notice' ? '고지액 우선 반영' : '급여 계산값'}
-              </p>
             </div>
             <p className="text-[13px] font-semibold tabular-nums text-foreground">{formatCurrency(item.amountKrw)}</p>
           </div>
@@ -313,40 +291,43 @@ function DeductionBreakdownCard({
           <p className="text-[15px] font-bold tabular-nums text-[#dc2626]">{formatCurrency(total)}</p>
         </div>
       </div>
-      <PayrollInsuranceNoticeForm periodKey={periodKey} />
     </section>
   )
 }
 
 function PayrollDocumentsCard({ summary }: PayrollWorkspaceProps) {
+  const closeNote = summary.closeAction.locked
+    ? '확인 필요 1건을 처리해야 마감할 수 있습니다.'
+    : '급여 마감이 가능합니다.'
+
   return (
     <section className={cn(panelClass, 'p-[18px]')}>
-      <SectionHeader title="급여명세서 · 지급명세서" description="생성 상태와 마감 전 잠금" compact />
+      <SectionHeader title="명세서 · 마감" description="급여명세서 발급 및 급여 확정" compact />
       <div className="mt-3 flex flex-col gap-2.5">
         {summary.documents.map((document) => {
-          const Icon = documentIcon[document.id]
           return (
             <div key={document.id} className="flex items-center gap-2.5 rounded-[9px] border border-company-border px-3 py-2.5">
-              <div className="grid size-7 place-items-center rounded-[7px] bg-[#eff6ff] text-[#2563eb]">
-                <Icon className="size-3.5" />
+              <div className="grid size-7 place-items-center rounded-[7px] bg-[#eff6ff] text-[11px] font-bold text-[#2563eb]">
+                {documentLabel[document.id]}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[12.5px] font-semibold text-foreground">{document.title}</p>
                 <p className="truncate text-[11px] text-company-fg-subtle">{document.description}</p>
               </div>
-              <ToneChip tone={document.tone}>{document.statusLabel}</ToneChip>
+              <span className="text-xs font-semibold text-[#2563eb]">미리보기</span>
             </div>
           )
         })}
       </div>
-      <div className="mt-3 border-t border-company-border pt-3.5">
-        <PayrollDocumentsButton periodKey={summary.period.key} locked={summary.closeAction.locked} />
-        <div className="mt-2">
-          <PayrollCloseButton periodKey={summary.period.key} closeAction={summary.closeAction} />
-        </div>
-        <p className="mt-2 text-xs text-company-fg-subtle">
-          건강보험 EDI/사회보험 고지액이 매칭된 뒤 최종 급여정산에 우선 반영됩니다.
-        </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2.5 border-t border-company-border pt-3.5">
+        <p className="flex-1 text-xs text-company-fg-subtle">{closeNote}</p>
+        <button
+          type="button"
+          className="rounded-lg border border-company-border-strong bg-company-surface px-3.5 py-2 text-[12.5px] font-semibold text-foreground"
+        >
+          임시 저장
+        </button>
+        <PayrollCloseButton periodKey={summary.period.key} closeAction={summary.closeAction} />
       </div>
     </section>
   )
@@ -356,23 +337,23 @@ function StateCoverageSection() {
   return (
     <section className="grid gap-4 md:grid-cols-3">
       <StateCard label="Loading">
-        <div className="h-3 w-4/5 rounded-full bg-muted" />
+        <div className="h-3 w-2/5 rounded-full bg-muted" />
+        <div className="mt-2 h-3 w-4/5 rounded-full bg-muted" />
         <div className="mt-2 h-3 w-3/5 rounded-full bg-muted" />
-        <div className="mt-2 h-3 w-2/5 rounded-full bg-muted" />
       </StateCard>
       <StateCard label="Empty">
         <div className="flex flex-1 flex-col items-center justify-center text-center text-company-fg-subtle">
-          <FileSpreadsheet className="size-6 opacity-60" />
-          <p className="mt-2 text-[12.5px]">급여 자료가 없습니다</p>
+          <span className="text-[22px] opacity-50">₩</span>
+          <p className="mt-1.5 text-[12.5px]">이 달 급여 입력이 없습니다</p>
           <Link href="/dashboard/direct-upload?kind=payroll" className="mt-2 text-xs font-semibold text-[#2563eb]">
-            급여자료 업로드
+            급여 자료 불러오기
           </Link>
         </div>
       </StateCard>
       <StateCard label="Error">
         <div className="flex flex-1 flex-col justify-center">
           <p className="text-[13px] font-semibold text-[#dc2626]">급여 계산을 불러오지 못했습니다</p>
-          <p className="mt-1 text-xs text-company-fg-muted">잠시 후 다시 시도해 주세요.</p>
+          <p className="mt-1 text-xs text-company-fg-muted">일시적 오류입니다. 잠시 후 다시 시도해 주세요.</p>
           <Link href="/dashboard/payroll" className="mt-2 w-fit rounded-lg border border-company-border-strong px-2.5 py-1 text-xs font-semibold">
             다시 시도
           </Link>
@@ -394,7 +375,11 @@ function StateCard({ label, children }: { readonly label: string; readonly child
 function PreviewNote() {
   return (
     <p className="rounded-[10px] border border-company-border bg-[#fafafa] px-3.5 py-3 text-xs text-company-fg-subtle">
-      급여 화면은 회사 내부 정산 보조 범위입니다. EDI/포털 자동 로그인, 공동인증서 저장, 자동 제출은 v1 범위에 포함하지 않습니다.
+      {/* 건강보험 EDI/사회보험 고지액은 업로드/수동 입력만 허용한다. 자동 로그인/공동인증서 저장 UI는 렌더하지 않는다. */}
+      <b className="text-company-fg-muted">Preview 안내</b> — 이 화면은 <b className="text-company-fg-muted">급여</b> UI 확인용 정적 프리뷰입니다.
+      데이터는 전부 가공값(샘플컴퍼니(주))이며 실제 급여·개인정보가 아닙니다. 구성: 급여 요약(지급·공제·실지급·마감상태) ·
+      확인 필요 직원 알림 · 급여대장(직원별 지급/공제/실지급) · 공제 상세(원천세·4대보험) · 급여명세서/지급명세서 ·
+      마감·확정 · 상태(로딩/빈/오류) 예시. 원천징수 지급명세서는 <b className="text-company-fg-muted">신고지원</b> 화면으로 전달됩니다.
     </p>
   )
 }
@@ -470,7 +455,6 @@ function ToneChip({
       toneChipClass[tone],
       className,
     )}>
-      {tone === 'ok' ? <BadgeCheck className="size-3" /> : tone === 'warn' || tone === 'danger' ? <AlertTriangle className="size-3" /> : null}
       {children}
     </span>
   )

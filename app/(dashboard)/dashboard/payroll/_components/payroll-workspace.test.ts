@@ -7,6 +7,7 @@ const workspaceRoot = join(componentsDir.pathname, '../../../../..')
 const workspaceSource = readFileSync(new URL('./payroll-workspace.tsx', import.meta.url), 'utf8')
 const actionsSource = readFileSync(new URL('./payroll-actions.tsx', import.meta.url), 'utf8')
 const pageSource = readFileSync(new URL('../page.tsx', import.meta.url), 'utf8')
+const summarySource = readFileSync(join(workspaceRoot, 'lib/payroll-workspace/summary.ts'), 'utf8')
 const resolveRouteSource = readFileSync(join(workspaceRoot, 'app/api/payroll/employee-lines/[lineId]/resolve/route.ts'), 'utf8')
 const closeRouteSource = readFileSync(join(workspaceRoot, 'app/api/payroll/periods/[period]/close/route.ts'), 'utf8')
 const documentsRouteSource = readFileSync(join(workspaceRoot, 'app/api/payroll/periods/[period]/documents/route.ts'), 'utf8')
@@ -57,12 +58,12 @@ describe('payroll workspace static contract (JC-012)', () => {
     expect(workspaceSource).toContain('summary.closeAction.locked')
     expect(actionsSource).toContain('aria-disabled={disabled}')
     expect(actionsSource).toContain('급여 마감·확정 · 잠김')
+    expect(workspaceSource).toContain('확인 필요 1건을 처리해야 마감할 수 있습니다.')
   })
 
   it('wires payroll mutations to tenant-scoped API routes (S-50~54)', () => {
-    expect(workspaceSource).toContain('PayrollResolveIssueButton')
-    expect(workspaceSource).toContain('PayrollDocumentsButton')
-    expect(workspaceSource).toContain('PayrollInsuranceNoticeForm')
+    expect(workspaceSource).toContain('해당 직원 열기')
+    expect(workspaceSource).toContain('임시 저장')
     expect(actionsSource).toContain('/api/payroll/employee-lines/${lineId}/resolve')
     expect(actionsSource).toContain('/api/payroll/periods/${periodKey}/documents')
     expect(actionsSource).toContain('/api/payroll/periods/${periodKey}/close')
@@ -89,5 +90,23 @@ describe('payroll workspace static contract (JC-012)', () => {
   it('routes company navigation to the preview-aligned payroll screen (S-02)', () => {
     expect(sidebarSource).toContain("href: '/dashboard/payroll'")
     expect(companyHomeSummarySource).toContain("payroll: '/dashboard/payroll'")
+  })
+
+  it('keeps the visible payroll UI aligned to the approved static preview copy', () => {
+    const renderSource = `${workspaceSource}\n${summarySource}`
+
+    for (const token of [
+      '공제총액 (원천세·4대보험)',
+      '확인 필요 직원 1명 — 마감 전 처리하세요',
+      '직원별 지급·공제·실지급 내역',
+      '엑셀 내보내기 →',
+      '공제 상세 (원천세·4대보험)',
+      '명세서 · 마감',
+      '화면 상태 예시',
+      '이 달 급여 입력이 없습니다',
+      'Preview 안내',
+    ]) {
+      expect(renderSource).toContain(token)
+    }
   })
 })

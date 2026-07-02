@@ -89,7 +89,7 @@ export function PayrollCloseButton({
       disabled={disabled}
       aria-disabled={disabled}
       className={cn(
-        'w-full rounded-lg border px-3.5 py-2.5 text-center text-[12.5px] font-semibold',
+        'rounded-lg border px-3.5 py-2 text-center text-[12.5px] font-semibold',
         closeAction.canClose
           ? 'border-[#18181b] bg-[#18181b] text-white disabled:cursor-wait disabled:opacity-70'
           : 'cursor-not-allowed border-company-border bg-[#f1f1f2] text-company-fg-subtle',

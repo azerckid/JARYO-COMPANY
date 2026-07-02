@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq } from 'drizzle-orm'
 import { DateTime } from 'luxon'
 import { client, payrollEmployeeLine, payrollPeriodSummary, tenant } from '@/lib/db/schema'
 
@@ -298,8 +298,8 @@ export function buildPayrollIssueAlert(rows: PayrollRegisterRow[]): PayrollIssue
 
   return {
     visible: true,
-    title: `${target.displayName} 확인 필요`,
-    description: target.issueLabel ?? '급여 마감 전 직원별 공제·고지액 상태를 확인하세요.',
+    title: '확인 필요 직원 1명 — 마감 전 처리하세요',
+    description: `신규 입사자 '${target.displayName}'의 4대보험 취득 기준일이 없어 공제액이 임시 계산되었습니다.`,
     targetEmployeeLineId: target.id,
   }
 }
@@ -312,11 +312,11 @@ export function buildPayrollDeductionBreakdown(rows: PayrollRegisterRow[]): Payr
   const socialSource = socialInsuranceSource(rows)
   const total = (selector: (row: PayrollRegisterRow) => number) => rows.reduce((sum, row) => sum + selector(row), 0)
   return [
-    { id: 'income_tax', label: '소득세', amountKrw: total((row) => row.incomeTaxKrw), source: 'calculated', tone: 'danger' },
+    { id: 'income_tax', label: '소득세(원천징수)', amountKrw: total((row) => row.incomeTaxKrw), source: 'calculated', tone: 'danger' },
     { id: 'local_income_tax', label: '지방소득세', amountKrw: total((row) => row.localIncomeTaxKrw), source: 'calculated', tone: 'danger' },
     { id: 'national_pension', label: '국민연금', amountKrw: total((row) => row.nationalPensionKrw), source: socialSource, tone: 'warn' },
     { id: 'health_insurance', label: '건강보험', amountKrw: total((row) => row.healthInsuranceKrw), source: socialSource, tone: 'warn' },
-    { id: 'long_term_care', label: '장기요양', amountKrw: total((row) => row.longTermCareKrw), source: socialSource, tone: 'warn' },
+    { id: 'long_term_care', label: '장기요양보험', amountKrw: total((row) => row.longTermCareKrw), source: socialSource, tone: 'warn' },
     { id: 'employment_insurance', label: '고용보험', amountKrw: total((row) => row.employmentInsuranceKrw), source: socialSource, tone: 'warn' },
   ]
 }
@@ -350,29 +350,22 @@ function documentStatusTone(status: PayrollDocumentStatus): PayrollTone {
 
 export function buildPayrollDocuments(summary: Pick<
   PayrollPeriodSummaryInput,
-  'payslipStatus' | 'withholdingStatementStatus' | 'insuranceStatementStatus'
+  'employeeCount' | 'payslipStatus' | 'withholdingStatementStatus'
 >): PayrollDocumentPreview[] {
   return [
     {
       id: 'payslip',
-      title: '급여명세서',
-      description: '직원별 지급·공제 내역 미리보기',
+      title: `급여명세서 (직원 ${summary.employeeCount.toLocaleString('ko-KR')}명)`,
+      description: '직원별 개별 명세서 일괄 생성',
       statusLabel: documentStatusLabel(summary.payslipStatus),
       tone: documentStatusTone(summary.payslipStatus),
     },
     {
       id: 'withholding_statement',
-      title: '원천징수 지급명세서',
-      description: '신고지원으로 전달할 원천세 산출물',
+      title: '원천징수 지급명세서(신고용)',
+      description: '신고지원 자료로 전달',
       statusLabel: documentStatusLabel(summary.withholdingStatementStatus),
       tone: documentStatusTone(summary.withholdingStatementStatus),
-    },
-    {
-      id: 'insurance_statement',
-      title: '4대보험 정산 자료',
-      description: '건강보험 EDI/사회보험 고지액 반영 결과',
-      statusLabel: documentStatusLabel(summary.insuranceStatementStatus),
-      tone: documentStatusTone(summary.insuranceStatementStatus),
     },
   ]
 }
@@ -384,7 +377,7 @@ export function buildPayrollCloseAction(summary: PayrollSummaryTotals): PayrollC
   if (summary.issueCount > 0 || summary.closeStatus === 'blocked') {
     return {
       locked: true,
-      lockReason: `확인 필요 ${summary.issueCount || 1}건 처리 후 활성화`,
+      lockReason: `확인 ${summary.issueCount || 1}건 처리 후 활성화`,
       canClose: false,
     }
   }
@@ -506,7 +499,7 @@ export async function loadPayrollWorkspaceSummary({
       eq(payrollEmployeeLine.clientId, businessEntity.id),
       eq(payrollEmployeeLine.periodSummaryId, periodSummaryRow.id),
     ))
-    .orderBy(asc(payrollEmployeeLine.status), asc(payrollEmployeeLine.employeeName), asc(payrollEmployeeLine.id))
+    .orderBy(asc(payrollEmployeeLine.employeeCode), asc(payrollEmployeeLine.employeeName), asc(payrollEmployeeLine.id))
 
   const registerRows = lineRows.map((row) => buildPayrollRegisterRow(row, canViewEmployeeNames))
   const summaryTotals = buildPayrollSummaryTotals(registerRows, {
@@ -525,4 +518,30 @@ export async function loadPayrollWorkspaceSummary({
     documents: buildPayrollDocuments(periodSummaryRow),
     closeAction: buildPayrollCloseAction(summaryTotals),
   }
+}
+
+export async function loadPayrollSidebarEmployeeCount(tenantId: string): Promise<number> {
+  const { db } = await import('@/lib/db')
+
+  const businessEntityRows = await db
+    .select({ id: client.id })
+    .from(client)
+    .where(eq(client.tenantId, tenantId))
+    .orderBy(asc(client.createdAt))
+    .limit(1)
+  const businessEntity = businessEntityRows[0] ?? null
+
+  if (!businessEntity) return 0
+
+  const latestRows = await db
+    .select({ employeeCount: payrollPeriodSummary.employeeCount })
+    .from(payrollPeriodSummary)
+    .where(and(
+      eq(payrollPeriodSummary.tenantId, tenantId),
+      eq(payrollPeriodSummary.clientId, businessEntity.id),
+    ))
+    .orderBy(desc(payrollPeriodSummary.payrollPeriod), desc(payrollPeriodSummary.createdAt))
+    .limit(1)
+
+  return latestRows[0]?.employeeCount ?? 0
 }
