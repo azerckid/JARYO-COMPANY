@@ -110,17 +110,17 @@ type LoadSourceCollectionSummaryParams = {
 
 const ROUTES = {
   sourceCollection: '/dashboard/direct-upload',
-  bookkeeping: '/dashboard/reviews',
+  bookkeeping: '/dashboard/bookkeeping',
 }
 
 const DEFAULT_TZ = 'Asia/Seoul'
-const MATERIAL_ISSUE_STATUSES = ['missing', 'non_compliant', 'uncertain'] as const
+const MATERIAL_MISSING_STATUSES = ['missing', 'non_compliant'] as const
 
 const SOURCE_TYPE_TILES: Array<{ id: SourceCollectionSourceType; title: string }> = [
   { id: 'tax_invoice', title: '세금계산서' },
   { id: 'bank_statement', title: '통장 거래내역' },
   { id: 'card_purchase', title: '카드 매입내역' },
-  { id: 'receipt_other', title: '영수증·기타' },
+  { id: 'receipt_other', title: '영수증 · 기타' },
 ]
 
 // item_group은 lib/review/default-criteria-data.ts의 기본 항목(bookkeeping/vat)
@@ -151,6 +151,32 @@ const FILE_STATUS_PROGRESS: Record<string, number> = {
   needs_review: 100,
   rejected: 0,
   failed: 20,
+}
+
+const SOURCE_COLLECTION_FILE_STATUS_LABEL: Record<string, string> = {
+  uploaded: '정규화 대기',
+  analyzing: '정규화 진행 중',
+  matched: '정규화 완료',
+  needs_review: '확인 필요',
+  rejected: '제외됨',
+  failed: '파싱 오류',
+}
+
+const IMPORT_ROW_STATUS_RANK: Record<SourceCollectionFileStatus, number> = {
+  matched: 0,
+  needs_review: 1,
+  analyzing: 2,
+  uploaded: 3,
+  failed: 4,
+  rejected: 5,
+}
+
+const IMPORT_ROW_SOURCE_TYPE_RANK: Record<SourceCollectionSourceType | 'unknown', number> = {
+  tax_invoice: 0,
+  bank_statement: 1,
+  receipt_other: 2,
+  card_purchase: 3,
+  unknown: 4,
 }
 
 function clampPercent(value: number) {
@@ -201,12 +227,15 @@ export function buildSourceCollectionCompleteness(
   files: Array<Pick<SourceCollectionTileFileRow, 'status'>> = [],
 ): SourceCollectionCompleteness {
   const requiredCount = rows.length
-  const missingCount = rows.filter((row) => MATERIAL_ISSUE_STATUSES.includes(row.validationStatus as (typeof MATERIAL_ISSUE_STATUSES)[number])).length
+  const missingCount = rows.filter((row) => MATERIAL_MISSING_STATUSES.includes(row.validationStatus as (typeof MATERIAL_MISSING_STATUSES)[number])).length
+  const uncertainCount = rows.filter((row) => row.validationStatus === 'uncertain').length
   const collectedCount = Math.max(0, requiredCount - missingCount)
   const progressPercent = requiredCount === 0
-    ? 100
+    ? 0
     : clampPercent((collectedCount / requiredCount) * 100)
-  const normalizationPendingCount = countNormalizationPendingFiles(files)
+  const normalizationPendingCount = uncertainCount > 0
+    ? uncertainCount
+    : countNormalizationPendingFiles(files)
 
   return { collectedCount, requiredCount, missingCount, progressPercent, normalizationPendingCount }
 }
@@ -222,12 +251,14 @@ export function buildSourceCollectionSourceTypeTiles(
     })
 
     const requiredCount = groupRows.length
-    const missingCount = groupRows.filter((row) => MATERIAL_ISSUE_STATUSES.includes(row.validationStatus as (typeof MATERIAL_ISSUE_STATUSES)[number])).length
+    const missingCount = groupRows.filter((row) => MATERIAL_MISSING_STATUSES.includes(row.validationStatus as (typeof MATERIAL_MISSING_STATUSES)[number])).length
+    const uncertainCount = groupRows.filter((row) => row.validationStatus === 'uncertain').length
     const collectedCount = Math.max(0, requiredCount - missingCount)
-    const normalizationPendingCount = files.filter((file) => (
+    const pendingFileCount = files.filter((file) => (
       fileBelongsToSourceTypeTile(file.sourceType, id)
       && NORMALIZATION_PENDING_STATUSES.includes(file.status as (typeof NORMALIZATION_PENDING_STATUSES)[number])
     )).length
+    const normalizationPendingCount = uncertainCount > 0 ? uncertainCount : pendingFileCount
 
     let tone: SourceCollectionTone
     let statusLabel: string
@@ -267,30 +298,52 @@ export function buildSourceCollectionImportRow(
   const display = resolveUploadedFileDisplay(file)
   const fileTypeLabel = FILE_TYPE_LABEL[file.fileType] ?? '기타'
   const sourceTypeTitle = sourceCollectionSourceTypeLabel(sourceType)
+  const safeTitle = sourceType === 'receipt_other' && fileTypeLabel === '기타'
+    ? `${sourceTypeTitle} 자료`
+    : `${sourceTypeTitle} · ${fileTypeLabel} 자료`
   const canRetry = file.status === 'failed'
   const periodQuery = periodKey ? `period=${periodKey}&` : ''
+  const viewQuery = periodKey ? `period=${periodKey}&fileId=${file.id}` : `fileId=${file.id}`
 
   return {
     id: file.id,
     uploadSessionId: file.uploadSessionId,
-    safeTitle: `${sourceTypeTitle} · ${fileTypeLabel} 자료`,
+    safeTitle,
     sourceType,
     progressPercent: FILE_STATUS_PROGRESS[file.status] ?? 0,
     status: (file.status as SourceCollectionFileStatus) ?? 'uploaded',
-    statusLabel: display.label,
+    statusLabel: display.isPasswordSubmittable
+      ? display.label
+      : SOURCE_COLLECTION_FILE_STATUS_LABEL[file.status] ?? display.label,
     uploadedAt: fromISO(file.uploadedAt).toISODate() ?? file.uploadedAt.slice(0, 10),
     rowCountLabel: formatFileSize(file.fileSize),
     href: canRetry
       ? `${ROUTES.sourceCollection}?${periodQuery}fileId=${file.id}&action=retry`
-      : `/dashboard/reviews?sessionId=${file.uploadSessionId}`,
+      : `${ROUTES.sourceCollection}?${viewQuery}#import-status`,
     canRetry,
   }
+}
+
+export function sortSourceCollectionImportRows(rows: SourceCollectionImportRow[]) {
+  return [...rows].sort((a, b) => {
+    const statusRankA = IMPORT_ROW_STATUS_RANK[a.status] ?? 99
+    const statusRankB = IMPORT_ROW_STATUS_RANK[b.status] ?? 99
+    const sourceRankA = IMPORT_ROW_SOURCE_TYPE_RANK[a.sourceType] ?? 99
+    const sourceRankB = IMPORT_ROW_SOURCE_TYPE_RANK[b.sourceType] ?? 99
+
+    return statusRankA - statusRankB
+      || sourceRankA - sourceRankB
+      || a.uploadedAt.localeCompare(b.uploadedAt)
+      || a.safeTitle.localeCompare(b.safeTitle)
+      || a.id.localeCompare(b.id)
+  })
 }
 
 export function buildSourceCollectionMissingItems(
   rows: Array<Pick<ValidationRow, 'id' | 'itemName' | 'validationStatus' | 'requestedAction'>>,
 ): SourceCollectionMissingItem[] {
   const items: SourceCollectionMissingItem[] = []
+  const uncertainRows = rows.filter((row) => row.validationStatus === 'uncertain')
 
   for (const row of rows) {
     if (row.validationStatus === 'missing') {
@@ -311,16 +364,22 @@ export function buildSourceCollectionMissingItems(
         href: ROUTES.sourceCollection,
         ctaLabel: '다시 업로드',
       })
-    } else if (row.validationStatus === 'uncertain') {
-      items.push({
-        id: row.id,
-        title: row.itemName,
-        description: row.requestedAction ?? '자동 분류 신뢰도가 낮아 확인이 필요합니다.',
-        tone: 'warn',
-        href: ROUTES.bookkeeping,
-        ctaLabel: '정규화 확인',
-      })
     }
+  }
+
+  if (uncertainRows.length > 0) {
+    const first = uncertainRows[0]
+    const count = uncertainRows.length
+    items.push({
+      id: count === 1 ? first.id : `uncertain:${count}`,
+      title: count === 1 ? first.itemName : `영수증 묶음 정규화 확인 ${count}건`,
+      description: first.requestedAction ?? (count === 1
+        ? '자동 분류 신뢰도가 낮아 확인이 필요합니다.'
+        : `자동 분류 신뢰도가 낮은 영수증 ${count}건이 검토를 기다립니다.`),
+      tone: 'warn',
+      href: ROUTES.bookkeeping,
+      ctaLabel: '정규화 확인',
+    })
   }
 
   return items
@@ -391,7 +450,7 @@ export async function loadSourceCollectionSummary({
   if (!businessEntity) {
     return {
       ...baseSummary,
-      completeness: { collectedCount: 0, requiredCount: 0, missingCount: 0, progressPercent: 100, normalizationPendingCount: 0 },
+      completeness: { collectedCount: 0, requiredCount: 0, missingCount: 0, progressPercent: 0, normalizationPendingCount: 0 },
       sourceTypeTiles: buildSourceCollectionSourceTypeTiles([], []),
       importRows: [],
       missingItems: [],
@@ -477,11 +536,11 @@ export async function loadSourceCollectionSummary({
     ...baseSummary,
     completeness: buildSourceCollectionCompleteness(validationRows, tileFiles),
     sourceTypeTiles: buildSourceCollectionSourceTypeTiles(validationRows, tileFiles),
-    importRows: fileRows.map((file) => buildSourceCollectionImportRow(
+    importRows: sortSourceCollectionImportRows(fileRows.map((file) => buildSourceCollectionImportRow(
       file,
       mapItemGroupToSourceType(fileItemGroupMap.get(file.id)),
       period.key,
-    )),
+    ))),
     missingItems: buildSourceCollectionMissingItems(validationRows),
   }
 }

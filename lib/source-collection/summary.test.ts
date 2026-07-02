@@ -12,6 +12,7 @@ import {
   buildSourceCollectionSourceTypeTiles,
   countNormalizationPendingFiles,
   mapItemGroupToSourceType,
+  sortSourceCollectionImportRows,
 } from './summary'
 
 describe('buildSourceCollectionCompleteness', () => {
@@ -42,6 +43,15 @@ describe('buildSourceCollectionCompleteness', () => {
     })
   })
 
+  it('does not imply completion before any collection criteria exist', () => {
+    expect(buildSourceCollectionCompleteness([])).toMatchObject({
+      collectedCount: 0,
+      requiredCount: 0,
+      missingCount: 0,
+      progressPercent: 0,
+    })
+  })
+
   it('counts normalization-pending files for completeness meta (Preview parity)', () => {
     const rows = Array.from({ length: 4 }, () => ({ validationStatus: 'satisfied' }))
     const files = [
@@ -54,6 +64,21 @@ describe('buildSourceCollectionCompleteness', () => {
       normalizationPendingCount: 2,
     })
     expect(countNormalizationPendingFiles(files)).toBe(2)
+  })
+
+  it('treats uncertain rows as review-needed, not missing material', () => {
+    const rows = [
+      { validationStatus: 'satisfied' },
+      { validationStatus: 'uncertain' },
+      { validationStatus: 'non_compliant' },
+    ]
+
+    expect(buildSourceCollectionCompleteness(rows)).toMatchObject({
+      collectedCount: 2,
+      requiredCount: 3,
+      missingCount: 1,
+      normalizationPendingCount: 1,
+    })
   })
 })
 
@@ -124,7 +149,10 @@ describe('buildSourceCollectionSourceTypeTiles', () => {
   })
 
   it('shows normalization pending on a tile when files are still processing (Preview blue chip)', () => {
-    const rows = Array.from({ length: 9 }, () => ({ itemGroup: 'other_evidence', validationStatus: 'satisfied' }))
+    const rows = [
+      ...Array.from({ length: 6 }, () => ({ itemGroup: 'other_evidence', validationStatus: 'satisfied' })),
+      ...Array.from({ length: 3 }, () => ({ itemGroup: 'other_evidence', validationStatus: 'uncertain' })),
+    ]
     const files = [
       { status: 'analyzing', sourceType: 'receipt_other' as const },
       { status: 'uploaded', sourceType: 'receipt_other' as const },
@@ -133,6 +161,8 @@ describe('buildSourceCollectionSourceTypeTiles', () => {
     ]
 
     expect(buildSourceCollectionSourceTypeTiles(rows, files).find((tile) => tile.id === 'receipt_other')).toMatchObject({
+      collectedCount: 9,
+      requiredCount: 9,
       tone: 'info',
       statusLabel: '정규화 대기 3',
     })
@@ -177,8 +207,9 @@ describe('buildSourceCollectionImportRow', () => {
     expect(row.safeTitle).not.toContain('storageKey')
     expect(row.safeTitle).toBe('세금계산서 · Excel 자료')
     expect(row.progressPercent).toBe(100)
+    expect(row.statusLabel).toBe('정규화 완료')
     expect(row.canRetry).toBe(false)
-    expect(row.href).toBe('/dashboard/reviews?sessionId=session-1')
+    expect(row.href).toBe('/dashboard/direct-upload?period=2026-H1&fileId=file-1#import-status')
     expect(row.rowCountLabel).toBe('1.2MB')
   })
 
@@ -194,8 +225,73 @@ describe('buildSourceCollectionImportRow', () => {
     }, 'unknown', '2026-H1')
 
     expect(row.status).toBe('failed')
+    expect(row.statusLabel).toBe('파싱 오류')
     expect(row.canRetry).toBe(true)
     expect(row.href).toContain('action=retry')
+  })
+
+  it('does not duplicate 기타 in receipt safe titles', () => {
+    const row = buildSourceCollectionImportRow({
+      id: 'file-3',
+      uploadSessionId: 'session-3',
+      fileType: 'other',
+      fileSize: 8_493_466,
+      status: 'analyzing',
+      passwordStatus: 'none',
+      uploadedAt: '2026-07-01T08:00:00.000Z',
+    }, 'receipt_other', '2026-H1')
+
+    expect(row.safeTitle).toBe('영수증 · 기타 자료')
+  })
+})
+
+describe('sortSourceCollectionImportRows', () => {
+  it('orders the status table like the approved preview: completed, in-progress, then failed', () => {
+    const rows = [
+      buildSourceCollectionImportRow({
+        id: 'file-card-failed',
+        uploadSessionId: 'session-1',
+        fileType: 'pdf',
+        fileSize: 400_000,
+        status: 'failed',
+        passwordStatus: 'none',
+        uploadedAt: '2026-07-01T09:00:00.000Z',
+      }, 'card_purchase', '2026-H1'),
+      buildSourceCollectionImportRow({
+        id: 'file-receipts',
+        uploadSessionId: 'session-1',
+        fileType: 'other',
+        fileSize: 8_493_466,
+        status: 'analyzing',
+        passwordStatus: 'none',
+        uploadedAt: '2026-07-01T08:00:00.000Z',
+      }, 'receipt_other', '2026-H1'),
+      buildSourceCollectionImportRow({
+        id: 'file-bank',
+        uploadSessionId: 'session-1',
+        fileType: 'excel',
+        fileSize: 3_565_158,
+        status: 'matched',
+        passwordStatus: 'none',
+        uploadedAt: '2026-06-30T11:00:00.000Z',
+      }, 'bank_statement', '2026-H1'),
+      buildSourceCollectionImportRow({
+        id: 'file-tax',
+        uploadSessionId: 'session-1',
+        fileType: 'excel',
+        fileSize: 1_258_291,
+        status: 'matched',
+        passwordStatus: 'none',
+        uploadedAt: '2026-06-30T10:00:00.000Z',
+      }, 'tax_invoice', '2026-H1'),
+    ]
+
+    expect(sortSourceCollectionImportRows(rows).map((row) => row.id)).toEqual([
+      'file-tax',
+      'file-bank',
+      'file-receipts',
+      'file-card-failed',
+    ])
   })
 })
 
@@ -219,7 +315,23 @@ describe('buildSourceCollectionMissingItems', () => {
       { id: 'riv-2', itemName: '영수증 묶음 정규화 확인', validationStatus: 'uncertain', requestedAction: null },
     ])
 
-    expect(items[0]).toMatchObject({ ctaLabel: '정규화 확인', href: '/dashboard/reviews' })
+    expect(items[0]).toMatchObject({ ctaLabel: '정규화 확인', href: '/dashboard/bookkeeping' })
+  })
+
+  it('groups multiple uncertain rows into one normalization-check item for Preview parity', () => {
+    const items = buildSourceCollectionMissingItems([
+      { id: 'riv-2', itemName: '영수증 A', validationStatus: 'uncertain', requestedAction: null },
+      { id: 'riv-3', itemName: '영수증 B', validationStatus: 'uncertain', requestedAction: null },
+      { id: 'riv-4', itemName: '영수증 C', validationStatus: 'uncertain', requestedAction: null },
+    ])
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        id: 'uncertain:3',
+        title: '영수증 묶음 정규화 확인 3건',
+        ctaLabel: '정규화 확인',
+      }),
+    ])
   })
 
   it('ignores satisfied rows', () => {

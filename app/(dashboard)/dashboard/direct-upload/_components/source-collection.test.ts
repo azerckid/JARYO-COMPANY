@@ -3,10 +3,12 @@ import { readFileSync } from 'node:fs'
 
 describe('source collection UI boundaries (JC-004 slice)', () => {
   const source = readFileSync(new URL('./source-collection.tsx', import.meta.url), 'utf8')
+  const uploadSource = readFileSync(new URL('./source-collection-upload.tsx', import.meta.url), 'utf8')
 
   it('does not link to the external upload portal or customer submission routes (S-70)', () => {
     expect(source).not.toContain('/upload/[token]')
     expect(source).not.toContain('/upload/submit')
+    expect(source).not.toContain('/dashboard/reviews')
     expect(source).not.toContain('purpose-request')
   })
 
@@ -29,6 +31,7 @@ describe('source collection UI boundaries (JC-004 slice)', () => {
     expect(source).toContain('전체 보기')
     expect(source).toContain('>파일</TableHead>')
     expect(source).toContain('>자료유형</TableHead>')
+    expect(uploadSource).toContain('홈택스 내보내기 파일')
     expect(source).toContain('SourceCollectionUploadDropzone')
     expect(source).toContain('upload-dropzone')
   })

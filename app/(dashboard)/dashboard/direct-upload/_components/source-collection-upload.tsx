@@ -262,7 +262,7 @@ export function SourceCollectionUploadDropzone({
         <div className="min-w-0 flex-1">
           <p className="text-[14.5px] font-semibold text-foreground">자료 파일 업로드</p>
           <p className="mt-0.5 text-[12.5px] text-company-fg-muted">
-            세금계산서 · 통장 거래내역 · 카드 매입내역 · 영수증 · 급여 파일 · 홈택스보내기 파일을 끌어다 놓거나 선택하세요.
+            세금계산서 · 통장 거래내역 · 카드 매입내역 · 영수증 · 급여 파일 · 홈택스 내보내기 파일을 끌어다 놓거나 선택하세요.
           </p>
           <p className="mt-2 text-[11.5px] text-company-fg-subtle">
             지원 형식: XLSX · CSV · PDF · 이미지(JPG/PNG) · ZIP · 최대 50MB
