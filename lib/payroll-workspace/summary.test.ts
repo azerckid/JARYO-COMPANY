@@ -7,6 +7,7 @@ import {
   buildPayrollRegisterRow,
   buildPayrollSummaryTotals,
   maskEmployeeName,
+  resolvePayrollPeriodKey,
   resolvePayrollPeriod,
   type PayrollRegisterRow,
 } from './summary'
@@ -55,6 +56,26 @@ describe('payroll period resolution', () => {
       periodKey: '2026-H1',
       today: DateTime.fromISO('2026-07-02T00:00:00', { zone: 'Asia/Seoul' }),
     }).key).toBe('2026-07')
+  })
+
+  it('uses the latest available payroll period for the menu default route', () => {
+    const today = DateTime.fromISO('2026-07-02T00:00:00', { zone: 'Asia/Seoul' })
+
+    expect(resolvePayrollPeriodKey({
+      periodKey: undefined,
+      latestPeriodKey: '2026-06',
+      today,
+    })).toBe('2026-06')
+    expect(resolvePayrollPeriodKey({
+      periodKey: '2026-05',
+      latestPeriodKey: '2026-06',
+      today,
+    })).toBe('2026-05')
+    expect(resolvePayrollPeriodKey({
+      periodKey: undefined,
+      latestPeriodKey: null,
+      today,
+    })).toBe('2026-07')
   })
 })
 

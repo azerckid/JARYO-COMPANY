@@ -146,6 +146,7 @@ type LoadPayrollWorkspaceSummaryParams = {
 }
 
 const DEFAULT_TZ = 'Asia/Seoul'
+const PAYROLL_PERIOD_KEY_PATTERN = /^20\d{2}-(0[1-9]|1[0-2])$/
 const EMPTY_PERIOD_SUMMARY: PayrollPeriodSummaryInput = {
   employeeCount: 0,
   issueCount: 0,
@@ -166,6 +167,28 @@ function padMonth(value: number) {
   return String(value).padStart(2, '0')
 }
 
+export function isPayrollPeriodKey(value: string | null | undefined): value is string {
+  return typeof value === 'string' && PAYROLL_PERIOD_KEY_PATTERN.test(value)
+}
+
+export function resolvePayrollPeriodKey({
+  periodKey,
+  latestPeriodKey,
+  today,
+  timezone = DEFAULT_TZ,
+}: {
+  periodKey?: string | null
+  latestPeriodKey?: string | null
+  today?: DateTime
+  timezone?: string
+}) {
+  if (isPayrollPeriodKey(periodKey)) return periodKey
+  if (isPayrollPeriodKey(latestPeriodKey)) return latestPeriodKey
+
+  const now = today ?? DateTime.now().setZone(timezone)
+  return `${now.year}-${padMonth(now.month)}`
+}
+
 export function resolvePayrollPeriod({
   periodKey,
   today,
@@ -177,9 +200,7 @@ export function resolvePayrollPeriod({
   timezone?: string
   paymentDate?: string | null
 }): PayrollPeriod {
-  const now = today ?? DateTime.now().setZone(timezone)
-  const fallback = `${now.year}-${padMonth(now.month)}`
-  const key = periodKey && /^20\d{2}-(0[1-9]|1[0-2])$/.test(periodKey) ? periodKey : fallback
+  const key = resolvePayrollPeriodKey({ periodKey, today, timezone })
   const [year, month] = key.split('-')
   const monthNumber = Number(month)
   return {
@@ -398,8 +419,7 @@ export async function loadPayrollWorkspaceSummary({
     .where(eq(tenant.id, tenantId))
     .limit(1)
   const tenantRow = tenantRows[0] ?? { id: tenantId, name: '회사', timezone: DEFAULT_TZ }
-
-  const initialPeriod = resolvePayrollPeriod({ periodKey, today, timezone: tenantRow.timezone })
+  const fallbackPeriod = resolvePayrollPeriod({ periodKey, today, timezone: tenantRow.timezone })
 
   const businessEntityRows = await db
     .select({ id: client.id, name: client.name })
@@ -414,7 +434,7 @@ export async function loadPayrollWorkspaceSummary({
     const summaryTotals = buildPayrollSummaryTotals([])
     return {
       ...base,
-      period: initialPeriod,
+      period: fallbackPeriod,
       summary: summaryTotals,
       issueAlert: buildPayrollIssueAlert([]),
       registerRows: [],
@@ -423,6 +443,28 @@ export async function loadPayrollWorkspaceSummary({
       closeAction: buildPayrollCloseAction(summaryTotals),
     }
   }
+
+  const latestPeriodRows = isPayrollPeriodKey(periodKey)
+    ? []
+    : await db
+      .select({ payrollPeriod: payrollPeriodSummary.payrollPeriod })
+      .from(payrollPeriodSummary)
+      .where(and(
+        eq(payrollPeriodSummary.tenantId, tenantId),
+        eq(payrollPeriodSummary.clientId, businessEntity.id),
+      ))
+      .orderBy(desc(payrollPeriodSummary.payrollPeriod), desc(payrollPeriodSummary.createdAt))
+      .limit(1)
+  const initialPeriod = resolvePayrollPeriod({
+    periodKey: resolvePayrollPeriodKey({
+      periodKey,
+      latestPeriodKey: latestPeriodRows[0]?.payrollPeriod ?? null,
+      today,
+      timezone: tenantRow.timezone,
+    }),
+    today,
+    timezone: tenantRow.timezone,
+  })
 
   const periodRows = await db
     .select({
