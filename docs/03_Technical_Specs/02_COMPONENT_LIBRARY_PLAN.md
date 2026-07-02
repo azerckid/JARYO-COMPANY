@@ -1,6 +1,6 @@
 # Component & Library Plan
 > Created: 2026-07-01 20:05
-> Last Updated: 2026-07-02 14:21
+> Last Updated: 2026-07-02 20:23
 
 ## 1. 목적 및 범위
 
@@ -13,7 +13,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 - 기장검토 — [02_bookkeeping_review.html](../02_UI_Screens/previews/02_bookkeeping_review.html)
 - 부가세 — [03_vat.html](../02_UI_Screens/previews/03_vat.html)
 - 급여 — [04_payroll.html](../02_UI_Screens/previews/04_payroll.html)
-- 신고지원은 화면 게이트(Pre-Code Brief) 진행 시 §7에 추가한다.
+- 신고지원 — [05_filing_support.html](../02_UI_Screens/previews/05_filing_support.html)
 
 원칙: **JARYO-GIWA 자산 최대 재사용 + 최소 신규 도입(YAGNI/KISS/DRY)**. 이미 설치된
 것을 우선 쓰고, 없을 때만 shadcn 표준 컴포넌트를 추가한다. 새 npm 패키지는 대상 화면
@@ -143,6 +143,24 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 - 급여 마감 버튼은 확인 필요 직원이 있으면 `disabled` + `aria-disabled="true"` + visible locknote를 사용한다. 브라우저별 `title` 툴팁에 의존하지 않는다.
 - 개인정보(주민등록번호·계좌·전화번호·storage key)는 화면에 노출하지 않고, 권한이 부족하면 직원명/급여액을 마스킹한다.
 
+### 7.6 신고지원 (UI Design 4.6)
+
+| 화면 컴포넌트 | 구현 방식 | 기반 |
+|:---|:---|:---|
+| Responsibility Banner | 커스텀 `FilingResponsibilityBanner` | `card` 계열 컨테이너 + 상태 아이콘 |
+| Filing Item Card/List | 커스텀 `FilingItemList` / `FilingItemCard` | `card` + `badge` + `button` |
+| Filing Package Actions | 커스텀 `FilingPackageActions` | `button` + 공용 `LockedActionButton` |
+| Hometax Input Guide | 커스텀 `FilingInputGuide` | 단계 리스트 + `button`(값 복사) |
+| Receipt Storage | 커스텀 `FilingReceiptList` / `ReceiptUploadButton` | 파일 입력 + `button` + `badge` |
+| Post-filing Checklist | 커스텀 `FilingChecklist` | checkbox/버튼형 토글 + 상태 텍스트 |
+| State(로딩/빈/오류) | 공용 재사용 | `skeleton` + `button` |
+
+- 신규 shadcn 없음. 기존 `card`/`badge`/`button`/`input`/`skeleton` 재사용.
+- 신고지원 화면은 회사용 `/dashboard/filing-support`로 새로 구성하며, 회사 홈 앵커 `#filing-support-status`는 구현 후 전용 route로 재지정한다.
+- 부가세(JC-011)의 `vat_period_summary` package 상태와 급여(JC-012)의 `payroll_period_summary` 문서 상태를 내부 의존성으로 읽는다.
+- 자동 홈택스 제출·자동 납부·홈택스/EDI 자격증명 저장 UI는 만들지 않는다. 책임 경계 배너와 하단 안내에서 사용자가 직접 제출/납부함을 명시한다.
+- 접수증은 private storage에 저장하고 화면에는 안전한 파일명·제출일·보관 상태만 표시한다. `storageKey`/Blob URL은 렌더하지 않는다.
+
 ## 8. Library Plan
 
 ### 8.1 이미 설치됨 — 재사용 (신규 설치 없음)
@@ -172,6 +190,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 - 회사 홈: **읽기 전용** — Server Component에서 데이터 페치, 클라이언트 상태 최소.
 - 자료수집: 업로드/정규화 **mutation 발생** — 업로드 진행·오류는 로컬 컴포넌트 상태 + `sonner` 토스트. 목록 갱신은 서버 재검증.
 - 급여: 직원 line 수정·고지액 import/match·명세서 생성·마감 **mutation 발생** — 로컬 입력 상태 + `sonner` 토스트, 성공 후 서버 재검증.
+- 신고지원: 접수증 업로드/삭제·체크리스트 토글 **mutation 발생** — 성공 후 서버 재검증. 가이드 값 복사는 클라이언트 clipboard만 사용하고 DB mutation 없음.
 - 기간 컨텍스트는 URL 파라미터로 관리(전역 스토어 미도입).
 
 ## 10. 미결/후속
@@ -180,8 +199,8 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 - 자료수집 Pre-Code Brief: [05_SOURCE_COLLECTION_PRE_CODE_BRIEF.md](./05_SOURCE_COLLECTION_PRE_CODE_BRIEF.md) (JC-009 구현·머지 완료).
 - 기장검토 Pre-Code Brief: [06_BOOKKEEPING_REVIEW_PRE_CODE_BRIEF.md](./06_BOOKKEEPING_REVIEW_PRE_CODE_BRIEF.md) (JC-010 구현·머지 완료).
 - 부가세 Pre-Code Brief: [07_VAT_PRE_CODE_BRIEF.md](./07_VAT_PRE_CODE_BRIEF.md) (JC-011 구현·머지 완료).
-- 급여 Pre-Code Brief: [08_PAYROLL_PRE_CODE_BRIEF.md](./08_PAYROLL_PRE_CODE_BRIEF.md) (JC-012 게이트 완료, 구현 전 DB migration 필요).
-- 신고지원은 구현 전 화면별 Pre-Code Brief와 QA 시나리오가 필요하다.
+- 급여 Pre-Code Brief: [08_PAYROLL_PRE_CODE_BRIEF.md](./08_PAYROLL_PRE_CODE_BRIEF.md) (JC-012 구현·머지 완료).
+- 신고지원 Pre-Code Brief: [09_FILING_SUPPORT_PRE_CODE_BRIEF.md](./09_FILING_SUPPORT_PRE_CODE_BRIEF.md) (JC-013 게이트 완료, 구현 PR에서 물리 migration 예정).
 
 ## 11. Related Documents
 - **Concept_Design**: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md) - 제품 목적 및 사용자
@@ -194,4 +213,5 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 - **Technical_Specs**: [Bookkeeping Review Pre-Code Brief](./06_BOOKKEEPING_REVIEW_PRE_CODE_BRIEF.md) - 기장검토 분류 큐·승인 mutation·Preview 계약
 - **Technical_Specs**: [VAT Pre-Code Brief](./07_VAT_PRE_CODE_BRIEF.md) - 부가세 세액 집계·공제 검토·패키지 잠금 계약
 - **Technical_Specs**: [Payroll Pre-Code Brief](./08_PAYROLL_PRE_CODE_BRIEF.md) - 급여대장·고지액 매칭·마감 잠금 계약
-- **Logic_Progress**: [Backlog](../04_Logic_Progress/00_BACKLOG.md) - JC-006/JC-009/JC-010/JC-011/JC-012 Context Lock
+- **Technical_Specs**: [Filing Support Pre-Code Brief](./09_FILING_SUPPORT_PRE_CODE_BRIEF.md) - 신고 항목·입력 가이드·접수증 보관 계약
+- **Logic_Progress**: [Backlog](../04_Logic_Progress/00_BACKLOG.md) - JC-006/JC-009/JC-010/JC-011/JC-012/JC-013 Context Lock

@@ -1,6 +1,6 @@
 # DB Schema (Company-context Adaptation)
 > Created: 2026-07-01 22:40
-> Last Updated: 2026-07-02 14:21
+> Last Updated: 2026-07-02 20:23
 
 ## 1. 목적 및 범위
 
@@ -64,7 +64,7 @@ tenant (로그인 주체 = 회사/대표)
 
 부가세·급여·신고지원 화면은 기존 추출/전표 테이블만으로는 사용자 판정·마감·패키지 상태를
 안정적으로 표현하기 어렵다. 부가세 4.1은 JC-011 구현에서 물리 적용했고, 급여 4.2는
-JC-012 게이트에서 논리 컬럼을 확정했다. 신고지원 4.3은 JC-013 게이트에서 구체화한다.
+JC-012 구현에서 물리 적용했다. 신고지원 4.3은 JC-013 게이트에서 논리 컬럼을 확정했다.
 
 ### 4.1 부가세 (VAT) — JC-011 물리 스키마 적용
 
@@ -169,10 +169,62 @@ JC-011 구현은 아래 두 테이블을 `lib/db/schema.ts`와
 | `created_at`, `updated_at` | 감사·동기화 |
 
 ### 4.3 신고지원 (Filing Support)
-- `filing_item` — 사업장·기간·신고종류(부가세/원천세/4대보험)별 패키지 상태(준비됨/대기/확인필요).
-- `filing_receipt` — 제출 접수증 보관(사용자 업로드, Vercel Blob storage key).
+- `filing_item` — 사업장·기간·신고종류(부가세/원천세/4대보험)별 패키지 상태(준비됨/대기/확인필요/제출기록).
+- `filing_receipt` — 제출 접수증 보관(사용자 업로드, Vercel Blob private storage key).
 - `filing_checklist_item` — 사후 체크리스트 항목·완료 상태.
 - 자동 홈택스 제출·자격증명 저장은 **비범위**(Product Baseline MVP Non-Scope).
+
+#### `filing_item`
+
+부가세·원천세·4대보험 신고 항목의 상태 스냅샷. 선행 화면 산출물 상태를 읽어 화면에 표시하고,
+사용자가 직접 신고한 뒤 접수증/체크리스트와 연결한다.
+
+| 컬럼 | 목적 |
+|:---|:---|
+| `id`, `tenant_id`, `client_id` | tenant + businessEntity 범위 |
+| `filing_period_key`, `payroll_period_key` | 부가세 신고 기간과 급여 귀속월 연결 |
+| `item_type` | `vat` / `withholding` / `social_insurance` |
+| `source_module`, `source_ref_id` | `vat_period_summary` 또는 `payroll_period_summary` 추적 |
+| `title`, `description` | 화면 표시 스냅샷 |
+| `status` | `locked` / `ready` / `needs_review` / `submitted` |
+| `package_status` | `locked` / `ready` / `generated` / `submitted` |
+| `lock_reason` | 잠금 사유(부가세 공제 검토, 급여 미마감 등) |
+| `package_storage_key`, `generated_at` | 내부 패키지 저장 상태(private key는 UI 미노출) |
+| `submitted_at` | 회사가 직접 제출했다고 기록한 시각 |
+| `created_at`, `updated_at` | 감사·동기화 |
+
+권장 인덱스: unique(`tenant_id`, `client_id`, `filing_period_key`, `item_type`),
+index(`tenant_id`, `client_id`, `status`), index(`tenant_id`, `client_id`, `package_status`).
+
+#### `filing_receipt`
+
+홈택스/EDI 제출 후 사용자가 업로드한 접수증. 시스템은 제출을 대행하지 않고, 접수증 파일과 보관 상태만 기록한다.
+
+| 컬럼 | 목적 |
+|:---|:---|
+| `id`, `tenant_id`, `client_id`, `filing_item_id` | 범위와 신고 항목 연결 |
+| `receipt_type` | `hometax_receipt` / `payment_receipt` / `insurance_receipt` |
+| `original_filename`, `storage_key`, `file_hash` | 원본 추적(private storage key는 UI 미노출) |
+| `uploaded_by_staff_id`, `uploaded_at` | 사용자 업로드 감사 |
+| `created_at`, `updated_at` | 감사·동기화 |
+
+권장 인덱스: index(`tenant_id`, `client_id`, `filing_item_id`),
+index(`tenant_id`, `client_id`, `receipt_type`).
+
+#### `filing_checklist_item`
+
+납부 확인·접수증 보관 같은 사후 체크리스트. 완료 상태는 내부 확인용이며, 실제 제출·납부 수행을 의미하지 않는다.
+
+| 컬럼 | 목적 |
+|:---|:---|
+| `id`, `tenant_id`, `client_id`, `filing_period_key` | 범위 |
+| `filing_item_id` | 특정 신고 항목 연결(공통 항목은 null 허용) |
+| `code`, `label`, `description`, `sort_order` | 체크리스트 정의 |
+| `completed`, `completed_by_staff_id`, `completed_at` | 완료 상태 |
+| `created_at`, `updated_at` | 감사·동기화 |
+
+권장 인덱스: unique(`tenant_id`, `client_id`, `filing_period_key`, `code`),
+index(`tenant_id`, `client_id`, `completed`).
 
 ## 5. 명명·마이그레이션 방침 (JC-005에서 실행)
 
@@ -184,9 +236,9 @@ JC-011 구현은 아래 두 테이블을 `lib/db/schema.ts`와
 
 ## 6. 구현 상태 및 미결(JC-005 구현 단계 확정 대상)
 - 완료: 부가세 신규 테이블의 물리 Drizzle migration·인덱스·FK는 JC-011 구현 PR에서 `0053_add_vat_tables.sql`로 적용.
-- 설계 완료: 급여 신규 테이블의 논리 컬럼은 [Payroll Pre-Code Brief](./08_PAYROLL_PRE_CODE_BRIEF.md)에서 확정. 구현 PR에서 물리 migration 적용 예정.
+- 완료: 급여 신규 테이블의 물리 Drizzle migration·인덱스·FK는 JC-012 구현 PR에서 `0054_add_payroll_workspace_tables.sql`로 적용.
+- 설계 완료: 신고지원 신규 테이블의 논리 컬럼은 [Filing Support Pre-Code Brief](./09_FILING_SUPPORT_PRE_CODE_BRIEF.md)에서 확정. 구현 PR에서 물리 migration 적용 예정.
 - 미결: `business_entity` 물리 rename 여부 및 마이그레이션 순서.
-- 미결: 신고지원 신규 테이블의 정확한 컬럼·인덱스·FK.
 - 미결: 과세기간(부가세 1기/2기·예정/확정) 표현 모델과 급여 귀속월·전표 기간의 정합.
 - 미결: v1 제외 이메일 서브시스템 테이블의 물리 처리(보존/드롭).
 
@@ -198,4 +250,5 @@ JC-011 구현은 아래 두 테이블을 `lib/db/schema.ts`와
 - **Technical_Specs**: [Component & Library Plan](./02_COMPONENT_LIBRARY_PLAN.md) - 화면 컴포넌트(데이터 소비처)
 - **Technical_Specs**: [VAT Pre-Code Brief](./07_VAT_PRE_CODE_BRIEF.md) - 부가세 신규 테이블·read model 구현 계약
 - **Technical_Specs**: [Payroll Pre-Code Brief](./08_PAYROLL_PRE_CODE_BRIEF.md) - 급여 신규 테이블·고지액 매칭 구현 계약
+- **Technical_Specs**: [Filing Support Pre-Code Brief](./09_FILING_SUPPORT_PRE_CODE_BRIEF.md) - 신고지원 신규 테이블·책임 경계 구현 계약
 - **Logic_Progress**: [Backlog](../04_Logic_Progress/00_BACKLOG.md) - JC-005(데이터 모델) 및 JC-006~013 착수 전제조건
