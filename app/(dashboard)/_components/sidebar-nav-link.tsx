@@ -9,15 +9,24 @@ interface SidebarNavLinkProps {
   href: string
   children: ReactNode
   disabled?: boolean
+  badge?: number
+  badgeActiveOnly?: boolean
 }
 
-export function SidebarNavLink({ href, children, disabled = false }: SidebarNavLinkProps) {
+export function SidebarNavLink({
+  href,
+  children,
+  disabled = false,
+  badge = 0,
+  badgeActiveOnly = true,
+}: SidebarNavLinkProps) {
   const pathname = usePathname()
   const hrefPathname = href.split('#')[0] ?? href
   const isAnchorLink = href.includes('#')
   const active = !isAnchorLink && (hrefPathname === '/dashboard'
     ? pathname === '/dashboard'
     : pathname.startsWith(hrefPathname))
+  const showBadge = badge > 0 && (!badgeActiveOnly || active)
 
   if (disabled) {
     return (
@@ -41,6 +50,11 @@ export function SidebarNavLink({ href, children, disabled = false }: SidebarNavL
       )}
     >
       {children}
+      {showBadge ? (
+        <span className="ml-auto rounded-full border border-[#fecaca] bg-[#fef2f2] px-[7px] py-px text-[10.5px] font-bold leading-4 text-[#dc2626]">
+          {badge}
+        </span>
+      ) : null}
     </Link>
   )
 }

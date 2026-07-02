@@ -9,6 +9,7 @@ describe('bookkeeping review UI boundaries (JC-010)', () => {
   const source = readFileSync(new URL('./bookkeeping-review.tsx', import.meta.url), 'utf8')
   const pageSource = readFileSync(new URL('../page.tsx', import.meta.url), 'utf8')
   const sidebarSource = readFileSync(join(workspaceRoot, 'app/(dashboard)/_components/sidebar.tsx'), 'utf8')
+  const sidebarNavLinkSource = readFileSync(join(workspaceRoot, 'app/(dashboard)/_components/sidebar-nav-link.tsx'), 'utf8')
   const layoutSource = readFileSync(join(workspaceRoot, 'app/(dashboard)/layout.tsx'), 'utf8')
   const companyHomeSummarySource = readFileSync(join(workspaceRoot, 'lib/company-home/summary.ts'), 'utf8')
 
@@ -53,10 +54,10 @@ describe('bookkeeping review UI boundaries (JC-010)', () => {
   })
 
   it('renders the pending-count sidebar badge from the server layout for Preview parity', () => {
-    expect(sidebarSource).toContain("badgeKey: 'bookkeepingPending'")
     expect(sidebarSource).toContain('bookkeepingPendingCount')
-    expect(sidebarSource).toContain('bg-[#fef2f2]')
-    expect(sidebarSource).toContain('text-[#dc2626]')
+    expect(sidebarSource).toContain('badge={badge}')
+    expect(sidebarNavLinkSource).toContain('bg-[#fef2f2]')
+    expect(sidebarNavLinkSource).toContain('text-[#dc2626]')
     expect(layoutSource).toContain('loadBookkeepingReviewPendingCount')
     expect(layoutSource).toContain('bookkeepingPendingCount={bookkeepingPendingCount}')
   })

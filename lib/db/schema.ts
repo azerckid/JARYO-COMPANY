@@ -1455,6 +1455,160 @@ export const payrollExcelDraft = sqliteTable('payroll_excel_draft', {
 })
 
 // ---------------------------------------------------------------------------
+// payroll_period_summary
+// 사업장·귀속월별 급여 요약과 마감 상태. payroll_extraction_row는 원천 후보이고,
+// 이 테이블은 회사용 급여 화면과 신고지원이 참조할 실행 결과 스냅샷이다.
+// ---------------------------------------------------------------------------
+export const payrollPeriodSummary = sqliteTable('payroll_period_summary', {
+  id: text('id').primaryKey(),
+  tenantId: text('tenant_id').notNull().references(() => tenant.id),
+  clientId: text('client_id').notNull().references(() => client.id),
+  payrollPeriod: text('payroll_period').notNull(),
+  paymentDate: text('payment_date'),
+  employeeCount: integer('employee_count').notNull().default(0),
+  issueCount: integer('issue_count').notNull().default(0),
+  grossPayKrw: integer('gross_pay_krw').notNull().default(0),
+  withholdingTaxKrw: integer('withholding_tax_krw').notNull().default(0),
+  socialInsuranceKrw: integer('social_insurance_krw').notNull().default(0),
+  deductionTotalKrw: integer('deduction_total_krw').notNull().default(0),
+  netPayKrw: integer('net_pay_krw').notNull().default(0),
+  noticeImportStatus: text('notice_import_status', {
+    enum: ['missing', 'partial', 'matched'],
+  }).notNull().default('missing'),
+  closeStatus: text('close_status', {
+    enum: ['open', 'blocked', 'closed'],
+  }).notNull().default('open'),
+  closedByStaffId: text('closed_by_staff_id').references(() => staff.id),
+  closedAt: text('closed_at'),
+  payslipStatus: text('payslip_status', {
+    enum: ['not_generated', 'ready', 'generated', 'failed'],
+  }).notNull().default('not_generated'),
+  withholdingStatementStatus: text('withholding_statement_status', {
+    enum: ['not_generated', 'ready', 'generated', 'failed'],
+  }).notNull().default('not_generated'),
+  insuranceStatementStatus: text('insurance_statement_status', {
+    enum: ['not_generated', 'ready', 'generated', 'failed'],
+  }).notNull().default('not_generated'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (t) => ({
+  scopeUidx: uniqueIndex('payroll_period_summary_scope_uidx')
+    .on(t.tenantId, t.clientId, t.payrollPeriod),
+  periodIdx: index('payroll_period_summary_period_idx').on(t.tenantId, t.clientId, t.payrollPeriod),
+  closeIdx: index('payroll_period_summary_close_idx').on(t.tenantId, t.clientId, t.closeStatus),
+}))
+
+// ---------------------------------------------------------------------------
+// payroll_employee_line
+// 직원별 급여대장 실행 결과. 건강보험 EDI/사회보험 고지액이 있으면
+// 계산 추정값보다 이 line의 최종 4대보험 공제액에 우선 반영된다.
+// ---------------------------------------------------------------------------
+export const payrollEmployeeLine = sqliteTable('payroll_employee_line', {
+  id: text('id').primaryKey(),
+  tenantId: text('tenant_id').notNull().references(() => tenant.id),
+  clientId: text('client_id').notNull().references(() => client.id),
+  periodSummaryId: text('period_summary_id').notNull().references(() => payrollPeriodSummary.id),
+  sourceBatchId: text('source_batch_id').references(() => payrollExtractionBatch.id),
+  sourceRowId: text('source_row_id').references(() => payrollExtractionRow.id),
+  uploadSessionId: text('upload_session_id').references(() => uploadSession.id),
+  employeeCode: text('employee_code'),
+  employeeName: text('employee_name').notNull(),
+  department: text('department'),
+  jobTitle: text('job_title'),
+  jobType: text('job_type'),
+  baseSalaryKrw: integer('base_salary_krw').notNull().default(0),
+  allowanceKrw: integer('allowance_krw').notNull().default(0),
+  grossPayKrw: integer('gross_pay_krw').notNull().default(0),
+  incomeTaxKrw: integer('income_tax_krw').notNull().default(0),
+  localIncomeTaxKrw: integer('local_income_tax_krw').notNull().default(0),
+  nationalPensionKrw: integer('national_pension_krw').notNull().default(0),
+  healthInsuranceKrw: integer('health_insurance_krw').notNull().default(0),
+  longTermCareKrw: integer('long_term_care_krw').notNull().default(0),
+  employmentInsuranceKrw: integer('employment_insurance_krw').notNull().default(0),
+  socialInsuranceKrw: integer('social_insurance_krw').notNull().default(0),
+  otherDeductionKrw: integer('other_deduction_krw').notNull().default(0),
+  deductionTotalKrw: integer('deduction_total_krw').notNull().default(0),
+  netPayKrw: integer('net_pay_krw').notNull().default(0),
+  noticeMatchStatus: text('notice_match_status', {
+    enum: ['matched', 'missing_notice', 'ambiguous', 'unmatched'],
+  }).notNull().default('missing_notice'),
+  // 순환 FK를 피하기 위해 DB FK는 notice line -> employee line 방향만 둔다.
+  noticeLineId: text('notice_line_id'),
+  status: text('status', {
+    enum: ['ready', 'needs_review', 'closed'],
+  }).notNull().default('needs_review'),
+  issueCode: text('issue_code'),
+  issueMessage: text('issue_message'),
+  editedByStaffId: text('edited_by_staff_id').references(() => staff.id),
+  editedAt: text('edited_at'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (t) => ({
+  periodIdx: index('payroll_employee_line_period_idx').on(t.tenantId, t.clientId, t.periodSummaryId),
+  statusIdx: index('payroll_employee_line_status_idx').on(t.tenantId, t.clientId, t.periodSummaryId, t.status),
+  sourceRowIdx: index('payroll_employee_line_source_row_idx').on(t.tenantId, t.sourceRowId),
+  noticeMatchIdx: index('payroll_employee_line_notice_match_idx')
+    .on(t.tenantId, t.clientId, t.periodSummaryId, t.noticeMatchStatus),
+}))
+
+// ---------------------------------------------------------------------------
+// payroll_insurance_notice_import
+// 건강보험 EDI/사회보험징수포털 고지내역 파일 또는 수동 입력 묶음.
+// 자격증명·공동인증서·포털 비밀번호는 저장하지 않는다.
+// ---------------------------------------------------------------------------
+export const payrollInsuranceNoticeImport = sqliteTable('payroll_insurance_notice_import', {
+  id: text('id').primaryKey(),
+  tenantId: text('tenant_id').notNull().references(() => tenant.id),
+  clientId: text('client_id').notNull().references(() => client.id),
+  payrollPeriod: text('payroll_period').notNull(),
+  sourceType: text('source_type', {
+    enum: ['nhis_edi', 'social_insurance_portal', 'manual'],
+  }).notNull(),
+  originalFilename: text('original_filename'),
+  storageKey: text('storage_key'),
+  fileHash: text('file_hash'),
+  status: text('status', {
+    enum: ['uploaded', 'parsed', 'matched', 'failed'],
+  }).notNull().default('uploaded'),
+  importedByStaffId: text('imported_by_staff_id').references(() => staff.id),
+  importedAt: text('imported_at').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (t) => ({
+  periodIdx: index('payroll_insurance_notice_import_period_idx').on(t.tenantId, t.clientId, t.payrollPeriod),
+  statusIdx: index('payroll_insurance_notice_import_status_idx').on(t.tenantId, t.clientId, t.status),
+}))
+
+// ---------------------------------------------------------------------------
+// payroll_insurance_notice_line
+// 고지내역 직원별 보험료 라인. 주민등록번호 원문은 저장하지 않고 match_key_hash만
+// 보관한다.
+// ---------------------------------------------------------------------------
+export const payrollInsuranceNoticeLine = sqliteTable('payroll_insurance_notice_line', {
+  id: text('id').primaryKey(),
+  tenantId: text('tenant_id').notNull().references(() => tenant.id),
+  clientId: text('client_id').notNull().references(() => client.id),
+  noticeImportId: text('notice_import_id').notNull().references(() => payrollInsuranceNoticeImport.id),
+  employeeCode: text('employee_code'),
+  employeeName: text('employee_name'),
+  matchKeyHash: text('match_key_hash'),
+  nationalPensionKrw: integer('national_pension_krw').notNull().default(0),
+  healthInsuranceKrw: integer('health_insurance_krw').notNull().default(0),
+  longTermCareKrw: integer('long_term_care_krw').notNull().default(0),
+  employmentInsuranceKrw: integer('employment_insurance_krw').notNull().default(0),
+  matchStatus: text('match_status', {
+    enum: ['matched', 'missing_notice', 'ambiguous', 'unmatched'],
+  }).notNull().default('unmatched'),
+  matchedEmployeeLineId: text('matched_employee_line_id').references(() => payrollEmployeeLine.id),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (t) => ({
+  importIdx: index('payroll_insurance_notice_line_import_idx').on(t.tenantId, t.noticeImportId),
+  matchIdx: index('payroll_insurance_notice_line_match_idx').on(t.tenantId, t.clientId, t.matchStatus),
+  employeeLineIdx: index('payroll_insurance_notice_line_employee_line_idx').on(t.tenantId, t.matchedEmployeeLineId),
+}))
+
+// ---------------------------------------------------------------------------
 // consultation_source_cache
 //   AI 전문 상담 Slice 1 — 공식 출처(law.go.kr) 응답 캐시.
 //   law.go.kr 법령 데이터는 공개·비고객 기준자료라 모든 테넌트가 동일하게

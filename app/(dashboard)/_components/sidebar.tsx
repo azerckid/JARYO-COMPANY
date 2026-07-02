@@ -9,7 +9,7 @@ const HOME_NAV = {
 
 const FLOW_NAV = [
   { href: '/dashboard/direct-upload', label: '자료수집', glyph: '↥' },
-  { href: '/dashboard/bookkeeping', label: '기장검토', glyph: '▤', badgeKey: 'bookkeepingPending' },
+  { href: '/dashboard/bookkeeping', label: '기장검토', glyph: '▤' },
   { href: '/dashboard/vat', label: '부가세', glyph: '％' },
   { href: '/dashboard/payroll', label: '급여', glyph: '₩' },
   { href: '/dashboard#filing-support-status', label: '신고지원', glyph: '↧' },
@@ -25,6 +25,7 @@ interface SidebarProps {
   userName: string
   tenantName: string
   bookkeepingPendingCount?: number
+  payrollEmployeeCount?: number
 }
 
 function userInitial(userName: string) {
@@ -32,7 +33,12 @@ function userInitial(userName: string) {
   return trimmed ? trimmed.slice(0, 1) : 'U'
 }
 
-export function Sidebar({ userName, tenantName, bookkeepingPendingCount = 0 }: SidebarProps) {
+export function Sidebar({
+  userName,
+  tenantName,
+  bookkeepingPendingCount = 0,
+  payrollEmployeeCount = 0,
+}: SidebarProps) {
   return (
     <aside className="sticky top-0 flex h-screen w-[248px] shrink-0 flex-col gap-1 border-r border-company-border bg-company-surface px-3.5 py-5 text-foreground">
       <div className="flex items-center gap-2.5 px-2 pb-[18px]">
@@ -56,17 +62,16 @@ export function Sidebar({ userName, tenantName, bookkeepingPendingCount = 0 }: S
         </p>
 
         {FLOW_NAV.map((item) => {
-          const badge = 'badgeKey' in item && item.badgeKey === 'bookkeepingPending' ? bookkeepingPendingCount : 0
+          const badge = item.href === '/dashboard/bookkeeping'
+            ? bookkeepingPendingCount
+            : item.href === '/dashboard/payroll'
+              ? payrollEmployeeCount
+              : 0
 
           return (
-            <SidebarNavLink key={item.href} href={item.href}>
+            <SidebarNavLink key={item.href} href={item.href} badge={badge}>
               <NavGlyph>{item.glyph}</NavGlyph>
               <span className="min-w-0 flex-1 truncate">{item.label}</span>
-              {badge > 0 ? (
-                <span className="ml-auto rounded-full border border-[#fecaca] bg-[#fef2f2] px-[7px] py-px text-[10.5px] font-bold leading-4 text-[#dc2626]">
-                  {badge}
-                </span>
-              ) : null}
             </SidebarNavLink>
           )
         })}
