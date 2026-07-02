@@ -1,6 +1,6 @@
 # Internal Reminder Mail Pre-Code Technical Brief
 > Created: 2026-07-02 21:18
-> Last Updated: 2026-07-02 21:18
+> Last Updated: 2026-07-02
 
 ## 0. Governing Principle
 
@@ -168,9 +168,9 @@ type InternalReminderSummary = {
 
 ## 8. Implementation Preconditions
 
-- [ ] UI Preview 작성 및 사용자 확인
-- [ ] 화면 진입 위치(`/dashboard/reminders` vs 설정 하위) 확정
-- [ ] JC-015 직원 명부를 수신자 source로 사용할지, v1은 staff-only로 시작할지 결정
+- [x] UI Preview 작성 및 사용자 확인 — [07_internal_reminder.html](../02_UI_Screens/previews/07_internal_reminder.html) (2026-07-02)
+- [x] 화면 진입 위치 확정 — 독립 메뉴 `/dashboard/reminders`
+- [x] 수신자 source 결정 — v1은 담당자 본인·내부 staff 발송(자가 리마인드). 직원 명부 기반 직원 수신은 후속
 - [ ] 신규 `internal_reminder_*` 물리 테이블 여부 확정
 - [ ] Resend 발송 환경변수와 테스트 발송 방식 확인
 - [ ] 예약 실행 방식(cron/manual job)과 idempotency key 확정
@@ -188,7 +188,7 @@ type InternalReminderSummary = {
 
 ## 10. Open Items
 
-- v1에서 직원 명부 기반 수신까지 포함할지, staff-only로 먼저 출시할지 결정이 필요하다.
+- v1 수신자는 담당자 본인·내부 staff로 확정(2026-07-02). 직원 명부 기반 직원 수신은 후속.
 - 예약 실행을 Vercel Cron으로 할지, 내부 수동 실행으로 시작할지 결정이 필요하다.
 - 이메일 템플릿 편집을 v1에 포함할지, 고정 템플릿으로 시작할지 결정이 필요하다.
 

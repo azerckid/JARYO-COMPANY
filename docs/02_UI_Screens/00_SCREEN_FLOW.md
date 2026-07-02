@@ -12,8 +12,9 @@
 5. **급여(Payroll)** — 승인 완료(2026-07-01)
 6. **신고지원(Filing Support)** — 승인 완료(2026-07-01)
 7. **직원 명부(Employee Directory)** — 구현 완료(2026-07-02, 운영 보조 화면·JC-015)
+8. **리마인드(Internal Reminder)** — UI Preview 승인 완료(2026-07-02, 운영 보조 화면·JC-016)
 
-6개 워크스페이스 전체 프리뷰 승인 완료(6/6 UI 확정, 2026-07-01). 직원 명부는 급여·4대보험 매칭·내부 리마인드의 기준 마스터로, UI Preview 승인(2026-07-02) 후 `/dashboard/employees` 구현 완료.
+6개 워크스페이스 전체 프리뷰 승인 완료(6/6 UI 확정, 2026-07-01). 직원 명부는 급여·4대보험 매칭·내부 리마인드의 기준 마스터로, UI Preview 승인(2026-07-02) 후 `/dashboard/employees` 구현 완료. 리마인드는 담당자 본인·내부 staff에게 세무 일정·확인 필요 상태를 알리는 자가 알림으로, UI Preview 승인(2026-07-02) 후 구현 대기.
 
 외부 연동(고객 업로드 포털 `/upload/[token]`, 외부 세무사 검토 흐름)은 v1 범위에서 제외한다.
 회사 내부 운영 화면만 다룬다.
@@ -187,7 +188,8 @@
 - Preview (급여): [04_payroll.html](./previews/04_payroll.html)
 - Preview (신고지원): [05_filing_support.html](./previews/05_filing_support.html)
 - Preview (직원 명부): [06_employee_directory.html](./previews/06_employee_directory.html)
-- 확인 방식: 브라우저에서 HTML 파일 직접 열람. 기존 6개 워크스페이스와 직원 명부는 사이드바/CTA로 상호 이동 가능.
+- Preview (리마인드): [07_internal_reminder.html](./previews/07_internal_reminder.html)
+- 확인 방식: 브라우저에서 HTML 파일 직접 열람. 기존 6개 워크스페이스와 직원 명부·리마인드는 사이드바/CTA로 상호 이동 가능.
 
 ## 7. Related Documents
 - **Concept_Design**: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md) - 제품 목적 및 사용자 정의
