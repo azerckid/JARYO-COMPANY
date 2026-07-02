@@ -1,6 +1,6 @@
 # JARYO Company Backlog
 > Created: 2026-07-01 17:57
-> Last Updated: 2026-07-02 15:09
+> Last Updated: 2026-07-02 20:23
 
 ## Status Legend
 
@@ -17,7 +17,7 @@
 | JC-002 | done | Link local Solmate skills | solmate-skills | `.agent/skills` contains symlinks to local skill folders with `SKILL.md` |
 | JC-003 | done | Switch package manager baseline to npm | package setup | README and PR template use npm commands; pnpm files removed |
 | JC-004 | todo | Audit copied routes and rename accounting-firm assumptions | `app`, `lib`, `components` | Company self-use terminology and responsibility boundary are reflected in visible routes |
-| JC-005 | doing | Define company tenant data model delta | `lib/db/schema.ts` | Company/operator model documented before DB migration — 설계: [DB Schema](../03_Technical_Specs/03_DB_SCHEMA.md) (client→business_entity 재정의, 이메일 서브시스템 v1 제외). 부가세 물리 마이그레이션은 JC-011 구현에서 추가, 신고 신규 테이블 컬럼은 후속 |
+| JC-005 | doing | Define company tenant data model delta | `lib/db/schema.ts` | Company/operator model documented before DB migration — 설계: [DB Schema](../03_Technical_Specs/03_DB_SCHEMA.md) (client→business_entity 재정의, 이메일 서브시스템 v1 제외). 부가세·급여 물리 마이그레이션 적용 완료, 신고지원 신규 테이블 컬럼은 JC-013 게이트에서 확정 |
 | JC-006 | done | Shape first working dashboard | `app/(dashboard)`, `components/ui` | Dashboard shows collection, bookkeeping, VAT, payroll, filing support status |
 | JC-007 | todo | Define filing package model | bookkeeping/payroll modules | Filing material package can store generated docs, Hometax guide, receipt, and audit state |
 | JC-008 | todo | Review residual npm audit findings | `package.json`, parser/import libraries | Decide replacements or mitigations for `xlsx`, `viem/ws`, `drizzle-kit/esbuild`, and Next/PostCSS audit advisories |
@@ -44,7 +44,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - Related UI Docs: [Screen Flow](../02_UI_Screens/00_SCREEN_FLOW.md) · [UI Design](../02_UI_Screens/01_UI_DESIGN.md)
 - Related HTML Preview: [00_company_home.html](../02_UI_Screens/previews/00_company_home.html) · [01_source_collection.html](../02_UI_Screens/previews/01_source_collection.html) · [02_bookkeeping_review.html](../02_UI_Screens/previews/02_bookkeeping_review.html) · [03_vat.html](../02_UI_Screens/previews/03_vat.html) · [04_payroll.html](../02_UI_Screens/previews/04_payroll.html) · [05_filing_support.html](../02_UI_Screens/previews/05_filing_support.html)
 - Related Technical Docs: [DB Schema](../03_Technical_Specs/03_DB_SCHEMA.md) · [Development Setup](../03_Technical_Specs/01_DEVELOPMENT_SETUP.md) · [Component & Library Plan](../03_Technical_Specs/02_COMPONENT_LIBRARY_PLAN.md)
-- Related QA Docs: 테넌트 격리·기간 필터는 [Company Home Test Scenarios](../05_QA_Validation/02_COMPANY_HOME_TEST_SCENARIOS.md) S-41·S-42에서 일부 검증. 부가세 논리 모델 검증은 [VAT Test Scenarios](../05_QA_Validation/05_VAT_TEST_SCENARIOS.md)에 추가. 물리 마이그레이션·신고지원 테이블 검증은 후속에서 추가.
+- Related QA Docs: 테넌트 격리·기간 필터는 [Company Home Test Scenarios](../05_QA_Validation/02_COMPANY_HOME_TEST_SCENARIOS.md) S-41·S-42에서 일부 검증. 부가세 논리 모델 검증은 [VAT Test Scenarios](../05_QA_Validation/05_VAT_TEST_SCENARIOS.md), 신고지원 테이블·책임 경계 검증은 [Filing Support Test Scenarios](../05_QA_Validation/07_FILING_SUPPORT_TEST_SCENARIOS.md)에 추가.
 - Prototype Review / 승인: 6개 승인 Preview(회사 홈·자료수집·기장검토·부가세·급여·신고지원)의 데이터 요구사항을 DB Schema에 반영.
 - Implementation Preconditions:
   - [x] HTML UI Preview 사용자 확인 및 피드백 기록 반영(6/6 승인)
@@ -55,9 +55,10 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [x] 부가세 신규 테이블 논리 컬럼 확정 — [DB Schema 4.1](../03_Technical_Specs/03_DB_SCHEMA.md), [VAT Pre-Code Brief](../03_Technical_Specs/07_VAT_PRE_CODE_BRIEF.md)
   - [ ] `business_entity` 물리 rename 여부와 마이그레이션 순서 확정 — **미충족**
   - [x] 부가세 물리 Drizzle migration·인덱스·FK 적용 — `lib/db/schema.ts`, `drizzle/0053_add_vat_tables.sql`
-  - [ ] 신고지원 신규 테이블 컬럼·인덱스·FK 확정 — **미충족**
+  - [x] 급여 물리 Drizzle migration·인덱스·FK 적용 — `lib/db/schema.ts`, `drizzle/0054_add_payroll_workspace_tables.sql`
+  - [x] 신고지원 신규 테이블 컬럼·인덱스·FK 확정 — [DB Schema 4.3](../03_Technical_Specs/03_DB_SCHEMA.md), [Filing Support Pre-Code Brief](../03_Technical_Specs/09_FILING_SUPPORT_PRE_CODE_BRIEF.md)
   - [ ] 과세기간·귀속월·전표 기간 표현 모델 확정 — **미충족**
-  - [ ] QA 테스트 시나리오 작성 (Layer 5) — **미충족**
+  - [x] QA 테스트 시나리오 작성 (Layer 5) — [Filing Support Test Scenarios](../05_QA_Validation/07_FILING_SUPPORT_TEST_SCENARIOS.md)
 - Acceptance Criteria:
   - [x] 6개 승인 화면의 데이터 요구사항이 기존 테이블 재사용/신규 테이블 필요성으로 매핑된다.
   - [x] 회사 셀프사용 컨텍스트에서 `clientId`의 개념 전환(`businessEntityId`)이 명시된다.
@@ -65,8 +66,8 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [ ] 실제 Drizzle 스키마 변경안과 마이그레이션 순서가 확정된다.
   - [x] 부가세 테이블의 최소 논리 컬럼이 구현 가능한 수준으로 확정된다.
   - [x] 부가세 물리 FK/인덱스가 구현 가능한 수준으로 확정되어 migration에 반영된다.
-  - [ ] 신고지원 테이블의 최소 컬럼, FK, 인덱스가 구현 가능한 수준으로 확정된다.
-- Document Sync Check: DB Schema / Backlog / 6개 승인 Preview의 데이터 요구사항을 상호 링크함 (2026-07-02 기준, 부가세 물리 Drizzle migration 추가, 신고지원 물리 스키마는 후속)
+  - [x] 신고지원 테이블의 최소 컬럼, FK, 인덱스가 구현 가능한 수준으로 확정된다.
+- Document Sync Check: DB Schema / Backlog / 6개 승인 Preview의 데이터 요구사항을 상호 링크함 (2026-07-02 기준, 부가세 물리 Drizzle migration 추가, 신고지원 논리 스키마·QA 시나리오 확정)
 
 ### JC-006 · Shape first working dashboard (회사 홈)
 
@@ -85,7 +86,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - Acceptance Criteria:
   - [x] 로그인 직후 회사 홈(대시보드)으로 진입한다(마케팅 페이지 아님).
   - [x] 현재 회계기간 상태·마감 D-day·준비 현황 카드·최근 제출/영수증이 승인된 화면 구조대로 표시된다.
-  - [x] "다음 할 일" CTA가 미수집·미분류·급여 확인 필요 상태에 따라 자료수집·기장검토·급여로 라우팅된다. 부가세/신고지원은 전용 React 라우트가 후속 JC-011/JC-013 범위라 현재 준비 현황 카드에서 회사 홈 섹션 앵커로 연결한다.
+  - [x] "다음 할 일" CTA가 미수집·미분류·급여 확인 필요 상태에 따라 자료수집·기장검토·급여로 라우팅된다. 부가세·급여는 전용 React route로 연결됐고, 신고지원은 후속 JC-013 implementation 범위다.
   - [x] 로딩·빈·오류 상태가 화면에 구현된다.
   - [x] 대시보드는 읽기 전용이며 데이터 mutation을 수행하지 않는다.
   - [x] 회사 홈 데이터 로더는 v1 제외 테이블(`client_request_event`, `outbound_email`, `inbound_email`, `staff_mailbox`)을 참조하지 않는다.
@@ -198,15 +199,15 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - Related Concept: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md) — MVP 비범위(자동 홈택스 제출 제외)
 - Related UI Docs: [Screen Flow 4f](../02_UI_Screens/00_SCREEN_FLOW.md) · [UI Design 4.6](../02_UI_Screens/01_UI_DESIGN.md)
 - Related HTML Preview: [05_filing_support.html](../02_UI_Screens/previews/05_filing_support.html)
-- Related Technical Docs: [Component & Library Plan](../03_Technical_Specs/02_COMPONENT_LIBRARY_PLAN.md) · [Development Setup](../03_Technical_Specs/01_DEVELOPMENT_SETUP.md)
-- Related QA Docs: N/A - Layer 5 QA 문서 미작성. 구현 착수 전 신고 항목 연동·패키지 생성·접수증 보관·책임 경계(자동 제출 없음) 테스트 시나리오 추가 필요(전제조건에 반영).
+- Related Technical Docs: [Component & Library Plan 7.6](../03_Technical_Specs/02_COMPONENT_LIBRARY_PLAN.md) · [DB Schema 4.3](../03_Technical_Specs/03_DB_SCHEMA.md) · [Filing Support Pre-Code Brief](../03_Technical_Specs/09_FILING_SUPPORT_PRE_CODE_BRIEF.md) · [Development Setup](../03_Technical_Specs/01_DEVELOPMENT_SETUP.md)
+- Related QA Docs: [Filing Support Test Scenarios](../05_QA_Validation/07_FILING_SUPPORT_TEST_SCENARIOS.md) — 신고 항목 연동·패키지 잠금·입력 가이드·접수증 보관·책임 경계(자동 제출 없음)
 - Prototype Review / 승인: [Filing Support Review](../02_UI_Screens/07_FILING_SUPPORT_PROTOTYPE_REVIEW.md) — 확인자 프로젝트 오너, 2026-07-01 승인
 - Implementation Preconditions:
   - [x] UI-First Gate 통과 (사용자 확인 완료)
-  - [ ] Component & Library Plan에 신고지원 전용 컴포넌트(Filing Item Card·Input Guide·Receipts·Checklist) 반영 — **미충족**
-  - [ ] Pre-Code Technical Brief(신고 항목 연동·패키지 생성·접수증 보관·체크리스트 mutation) 정리 — **미충족**
-  - [ ] 부가세(JC-011)·급여(JC-012) 산출물 데이터 모델 선행 — **미충족**
-  - [ ] QA 테스트 시나리오 작성 (Layer 5) — **미충족**
+  - [x] Component & Library Plan에 신고지원 전용 컴포넌트(Filing Item Card·Input Guide·Receipts·Checklist) 반영 — [Component Plan 7.6](../03_Technical_Specs/02_COMPONENT_LIBRARY_PLAN.md)
+  - [x] Pre-Code Technical Brief(신고 항목 연동·패키지 생성·접수증 보관·체크리스트 mutation) 정리 — [Filing Support Pre-Code Brief](../03_Technical_Specs/09_FILING_SUPPORT_PRE_CODE_BRIEF.md)
+  - [x] 부가세(JC-011)·급여(JC-012) 산출물 데이터 모델 선행 — `vat_period_summary`, `payroll_period_summary`
+  - [x] QA 테스트 시나리오 작성 (Layer 5) — [Filing Support Test Scenarios](../05_QA_Validation/07_FILING_SUPPORT_TEST_SCENARIOS.md)
 - Acceptance Criteria:
   - [ ] 신고 항목(부가세/원천세/4대보험)이 선행 화면 산출물과 연동되어 상태와 함께 표시된다.
   - [ ] 부가세 패키지는 공제 검토 완료 전 잠금이다.
@@ -215,13 +216,13 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [ ] 사후 체크리스트로 납부·보관을 확인한다.
   - [ ] **자동 홈택스 제출·자동 납부·자격증명 서버 저장은 제공하지 않는다**(책임 경계를 화면에 반복 노출).
   - [ ] 로딩·빈·오류 상태가 화면에 구현된다.
-- Document Sync Check: Screen Flow 4f / UI Design 4.6 / Prototype Review / Preview 상호 링크됨 (2026-07-01 기준 일치)
+- Document Sync Check: Screen Flow 4f / UI Design 4.6 / Prototype Review / Preview / Component Plan 7.6 / DB Schema 4.3 / Filing Support Pre-Code Brief / QA Scenarios 상호 링크됨. 구현 파일은 JC-013 implementation PR에서 갱신한다.
 
-> 현재 여섯 항목 모두 **UI-First Gate 통과 (UI 6/6 완료)**. JC-005는 DB Schema 설계 초안을 완료했고, JC-011에서 부가세 물리 Drizzle migration과 read model/UI 구현이 완료됐다. JC-006은 회사 홈 구현·머지 완료. JC-009는 자료수집 read model·UI 구현·머지 완료(PR #4·#5, Preview 정합 포함). JC-010은 기장검토 read model·UI 구현과 QA Result 반영 완료. JC-012는 급여 read model·UI·고지액 수동 입력/match·문서 생성·마감 guard 구현을 완료했다. 신고지원 신규 테이블 컬럼·기간 모델 세부 정합은 JC-013 후속이다. JC-004 전체 라우트 감사는 `todo` 유지(JC-009 §3은 업로드 슬라이스만 완료). 남은 공통 구현 착수 전제조건은 JC-013 **Pre-Code Brief**와 **Layer 5 QA**다.
+> 현재 여섯 항목 모두 **UI-First Gate 통과 (UI 6/6 완료)**. JC-005는 DB Schema 설계 초안을 완료했고, JC-011에서 부가세 물리 Drizzle migration과 read model/UI 구현이 완료됐다. JC-006은 회사 홈 구현·머지 완료. JC-009는 자료수집 read model·UI 구현·머지 완료(PR #4·#5, Preview 정합 포함). JC-010은 기장검토 read model·UI 구현과 QA Result 반영 완료. JC-012는 급여 read model·UI·고지액 수동 입력/match·문서 생성·마감 guard 구현을 완료했다. JC-013은 신고지원 Pre-Code Brief·DB 논리 컬럼·Layer 5 QA를 완료해 구현 착수 가능 상태다. JC-004 전체 라우트 감사는 `todo` 유지(JC-009 §3은 업로드 슬라이스만 완료).
 
 ## Related Documents
 - **Concept_Design**: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md) - 제품 목적 및 MVP 범위
 - **UI_Screens**: [Screen Flow](../02_UI_Screens/00_SCREEN_FLOW.md) · [UI Design](../02_UI_Screens/01_UI_DESIGN.md) - 화면 흐름·컴포넌트(Context Lock 참조 대상)
 - **UI_Screens**: [HTML Preview 폴더](../02_UI_Screens/previews/) - 승인된 화면 프로토타입(6화면)
-- **Technical_Specs**: [Development Setup](../03_Technical_Specs/01_DEVELOPMENT_SETUP.md) · [Component & Library Plan](../03_Technical_Specs/02_COMPONENT_LIBRARY_PLAN.md) · [Payroll Pre-Code Brief](../03_Technical_Specs/08_PAYROLL_PRE_CODE_BRIEF.md) - 스택 및 컴포넌트/급여 구현 계약
-- **QA_Validation**: [MVP QA Baseline](../05_QA_Validation/01_MVP_QA_BASELINE.md) · [Payroll Test Scenarios](../05_QA_Validation/06_PAYROLL_TEST_SCENARIOS.md) - 검증 기준(Acceptance 연계)
+- **Technical_Specs**: [Development Setup](../03_Technical_Specs/01_DEVELOPMENT_SETUP.md) · [Component & Library Plan](../03_Technical_Specs/02_COMPONENT_LIBRARY_PLAN.md) · [Payroll Pre-Code Brief](../03_Technical_Specs/08_PAYROLL_PRE_CODE_BRIEF.md) · [Filing Support Pre-Code Brief](../03_Technical_Specs/09_FILING_SUPPORT_PRE_CODE_BRIEF.md) - 스택 및 컴포넌트/급여·신고지원 구현 계약
+- **QA_Validation**: [MVP QA Baseline](../05_QA_Validation/01_MVP_QA_BASELINE.md) · [Payroll Test Scenarios](../05_QA_Validation/06_PAYROLL_TEST_SCENARIOS.md) · [Filing Support Test Scenarios](../05_QA_Validation/07_FILING_SUPPORT_TEST_SCENARIOS.md) - 검증 기준(Acceptance 연계)
