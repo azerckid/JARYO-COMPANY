@@ -1,0 +1,9 @@
+# External symlinks that break on Vercel build (targets outside repo)
+USAGE.md
+.agent
+
+# Local-only artifacts / secrets (defense-in-depth; also in .gitignore)
+.env*.local
+local-dev.db
+local-dev.db-shm
+local-dev.db-wal
