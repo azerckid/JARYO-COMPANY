@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { organization } from '@/lib/auth-client'
 
@@ -10,6 +10,36 @@ export default function OnboardingPage() {
   const [subdomain, setSubdomain] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  // 이미 회사(조직/테넌트)가 있는 사용자가 여기로 오면(예: 활성 테넌트 미설정 상태로 진입),
+  // 회사 등록 폼을 보여주지 않고 setActive 후 대시보드로 되돌린다(JC-020).
+  const [checkingExisting, setCheckingExisting] = useState(true)
+  // 회사 정보 조회/활성화가 실패하면 회사 등록 폼을 보여주지 않고 재시도를 안내한다.
+  // 기존 회사 사용자가 폼을 보면 중복 회사를 만들 수 있기 때문이다(P3 방어).
+  const [resolveError, setResolveError] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    organization
+      .list()
+      .then(async ({ data: orgs }) => {
+        if (!active) return
+        if (orgs && orgs.length > 0) {
+          await organization.setActive({ organizationId: orgs[0].id })
+          if (active) router.replace('/dashboard/clients')
+          return
+        }
+        setCheckingExisting(false)
+      })
+      .catch(() => {
+        if (active) {
+          setResolveError(true)
+          setCheckingExisting(false)
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,6 +67,33 @@ export default function OnboardingPage() {
       setError('서버 오류가 발생했습니다')
       setLoading(false)
     }
+  }
+
+  if (checkingExisting) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <p className="text-sm text-gray-500">확인 중…</p>
+      </div>
+    )
+  }
+
+  if (resolveError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-sm bg-white rounded-xl border border-gray-200 p-8 text-center">
+          <p className="text-sm text-gray-700 mb-4">
+            회사 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="w-full bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

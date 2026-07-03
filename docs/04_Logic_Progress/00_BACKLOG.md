@@ -32,7 +32,7 @@
 | JC-017 | todo | Schedule internal reminder cron | `app/api/cron/reminder`, `vercel.json`, `lib/internal-reminders` | Vercel Cron이 신규 내부 리마인드 발송 흐름을 실행한다. 레거시 세션/outboundEmail 기반 cron과 회사 v1 내부 리마인드 책임을 분리하고, idempotency·발송 로그·provider missing 처리를 검증한다. |
 | JC-018 | todo | Connect employee directory recipients to reminders | `lib/internal-reminders`, `lib/employee-directory`, `employee_profile` | `employee_profile.work_email`과 `notification_enabled`를 내부 리마인드 수신자 후보로 연결한다. 직원 수신자는 비활성/이메일 없음/알림 꺼짐 상태를 제외하고, 기존 담당자 본인·staff 수신 정책과 충돌하지 않는다. |
 | JC-019 | todo | Provide first-run sample workspace data | onboarding, approved previews, workspace read models | 신규 테넌트가 가입 직후 승인 Preview와 같은 샘플 업무 데이터를 보고 메뉴 구조를 이해할 수 있다. 샘플 데이터는 명확히 표시되고, 실사용 전 사용자가 한 번에 삭제할 수 있어야 한다. |
-| JC-020 | todo | Fix signup-to-onboarding routing | `app/(auth)/sign-up`, `app/onboarding`, auth/tenant guards | 신규 가입자가 tenant/organization이 없는 상태에서 깨진 dashboard/clients 화면으로 이동하지 않고 `/onboarding`으로 안내된다. 기존 tenant가 있는 사용자는 기존 대시보드 진입을 유지한다. |
+| JC-020 | done | Fix signup-to-onboarding routing | `app/(auth)/sign-up`, `app/(auth)/sign-in`, `app/(dashboard)/layout.tsx`, `app/onboarding` | 신규 가입자가 tenant/organization이 없는 상태에서 깨진 dashboard/clients 화면으로 이동하지 않고 `/onboarding`으로 안내된다. 기존 tenant가 있는 사용자는 기존 대시보드 진입을 유지한다. **구현(2026-07-04)**: sign-up→`/onboarding`, sign-in은 org 있으면 setActive 후 dashboard·없으면 `/onboarding`, dashboard layout은 활성 테넌트 없으면 `/onboarding` redirect(깨진 children 렌더 제거), onboarding은 이미 org 있는 사용자를 setActive 후 dashboard로 자기교정. |
 | JC-021 | todo | Remove remaining JARYO brand residue from first-run UX | signup welcome modal, onboarding copy, domain suffix | 프로덕션 첫 가입 흐름에서 `JARYO beta` 모달·`.jaryo.kr` 서브도메인 접미사 등 잔여 브랜드가 SemuAgent 문맥으로 정리된다. 상류 JARYO-GIWA 이력 문구와 운영자 콘솔 식별자는 범위 밖이다. |
 | JC-022 | todo | Refine settings screen product language | `app/(dashboard)/dashboard/settings`, `app/onboarding`, `app/api/settings` | 설정 화면의 개발자/상류 용어(`테넌트`, `.jaryo.kr`)를 사용자가 이해하는 회사/사업자 문맥으로 정리한다. 설정 정보구조는 회사 정보·담당자·업무메일·사업장 관리가 SemuAgent 제품 책임과 맞게 보이도록 재검토한다. |
 
@@ -314,16 +314,16 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - Related QA Docs: [MVP QA Baseline](../05_QA_Validation/01_MVP_QA_BASELINE.md) · [Company Home Test Scenarios](../05_QA_Validation/02_COMPANY_HOME_TEST_SCENARIOS.md) S-70~S-71(미인증/tenant 미소속 상태)
 - Prototype Review / 승인: N/A - 사용자 프로덕션 E2E 중 확인된 신규 가입 라우팅 버그. 구현 전 auth/onboarding flow를 짧은 technical brief 또는 QA case로 보강한다.
 - Implementation Preconditions:
-  - [ ] 신규 가입 직후 no-tenant/no-organization 상태의 라우팅 계약 확정
-  - [ ] Better Auth organization/session 생성 타이밍과 `requireTenantSession` 실패 경로 확인
-  - [ ] `/dashboard/clients` 진입 전 tenant 없음 상태를 `/onboarding`으로 redirect하는 위치 결정
-  - [ ] signup success path 회귀 테스트 또는 browser smoke 추가
+  - [x] 신규 가입 직후 no-tenant/no-organization 상태의 라우팅 계약 확정 — "활성 테넌트 없음 → `/onboarding`"으로 확정
+  - [x] Better Auth organization/session 생성 타이밍과 `requireTenantSession` 실패 경로 확인 — `activeOrganizationId`는 로그인 직후 null, `setActive()`로 설정됨을 확인
+  - [x] `/dashboard/clients` 진입 전 tenant 없음 상태를 `/onboarding`으로 redirect하는 위치 결정 — `app/(dashboard)/layout.tsx` 서버 가드
+  - [ ] signup success path 회귀 테스트 또는 browser smoke 추가 — 자동 회귀 테스트는 미추가(후속). 현재 `tsc`/`next build` 통과로 대체하고 인증 플로우는 배포 후 수동 확인.
 - Acceptance Criteria:
-  - [ ] 신규 가입자가 tenant/organization 없이 인증된 상태가 되면 `/onboarding`으로 이동한다.
-  - [ ] 기존 tenant가 있는 사용자는 로그인 후 기존 대시보드/회사 홈으로 이동한다.
-  - [ ] 첫 가입자가 `/dashboard/clients`에서 "현황 로드 실패" 상태를 먼저 보지 않는다.
-  - [ ] 온보딩 완료 후 tenant/member/client 생성 흐름은 기존처럼 정상 동작한다.
-- Document Sync Check: 2026-07-03 프로덕션 E2E에서 회원가입 성공 후 `organization=0`, `tenant=0` 상태로 dashboard/clients에 진입하며 오류가 보인 사실을 근거로 등록.
+  - [x] 신규 가입자가 tenant/organization 없이 인증된 상태가 되면 `/onboarding`으로 이동한다. — sign-up→`/onboarding`, layout redirect 구현
+  - [x] 기존 tenant가 있는 사용자는 로그인 후 기존 대시보드/회사 홈으로 이동한다. — sign-in setActive 후 dashboard, onboarding 자기교정
+  - [x] 첫 가입자가 `/dashboard/clients`에서 "현황 로드 실패" 상태를 먼저 보지 않는다. — layout이 깨진 children 대신 redirect
+  - [x] 온보딩 완료 후 tenant/member/client 생성 흐름은 기존처럼 정상 동작한다. — `createTenantWithOrg` 경로 미변경
+- Document Sync Check: 2026-07-03 프로덕션 E2E에서 회원가입 성공 후 `organization=0`, `tenant=0` 상태로 dashboard/clients에 진입하며 오류가 보인 사실을 근거로 등록. **구현 완료(2026-07-04, PR #39)** — sign-up/sign-in/dashboard layout/onboarding 라우팅 + 홈 로그인 CTA. `tsc`/`next build` 통과. 자동 회귀 테스트는 후속, 인증 플로우 런타임 확인은 배포 후 수동으로 남김.
 
 ### JC-021 · Remove remaining JARYO brand residue from first-run UX (첫 가입 브랜드 잔재 정리) — 신규
 
