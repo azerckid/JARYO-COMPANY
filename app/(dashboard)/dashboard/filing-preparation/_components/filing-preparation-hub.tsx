@@ -203,13 +203,15 @@ function TrackCard({ track }: { track: FilingPrepTrackCard }) {
       )}
       <div className="flex items-center justify-between gap-3 border-t border-company-border pt-3">
         <span className="text-xs text-company-fg-muted">{track.handoffLabel}</span>
-        {track.href
-          ? (
-              <Link href={track.href} className="whitespace-nowrap rounded-lg border border-company-border-strong bg-company-surface px-3 py-1.5 text-xs font-semibold">
-                열기
-              </Link>
-            )
-          : <Chip tone="muted">{track.status === 'roadmap' ? '준비 중' : '예정'}</Chip>}
+        {!track.applicable
+          ? <Chip tone="muted">해당 없음</Chip>
+          : track.href
+            ? (
+                <Link href={track.href} className="whitespace-nowrap rounded-lg border border-company-border-strong bg-company-surface px-3 py-1.5 text-xs font-semibold">
+                  열기
+                </Link>
+              )
+            : <Chip tone="muted">{track.status === 'roadmap' ? '준비 중' : '예정'}</Chip>}
       </div>
     </article>
   )

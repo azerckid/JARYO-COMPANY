@@ -283,7 +283,7 @@ function buildFoundation(attentions: InternalReminderAttention[]): FilingPrepFou
   ]
 }
 
-function buildTracks(
+export function buildTracks(
   attentions: InternalReminderAttention[],
   vatTax: { outputTaxKrw: number; inputTaxKrw: number; pendingDeductionCount: number },
   type: FilingPrepBusinessType,
@@ -306,7 +306,7 @@ function buildTracks(
       input: '급여대장 · 지급내역 · 4대보험 고지액',
       output: '간이세액표 집계 · 원천세 신고서 초안 수치',
       handoffLabel: 'handoff: 신고지원 원천세 항목',
-      href: '/dashboard/filing-support',
+      href: withholdingApplicable ? '/dashboard/filing-support' : null,
     },
     {
       id: 'vat',
@@ -326,7 +326,7 @@ function buildTracks(
         ? `매출세액 ${formatKrw(vatTax.outputTaxKrw)} · 매입세액 ${formatKrw(vatTax.inputTaxKrw)}`
         : '면세 사업자는 부가세 신고 대상이 아닙니다.',
       handoffLabel: 'handoff: 부가세 초안값 + 공제 검토 결과',
-      href: '/dashboard/vat',
+      href: vatApplicable ? '/dashboard/vat' : null,
     },
     {
       id: 'payment_statement',

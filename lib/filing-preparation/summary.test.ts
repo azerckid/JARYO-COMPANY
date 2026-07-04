@@ -4,6 +4,7 @@ import type { InternalReminderAttention } from '@/lib/internal-reminders/summary
 import {
   buildFilingPreparationBlockers,
   buildFilingPreparationReadiness,
+  buildTracks,
   buildUpcomingSchedule,
   businessTypeLabel,
   classifyBusinessType,
@@ -47,6 +48,26 @@ describe('classifyBusinessType', () => {
     expect(businessTypeLabel('tax_exempt')).toBe('면세 개인')
     expect(businessTypeLabel('individual')).toBe('개인')
     expect(businessTypeLabel('unknown')).toBe('미지정')
+  })
+})
+
+describe('buildTracks', () => {
+  it('null-hrefs a non-applicable track so "해당 없음" cannot be opened (dimmed = 실행 막기)', () => {
+    const tracks = buildTracks(attentions(), { outputTaxKrw: 0, inputTaxKrw: 0, pendingDeductionCount: 0 }, 'tax_exempt')
+    const vat = tracks.find((t) => t.id === 'vat')!
+    expect(vat.applicable).toBe(false)
+    expect(vat.href).toBeNull()
+    // 해당하는 트랙은 링크가 유지된다
+    const withholding = tracks.find((t) => t.id === 'withholding')!
+    expect(withholding.applicable).toBe(true)
+    expect(withholding.href).toBe('/dashboard/filing-support')
+  })
+
+  it('keeps VAT openable for applicable business types', () => {
+    const tracks = buildTracks(attentions(), { outputTaxKrw: 0, inputTaxKrw: 0, pendingDeductionCount: 0 }, 'individual')
+    const vat = tracks.find((t) => t.id === 'vat')!
+    expect(vat.applicable).toBe(true)
+    expect(vat.href).toBe('/dashboard/vat')
   })
 })
 
