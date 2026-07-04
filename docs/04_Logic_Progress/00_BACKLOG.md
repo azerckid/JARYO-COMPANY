@@ -333,7 +333,6 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - Related Technical Docs: [Payroll Employee Reminder Pre-Code Brief](../03_Technical_Specs/17_PAYROLL_EMPLOYEE_REMINDER_PRE_CODE_BRIEF.md) — 직원 매칭·이메일 콘텐츠 분리·발송 흐름 계약 · [Internal Reminder Mail Pre-Code Brief](../03_Technical_Specs/11_INTERNAL_REMINDER_MAIL_PRE_CODE_BRIEF.md) — JC-016 선행 계약 · [Payroll Pre-Code Brief](../03_Technical_Specs/08_PAYROLL_PRE_CODE_BRIEF.md) — needs_review 라인 정의
 - Related QA Docs: [Internal Reminder Mail Test Scenarios](../05_QA_Validation/09_INTERNAL_REMINDER_MAIL_TEST_SCENARIOS.md) — 구현 시 직원 매칭·제외 조건·이메일 콘텐츠 안전성 시나리오 추가 대상(S-90번대)
 - Prototype Review / 승인: N/A - 백엔드 발송 정책 변경, 신규 UI 없음.
-- Prototype Review / 승인: N/A - 백엔드 발송 정책 변경.
 - **v1 Scope 확정 (2026-07-05):**
   - **대상 도메인**: payroll(급여) 내부 리마인드 규칙 한정. 다른 도메인은 v1에서 staff만 유지.
   - **mixed 수신자 정의**: staff(기존 전체 요약 이메일, 변경 없음) **+ 그 시점 `payrollEmployeeLine.status === 'needs_review'`인 직원만**(전체 직원 아님). employeeCode로 `employee_profile` 매칭.
