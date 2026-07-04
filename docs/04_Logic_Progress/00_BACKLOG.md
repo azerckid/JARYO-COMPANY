@@ -526,7 +526,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [x] 신규 산출 엔진·신규 DB·자동제출은 JC-029 Preview/1차 구현 범위에 포함하지 않는다
   - [x] 화면은 read-only이며 mutation을 수행하지 않는다
   - [x] 로딩·빈·오류·권한 없음 상태가 구현된다
-- Document Sync Check: 2026-07-04 재프레임 + UI-First Gate 승인 + Pre-Code Brief 작성. PR #50의 "세무 일정 허브" Preview는 "신고 준비 현황 허브"로 supersede. Context Lock 전제 6/6 충족(브라우저 검토 승인·흐림 노출 규칙·Brief 15). 구현 완료(2026-07-04): lib/filing-preparation/summary.ts(집계 read model + classifyBusinessType·isTrackApplicable·준비율 순수함수), /dashboard/filing-preparation(page·hub·loading·error), 사이드바 항목+layout badge. 테스트 11건·전체 1345건 통과, tsc/eslint/build 클린. 사업자 유형은 tenant_billing_profile.businessType로 분류(불명확 시 unknown=흐림 없음), 전용 유형 필드는 후속. 저위험.
+- Document Sync Check: 2026-07-04 재프레임 + UI-First Gate 승인 + Pre-Code Brief 작성. PR #50의 "세무 일정 허브" Preview는 "신고 준비 현황 허브"로 supersede. Context Lock 전제 6/6 충족(브라우저 검토 승인·흐림 노출 규칙·Brief 15). 구현 완료(2026-07-04): lib/filing-preparation/summary.ts(집계 read model + classifyBusinessType·isTrackApplicable·준비율 순수함수), /dashboard/filing-preparation(page·hub·loading·error), 사이드바 항목+layout badge. 테스트 11건·전체 1345건 통과, tsc/eslint/build 클린. 사업자 유형은 JC-032로 `client.taxEntityType`에 직접 연결 완료(billing-profile 휴리스틱·classifyBusinessType 제거, 미지정 null=흐림 없음). 저위험.
 
 ### JC-030 · 전자신고 파일 생성·검증 — 파일변환신고용 제출 파일 (우선순위 높음 · 저위험)
 
