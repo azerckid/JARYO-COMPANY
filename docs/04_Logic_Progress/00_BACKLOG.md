@@ -440,7 +440,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - **v1 Scope 확정 (2026-07-05):**
   - **지급명세서**: 간이지급명세서(근로소득) **우선**. 기존 월별 payroll `withholding_statement` 데이터를 반기 단위로 집계. 연간 지급명세서·사업소득 명세서는 후속.
   - **연말정산**: **데이터 준비·검토까지**. 직원별 연간 지급·기납부 원천세 집계·누락 검토. **정산액(결정세액·환급/추징) 계산은 제외**(후속). 소득·세액공제 자동계산 미포함.
-  - **JC-030 경계**: JC-024는 제출용 명세서 **데이터셋·검토 상태**까지. **전자신고 파일 생성은 JC-030**(JC-024에 넣지 않음).
+  - **JC-030 경계**: JC-024는 **신고 준비 데이터셋·검토 상태**까지. **전자신고 파일 생성은 JC-030**(JC-024에 넣지 않음).
   - **허브 live 범위**: 신고 준비 허브 트랙 live 전환 **+ 전용 검토 화면**(지급명세서/연말정산 준비·누락 검토).
   - 재사용: 급여 `PayrollDocumentPreview.withholding_statement`, 신고지원 `withholding` 항목·`splitWithholdingTax`, 직원 명부.
 - Implementation Preconditions:
