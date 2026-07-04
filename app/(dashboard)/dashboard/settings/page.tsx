@@ -40,11 +40,15 @@ export default async function SettingsPage() {
     .where(eq(staff.tenantId, tenantId))
     .orderBy(staff.createdAt)
 
-  // 담당자별 배정 클라이언트 수
+  // 담당자별 배정 클라이언트 수 + 기본 사업장 사업자 유형(JC-032)
   const clientRows = await db
-    .select({ staffId: client.staffId })
+    .select({ staffId: client.staffId, createdAt: client.createdAt, taxEntityType: client.taxEntityType })
     .from(client)
     .where(eq(client.tenantId, tenantId))
+
+  // v1은 테넌트당 사업장 1개 — 최초 등록 사업장의 사업자 유형을 회사 설정에 노출한다.
+  const primaryClient = [...clientRows].sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0] ?? null
+  const businessEntityTaxType = primaryClient?.taxEntityType ?? null
 
   const clientCounts: Record<string, number> = {}
   for (const row of clientRows) {
@@ -115,6 +119,7 @@ export default async function SettingsPage() {
         currentStaffPhone={currentStaffPhone}
         workEmailAddresses={workEmailAddresses}
         workEmailStaffOptions={workEmailStaffOptions}
+        businessEntityTaxType={businessEntityTaxType}
       />
     </div>
   )

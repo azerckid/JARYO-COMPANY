@@ -7,7 +7,6 @@ import {
   buildTracks,
   buildUpcomingSchedule,
   businessTypeLabel,
-  classifyBusinessType,
   inapplicableReasonFor,
   isTrackApplicable,
 } from './summary'
@@ -28,22 +27,8 @@ function attentions(overrides: Partial<Record<InternalReminderAttention['domain'
   }))
 }
 
-describe('classifyBusinessType', () => {
-  it('classifies known keywords and defaults unknown to unknown', () => {
-    expect(classifyBusinessType('법인사업자')).toBe('corporation')
-    expect(classifyBusinessType('면세 개인사업자')).toBe('tax_exempt')
-    expect(classifyBusinessType('개인 일반과세')).toBe('individual')
-    expect(classifyBusinessType(null)).toBe('unknown')
-    expect(classifyBusinessType('')).toBe('unknown')
-    expect(classifyBusinessType('주식회사')).toBe('unknown')
-  })
-
-  it('prioritizes 면세 over 개인', () => {
-    // 면세 개인사업자는 tax_exempt로 분류되어야 부가세 흐림이 작동한다
-    expect(classifyBusinessType('면세 개인')).toBe('tax_exempt')
-  })
-
-  it('labels types for the UI', () => {
+describe('businessTypeLabel', () => {
+  it('labels tax entity types for the UI (unknown → 미지정)', () => {
     expect(businessTypeLabel('corporation')).toBe('법인')
     expect(businessTypeLabel('tax_exempt')).toBe('면세 개인')
     expect(businessTypeLabel('individual')).toBe('개인')

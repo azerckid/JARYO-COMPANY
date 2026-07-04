@@ -15,6 +15,7 @@ import type {
   WorkEmailAddressRow,
   WorkEmailStaffOption,
 } from '../../emails/_components/mail-console-types'
+import { TAX_ENTITY_TYPES, TAX_ENTITY_TYPE_LABEL, type TaxEntityType } from '@/lib/validations/business-entity'
 
 const SETTINGS_TABS = ['tenant', 'staff', 'mail', 'clients'] as const
 
@@ -65,6 +66,7 @@ interface Props {
   currentStaffPhone: string
   workEmailAddresses: WorkEmailAddressRow[]
   workEmailStaffOptions: WorkEmailStaffOption[]
+  businessEntityTaxType: TaxEntityType | null
 }
 
 const TIMEZONE_OPTIONS = [
@@ -90,6 +92,7 @@ export function SettingsPanel({
   currentStaffPhone,
   workEmailAddresses,
   workEmailStaffOptions,
+  businessEntityTaxType,
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -99,6 +102,7 @@ export function SettingsPanel({
   // ── 테넌트 설정 state
   const [tenantName, setTenantName] = useState(initialTenant.name)
   const [timezone, setTimezone] = useState(initialTenant.timezone)
+  const [taxEntityType, setTaxEntityType] = useState<TaxEntityType | ''>(businessEntityTaxType ?? '')
   const [tenantSaving, setTenantSaving] = useState(false)
   const [tenantError, setTenantError] = useState('')
 
@@ -151,14 +155,26 @@ export function SettingsPanel({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: tenantName, timezone, reminderDaysBefore: initialTenant.reminderDaysBefore }),
     })
-    setTenantSaving(false)
     if (!res.ok) {
+      setTenantSaving(false)
       const data = await res.json().catch(() => ({}))
       setTenantError(data.error ?? '저장에 실패했습니다')
-    } else {
-      toast.success(successMessage)
-      startTransition(() => router.refresh())
+      return
     }
+    // 사업자 유형은 사업장(client) 필드라 별도 엔드포인트로 저장한다(빈 값 → 미지정 null).
+    const bizRes = await fetch('/api/settings/business-entity', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taxEntityType: taxEntityType || null }),
+    })
+    setTenantSaving(false)
+    if (!bizRes.ok) {
+      const data = await bizRes.json().catch(() => ({}))
+      setTenantError(data.error ?? '사업자 유형 저장에 실패했습니다')
+      return
+    }
+    toast.success(successMessage)
+    startTransition(() => router.refresh())
   }
 
   const handleTenantSave = async (e: React.SyntheticEvent) => {
@@ -296,6 +312,21 @@ export function SettingsPanel({
                     ))}
                   </Select>
                   <p className="text-xs text-muted-foreground">토큰 만료일과 메일 자동화 기준 시각 계산에 사용합니다.</p>
+                </div>
+
+                <div className="grid gap-1.5">
+                  <label htmlFor="tenant-tax-entity" className="text-sm font-medium text-foreground">사업자 유형</label>
+                  <Select
+                    id="tenant-tax-entity"
+                    value={taxEntityType}
+                    onChange={(e) => setTaxEntityType(e.target.value as TaxEntityType | '')}
+                  >
+                    <option value="">미지정</option>
+                    {TAX_ENTITY_TYPES.map((type) => (
+                      <option key={type} value={type}>{TAX_ENTITY_TYPE_LABEL[type]}</option>
+                    ))}
+                  </Select>
+                  <p className="text-xs text-muted-foreground">신고 준비 화면에서 해당 없는 세목 트랙(예: 면세 개인의 부가세)을 흐림 처리하는 데 사용합니다.</p>
                 </div>
 
                 <div className="grid gap-1.5">

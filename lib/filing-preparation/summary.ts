@@ -1,7 +1,7 @@
 import { asc, eq } from 'drizzle-orm'
 import type { DateTime } from 'luxon'
 import { buildCompanyHomePeriod, type CompanyHomePeriod } from '@/lib/company-home/summary'
-import { client, tenant, tenantBillingProfile } from '@/lib/db/schema'
+import { client, tenant } from '@/lib/db/schema'
 import {
   loadInternalReminderAttentionItems,
   type InternalReminderAttention,
@@ -9,6 +9,7 @@ import {
 } from '@/lib/internal-reminders/summary'
 import { expandTaxSchedulesForMonth } from '@/lib/tax-calendar'
 import { now } from '@/lib/time'
+import type { TaxEntityType } from '@/lib/validations/business-entity'
 import { loadVatSummary } from '@/lib/vat/summary'
 
 const DEFAULT_TZ = 'Asia/Seoul'
@@ -19,7 +20,8 @@ const DEFAULT_TZ = 'Asia/Seoul'
 // ---------------------------------------------------------------------------
 
 export type FilingPrepTone = 'ok' | 'warn' | 'danger' | 'plan' | 'muted'
-export type FilingPrepBusinessType = 'individual' | 'corporation' | 'tax_exempt' | 'unknown'
+// 사업장 taxEntityType(개인/법인/면세) + 미지정(unknown → 흐림 없음).
+export type FilingPrepBusinessType = TaxEntityType | 'unknown'
 export type FilingPrepTrackId = 'withholding' | 'vat' | 'payment_statement' | 'local_income'
 export type FilingPrepTrackStatus = 'live' | 'roadmap'
 
@@ -101,19 +103,6 @@ const BLOCKER_META: Record<InternalReminderDomain, { href: string; ctaLabel: str
 // 순수 함수 (단위 테스트 대상)
 // ---------------------------------------------------------------------------
 
-// businessType은 자유 텍스트(nullable)다. 확실히 판별되는 키워드만 분류하고,
-// 알 수 없으면 'unknown'으로 두어 어떤 트랙도 흐림 처리하지 않는다(과잉 숨김 방지).
-export function classifyBusinessType(businessType: string | null | undefined): FilingPrepBusinessType {
-  const value = (businessType ?? '').toLowerCase()
-  if (!value.trim()) return 'unknown'
-  if (value.includes('면세')) return 'tax_exempt'
-  if (value.includes('법인') || value.includes('corp')) return 'corporation'
-  if (value.includes('개인') || value.includes('간이') || value.includes('일반') || value.includes('individual')) {
-    return 'individual'
-  }
-  return 'unknown'
-}
-
 export function businessTypeLabel(type: FilingPrepBusinessType): string {
   if (type === 'corporation') return '법인'
   if (type === 'tax_exempt') return '면세 개인'
@@ -187,25 +176,16 @@ export async function loadFilingPreparationSummary({
   const tenantRow = tenantRows[0] ?? { id: tenantId, name: '회사', timezone: DEFAULT_TZ }
   const period = buildCompanyHomePeriod({ periodKey, today, timezone: tenantRow.timezone })
 
-  // 사업장(명칭)은 client에서, 사업자 유형 힌트는 tenant_billing_profile.businessType에서 얻는다.
-  // 해당 필드는 자유 텍스트(업태 등)라 개인/법인/면세 키워드가 명확할 때만 분류하고,
-  // 아니면 unknown → 어떤 트랙도 흐림 처리하지 않는다(과잉 숨김 방지). 전용 사업자 유형
-  // 필드 도입은 후속(온보딩/설정 확장).
-  const [businessEntityRows, billingRows] = await Promise.all([
-    db
-      .select({ id: client.id, name: client.name })
-      .from(client)
-      .where(eq(client.tenantId, tenantId))
-      .orderBy(asc(client.createdAt))
-      .limit(1),
-    db
-      .select({ businessType: tenantBillingProfile.businessType })
-      .from(tenantBillingProfile)
-      .where(eq(tenantBillingProfile.tenantId, tenantId))
-      .limit(1),
-  ])
+  // 사업자 유형은 사업장(client.taxEntityType, JC-032) 필드에서 직접 읽는다.
+  // 미지정(null)이면 unknown → 어떤 트랙도 흐림 처리하지 않는다(과잉 숨김 방지).
+  const businessEntityRows = await db
+    .select({ id: client.id, name: client.name, taxEntityType: client.taxEntityType })
+    .from(client)
+    .where(eq(client.tenantId, tenantId))
+    .orderBy(asc(client.createdAt))
+    .limit(1)
   const entityRow = businessEntityRows[0] ?? null
-  const businessType = classifyBusinessType(billingRows[0]?.businessType)
+  const businessType: FilingPrepBusinessType = entityRow?.taxEntityType ?? 'unknown'
 
   const base = {
     tenant: tenantRow,
