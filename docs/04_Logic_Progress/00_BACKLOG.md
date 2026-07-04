@@ -328,7 +328,11 @@ Technical, and QA docs first, then prepare a short implementation brief.
 
 - Related Concept: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md) — 회사 self-use 세무 준비, 개인정보 최소 수집 원칙
 - Related Domain: 내부 리마인드(JC-016·JC-017), 급여(JC-012, `payrollEmployeeLine.status`), 직원 명부(JC-015, `employee_profile.workEmail`·`notificationEnabled`)
-- Related HTML Preview: N/A - 신규 화면 없음(기존 리마인드 화면의 이메일 발송 로직 변경). 규칙별 recipient_source UI는 후속(별도 UI Preview 필요 시점에 작성).
+- Related UI Docs: N/A - 신규 화면 없음. 기존 리마인드 화면([Screen Flow](../02_UI_Screens/00_SCREEN_FLOW.md) 8번 항목·[UI Design 4.9](../02_UI_Screens/01_UI_DESIGN.md))의 발송 로직만 확장. 규칙별 recipient_source UI는 후속(그 시점 별도 UI Preview 필요).
+- Related HTML Preview: N/A - 신규 화면 없음(기존 리마인드 화면 [07_internal_reminder.html](../02_UI_Screens/previews/07_internal_reminder.html) 그대로, 이메일 발송 로직만 변경).
+- Related Technical Docs: [Payroll Employee Reminder Pre-Code Brief](../03_Technical_Specs/17_PAYROLL_EMPLOYEE_REMINDER_PRE_CODE_BRIEF.md) — 직원 매칭·이메일 콘텐츠 분리·발송 흐름 계약 · [Internal Reminder Mail Pre-Code Brief](../03_Technical_Specs/11_INTERNAL_REMINDER_MAIL_PRE_CODE_BRIEF.md) — JC-016 선행 계약 · [Payroll Pre-Code Brief](../03_Technical_Specs/08_PAYROLL_PRE_CODE_BRIEF.md) — needs_review 라인 정의
+- Related QA Docs: [Internal Reminder Mail Test Scenarios](../05_QA_Validation/09_INTERNAL_REMINDER_MAIL_TEST_SCENARIOS.md) — 구현 시 직원 매칭·제외 조건·이메일 콘텐츠 안전성 시나리오 추가 대상(S-90번대)
+- Prototype Review / 승인: N/A - 백엔드 발송 정책 변경, 신규 UI 없음.
 - Prototype Review / 승인: N/A - 백엔드 발송 정책 변경.
 - **v1 Scope 확정 (2026-07-05):**
   - **대상 도메인**: payroll(급여) 내부 리마인드 규칙 한정. 다른 도메인은 v1에서 staff만 유지.

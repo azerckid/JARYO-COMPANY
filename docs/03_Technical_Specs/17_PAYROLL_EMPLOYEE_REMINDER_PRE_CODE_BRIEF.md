@@ -63,7 +63,7 @@ async function loadPayrollAttentionEmployees(params: {
 | staff | `composeInternalReminderEmail`(기존, 변경 없음) | 확인 필요 건수, 도메인 라벨 등 요약(기존과 동일) |
 | 직원 | **신규** `composeEmployeePayrollReminderEmail` | 이름 + 일반 문구만. **금액·세액·issueLabel 등 급여 세부 내용 미포함** |
 
-**직원용 이메일 (고정 템플릿, 변수 보간 없음):**
+**직원용 이메일 (고정 템플릿 — 허용 변수는 `recipientName`과 `[테스트] ` 접두뿐, 급여 금액·세액·issueLabel 등 민감 변수 보간 금지):**
 ```
 제목: 급여 정보 확인 요청
 본문:
