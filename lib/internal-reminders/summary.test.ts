@@ -2,11 +2,13 @@ import { DateTime } from 'luxon'
 import { describe, expect, it } from 'vitest'
 import { buildCompanyHomePeriod } from '@/lib/company-home/summary'
 import {
+  INTERNAL_REMINDER_SYSTEM_USER_ID,
   buildInternalReminderProviderState,
   buildInternalReminderRecipients,
   buildInternalReminderRules,
   buildInternalReminderStats,
   isInternalReminderProviderConfigured,
+  isInternalReminderRuleDue,
   renderReminderTemplate,
   triggerLabel,
 } from './summary'
@@ -78,6 +80,94 @@ describe('internal reminder recipients', () => {
       ['정하늘', '제외', false],
     ])
     expect(recipients[2].email).toContain('알림 수신 꺼짐')
+  })
+
+  it('system scope (cron, no session) marks no staff as 본인 and keeps active staff included', () => {
+    const recipients = buildInternalReminderRecipients([
+      {
+        id: 'staff-1',
+        userId: 'user-1',
+        email: 'owner@example.com',
+        name: '김대표',
+        role: 'owner',
+        active: true,
+      },
+      {
+        id: 'staff-2',
+        userId: 'user-2',
+        email: 'sumin@example.com',
+        name: '이수민',
+        role: 'member',
+        active: true,
+      },
+    ], INTERNAL_REMINDER_SYSTEM_USER_ID)
+
+    expect(recipients.every((recipient) => recipient.chipLabel !== '본인')).toBe(true)
+    expect(recipients.filter((recipient) => recipient.included)).toHaveLength(2)
+  })
+})
+
+describe('internal reminder cron due judgment', () => {
+  const today = DateTime.fromISO('2026-07-02T00:00:00', { zone: 'Asia/Seoul' })
+  const deadlineMinus = (days: number) =>
+    today
+      .set({
+        year: Number(period.filingDeadline.slice(0, 4)),
+        month: Number(period.filingDeadline.slice(5, 7)),
+        day: Number(period.filingDeadline.slice(8, 10)),
+      })
+      .minus({ days })
+
+  it('sends daily_digest only when there is attention (skips 0-count) and never sends manual via cron', () => {
+    // 확인 필요 건이 있을 때만 발송
+    expect(isInternalReminderRuleDue({
+      rule: { triggerType: 'daily_digest', offsetDays: null, enabled: true, domain: 'payroll', attentionCount: 1 },
+      period,
+      today,
+    })).toBe(true)
+    // 확인 필요 0건이면 발송하지 않는다 (0건 메일 스팸 방지)
+    expect(isInternalReminderRuleDue({
+      rule: { triggerType: 'daily_digest', offsetDays: null, enabled: true, domain: 'payroll', attentionCount: 0 },
+      period,
+      today,
+    })).toBe(false)
+    expect(isInternalReminderRuleDue({
+      rule: { triggerType: 'manual', offsetDays: null, enabled: true, domain: 'filing_support', attentionCount: 5 },
+      period,
+      today,
+    })).toBe(false)
+  })
+
+  it('sends deadline_offset(vat) on filingDeadline − offsetDays regardless of attention', () => {
+    const dueDay = deadlineMinus(3)
+    // deadline_offset은 마감 리마인드이므로 attentionCount 0이어도 마감일 기준으로 발송한다
+    expect(isInternalReminderRuleDue({
+      rule: { triggerType: 'deadline_offset', offsetDays: 3, enabled: true, domain: 'vat', attentionCount: 0 },
+      period,
+      today: dueDay,
+    })).toBe(true)
+    // 마감 당일(오프셋 0)엔 발송하지 않는다 (offsetDays=3 규칙)
+    expect(isInternalReminderRuleDue({
+      rule: { triggerType: 'deadline_offset', offsetDays: 3, enabled: true, domain: 'vat', attentionCount: 2 },
+      period,
+      today: deadlineMinus(0),
+    })).toBe(false)
+  })
+
+  it('skips deadline_offset for non-vat domains (v1 has no other deadline mapping)', () => {
+    expect(isInternalReminderRuleDue({
+      rule: { triggerType: 'deadline_offset', offsetDays: 3, enabled: true, domain: 'payroll', attentionCount: 4 },
+      period,
+      today: deadlineMinus(3),
+    })).toBe(false)
+  })
+
+  it('never sends disabled rules', () => {
+    expect(isInternalReminderRuleDue({
+      rule: { triggerType: 'daily_digest', offsetDays: null, enabled: false, domain: 'payroll', attentionCount: 9 },
+      period,
+      today,
+    })).toBe(false)
   })
 })
 
