@@ -165,6 +165,11 @@ export async function persistInternalReminderRule({
       target: internalReminderRule.id,
       set: {
         enabled: enabled ?? rule.enabled,
+        // JC-018: recipientSource도 갱신한다. rule.recipientSource는 이미
+        // buildInternalReminderRules에서 payroll이면 'mixed'로 정규화된 값이라,
+        // 여기서 갱신하지 않으면 DB 원본(row)만 계속 낡은 'staff'로 남아
+        // 애플리케이션 동작(항상 mixed로 재정규화)과 어긋난 상태로 저장된다.
+        recipientSource: rule.recipientSource,
         // cron(staffId=null)은 기존 규칙의 편집자 정보를 덮어쓰지 않는다.
         ...(staffId ? { updatedByStaffId: staffId } : {}),
         updatedAt: timestamp,
