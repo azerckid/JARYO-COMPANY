@@ -6,10 +6,12 @@ import {
   buildSimplifiedRow,
   buildYearEndRow,
   employeeKeyOf,
+  resolveEmployeeGroupKey,
   resolveReportingContext,
   type EmployeeProfileInput,
   type PayrollLineInput,
   type SimplifiedRow,
+  type YearEndRow,
 } from './summary'
 
 function line(period: string, over: Partial<PayrollLineInput> = {}): PayrollLineInput {
@@ -62,6 +64,25 @@ describe('employeeKeyOf', () => {
   })
 })
 
+describe('resolveEmployeeGroupKey (P1 regression: no split rows for the same person)', () => {
+  it('resolves a code-less payroll line to the profile code via name match, not a separate name-key row', () => {
+    const profileByCode = new Map([['E-001', profile()]])
+    const profileByName = new Map([['김대표', profile()]])
+    // 급여 line에 employeeCode가 비어 있어도(레거시 데이터), 이름이 명부와 일치하면
+    // 명부의 code를 그룹 키로 채택해야 한다 — employeeKeyOf만 쓰면 'name:김대표'와
+    // 'code:E-001'로 갈라져 한 사람이 두 행이 된다.
+    const resolved = resolveEmployeeGroupKey({ employeeCode: null, name: '김대표' }, profileByCode, profileByName)
+    expect(resolved.key).toBe('code:E-001')
+    expect(resolved.profile?.employeeCode).toBe('E-001')
+  })
+
+  it('falls back to a name key only when no profile matches by code or name', () => {
+    const resolved = resolveEmployeeGroupKey({ employeeCode: null, name: '무명씨' }, new Map(), new Map())
+    expect(resolved.key).toBe('name:무명씨')
+    expect(resolved.profile).toBeUndefined()
+  })
+})
+
 describe('buildSimplifiedRow (간이지급명세서 반기)', () => {
   const base = { employeeKey: 'code:E-001', employeeName: '김대표', employeeCode: 'E-001', halfMonths: H1 }
 
@@ -94,6 +115,22 @@ describe('buildSimplifiedRow (간이지급명세서 반기)', () => {
   it('flags profile_incomplete when hireDate missing (주민번호는 검증 대상 아님)', () => {
     const row = buildSimplifiedRow({ ...base, lines: H1.map((m) => line(m)), profile: profile({ hireDate: null }) })
     expect(row.status).toBe('profile_incomplete')
+  })
+
+  it('P1 regression: profile_incomplete takes priority over missing_months', () => {
+    // hireDate가 없으면 expectedMonths()가 반기 전체를 기대값으로 잡아 missing_months가
+    // 잘못 뜬다(실제로는 직원 명부를 고쳐야 하는데 급여 화면으로 오라우팅됨). 프로필이
+    // 없거나 hireDate가 없을 때는 missing_months보다 profile_incomplete가 우선해야 한다.
+    const partialLines = H1.filter((m) => m !== '2026-05' && m !== '2026-06').map((m) => line(m))
+    const rowNoProfile = buildSimplifiedRow({ ...base, lines: partialLines, profile: undefined })
+    expect(rowNoProfile.status).toBe('profile_incomplete')
+
+    const rowNoHireDate = buildSimplifiedRow({ ...base, lines: partialLines, profile: profile({ hireDate: null }) })
+    expect(rowNoHireDate.status).toBe('profile_incomplete')
+
+    // 프로필이 완전하면 그제서야 진짜 누락이 missing_months로 보인다.
+    const rowComplete = buildSimplifiedRow({ ...base, lines: partialLines, profile: profile() })
+    expect(rowComplete.status).toBe('missing_months')
   })
 })
 
@@ -145,10 +182,26 @@ describe('blockers + hero', () => {
   })
 
   it('computes readiness = ready / total', () => {
-    const hero = buildPaymentStatementHero(rows(['ready', 'ready', 'needs_review', 'missing_months']))
+    const hero = buildPaymentStatementHero(rows(['ready', 'ready', 'needs_review', 'missing_months']), [])
     expect(hero.totalEmployees).toBe(4)
     expect(hero.readyCount).toBe(2)
     expect(hero.attentionCount).toBe(2)
     expect(hero.readinessPercent).toBe(50)
+  })
+
+  it('P1 regression: a yearEnd-only issue (e.g. mid_year_settlement) counts as attention', () => {
+    // simplified는 전부 ready(반기 급여는 정상)이지만, 연말정산 표에서 중도퇴사로
+    // "중도정산 검토"가 뜨는 직원이 있다면 hero/허브 attention에도 반영돼야 한다.
+    // 그렇지 않으면 화면은 경고를 보여주는데 hero·허브 트랙은 "데이터 준비"로
+    // 어긋나 보인다.
+    const simplified = rows(['ready', 'ready'])
+    const yearEnd: YearEndRow[] = [
+      { employeeKey: 'k0', employeeName: 'e0', employeeCode: null, employeeStatus: 'active', employeeStatusLabel: '재직', annualGrossPayKrw: 100, annualWithholdingTaxKrw: 10, missingLabel: '없음', status: 'ready', statusLabel: '', tone: 'ok' },
+      { employeeKey: 'k1', employeeName: 'e1', employeeCode: null, employeeStatus: 'terminated', employeeStatusLabel: '중도퇴사', annualGrossPayKrw: 90, annualWithholdingTaxKrw: 9, missingLabel: '퇴사 정산 확인', status: 'mid_year_settlement', statusLabel: '', tone: 'warn' },
+    ]
+    const hero = buildPaymentStatementHero(simplified, yearEnd)
+    expect(hero.totalEmployees).toBe(2)
+    expect(hero.readyCount).toBe(1)
+    expect(hero.attentionCount).toBe(1)
   })
 })

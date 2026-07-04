@@ -158,10 +158,14 @@ export function buildSimplifiedRow(params: {
   const hasNeedsReview = lines.some((l) => l.status === 'needs_review')
   const profileIncomplete = !profile || !profile.hireDate
 
+  // profile_incomplete를 missing_months보다 먼저 판정한다: hireDate가 없으면
+  // expectedMonths()가 반기 전체를 기대값으로 잡아 신뢰할 수 없다. 그 상태에서
+  // missing_months(→급여 화면)로 보내면, 실제 수정 위치(직원 명부)가 아닌 곳으로
+  // 오라우팅된다.
   let status: SimplifiedStatus
   if (hasNeedsReview) status = 'needs_review'
-  else if (expected.some((m) => !monthsPresent.has(m))) status = 'missing_months'
   else if (profileIncomplete) status = 'profile_incomplete'
+  else if (expected.some((m) => !monthsPresent.has(m))) status = 'missing_months'
   else status = 'ready'
 
   const presentMonths = [...monthsPresent].sort()
@@ -269,9 +273,17 @@ export function buildPaymentStatementBlockers(params: {
   return blockers
 }
 
-export function buildPaymentStatementHero(simplified: SimplifiedRow[]): PaymentStatementSummary['hero'] {
+// 준비 완료는 반기(simplified)와 연말정산(yearEnd) 둘 다 ready일 때만이다.
+// yearEnd만 보는 것(예: 중도퇴사 → mid_year_settlement)도 hero/허브 attention에
+// 반영해야, 연말정산 표의 "중도정산 검토"가 hero·허브 트랙에서 "데이터 준비"로
+// 어긋나 보이지 않는다.
+export function buildPaymentStatementHero(simplified: SimplifiedRow[], yearEnd: YearEndRow[]): PaymentStatementSummary['hero'] {
   const totalEmployees = simplified.length
-  const readyCount = simplified.filter((r) => r.status === 'ready').length
+  const yearEndByKey = new Map(yearEnd.map((r) => [r.employeeKey, r]))
+  const readyCount = simplified.filter((r) => {
+    const ye = yearEndByKey.get(r.employeeKey)
+    return r.status === 'ready' && (!ye || ye.status === 'ready')
+  }).length
   const attentionCount = totalEmployees - readyCount
   const readinessPercent = totalEmployees === 0 ? 0 : Math.round((readyCount / totalEmployees) * 100)
   return { totalEmployees, attentionCount, readyCount, readinessPercent }
@@ -357,34 +369,92 @@ async function loadRows(tenantId: string, context: ReportingContext) {
   return { tenantRow, businessEntity, lines, profiles }
 }
 
+type EmployeeGroup = {
+  employeeKey: string
+  employeeName: string
+  employeeCode: string | null
+  lines: PayrollLineInput[]
+  profile?: EmployeeProfileInput
+}
+
+// employeeCode 우선 매칭 + 이름 fallback으로 급여 line과 명부를 하나의 그룹으로 묶는다.
+// 급여 line에 employeeCode가 비어 있어도(레거시 데이터), 이름이 명부와 일치하면
+// 명부의 code를 그룹 키로 채택해 한 사람이 두 행으로 갈라지지 않게 한다.
+export function resolveEmployeeGroupKey(
+  entry: { employeeCode: string | null; name: string },
+  profileByCode: Map<string, EmployeeProfileInput>,
+  profileByName: Map<string, EmployeeProfileInput>,
+): { key: string; profile?: EmployeeProfileInput } {
+  const code = entry.employeeCode?.trim()
+  if (code && profileByCode.has(code)) {
+    return { key: `code:${code}`, profile: profileByCode.get(code) }
+  }
+  const name = entry.name.trim()
+  const byName = profileByName.get(name)
+  if (byName) {
+    const byNameCode = byName.employeeCode?.trim()
+    return { key: byNameCode ? `code:${byNameCode}` : `name:${name}`, profile: byName }
+  }
+  return { key: code ? `code:${code}` : `name:${name}` }
+}
+
 function assemble(lines: PayrollLineInput[], profiles: EmployeeProfileInput[], context: ReportingContext) {
-  const profileByKey = new Map(profiles.map((p) => [employeeKeyOf(p), p]))
-  // 직원 그룹: 급여 line + 명부의 합집합
-  const keys = new Set<string>([...lines.map(employeeKeyOf), ...profiles.map(employeeKeyOf)])
+  const profileByCode = new Map<string, EmployeeProfileInput>()
+  const profileByName = new Map<string, EmployeeProfileInput>()
+  for (const p of profiles) {
+    const code = p.employeeCode?.trim()
+    if (code) profileByCode.set(code, p)
+    profileByName.set(p.displayName.trim(), p)
+  }
+
+  const groups = new Map<string, EmployeeGroup>()
+
+  for (const line of lines) {
+    const { key, profile } = resolveEmployeeGroupKey({ employeeCode: line.employeeCode, name: line.employeeName }, profileByCode, profileByName)
+    const existing = groups.get(key)
+    if (existing) {
+      existing.lines.push(line)
+      if (!existing.profile && profile) existing.profile = profile
+    } else {
+      groups.set(key, {
+        employeeKey: key,
+        employeeName: line.employeeName,
+        employeeCode: line.employeeCode ?? profile?.employeeCode ?? null,
+        lines: [line],
+        profile,
+      })
+    }
+  }
+
+  // 급여 line이 아직 없는 직원(명부에만 존재)도 반영한다.
+  for (const p of profiles) {
+    const { key } = resolveEmployeeGroupKey({ employeeCode: p.employeeCode, name: p.displayName }, profileByCode, profileByName)
+    const existing = groups.get(key)
+    if (existing) {
+      if (!existing.profile) existing.profile = p
+    } else {
+      groups.set(key, { employeeKey: key, employeeName: p.displayName, employeeCode: p.employeeCode, lines: [], profile: p })
+    }
+  }
 
   const simplified: SimplifiedRow[] = []
   const yearEnd: YearEndRow[] = []
 
-  for (const key of keys) {
-    const empLines = lines.filter((l) => employeeKeyOf(l) === key)
-    const profile = profileByKey.get(key)
-    const name = empLines[0]?.employeeName ?? profile?.displayName ?? '(이름 없음)'
-    const code = empLines[0]?.employeeCode ?? profile?.employeeCode ?? null
-
+  for (const group of groups.values()) {
     simplified.push(buildSimplifiedRow({
-      employeeKey: key,
-      employeeName: name,
-      employeeCode: code,
-      lines: empLines.filter((l) => context.halfMonths.includes(l.period)),
+      employeeKey: group.employeeKey,
+      employeeName: group.employeeName,
+      employeeCode: group.employeeCode,
+      lines: group.lines.filter((l) => context.halfMonths.includes(l.period)),
       halfMonths: context.halfMonths,
-      profile,
+      profile: group.profile,
     }))
     yearEnd.push(buildYearEndRow({
-      employeeKey: key,
-      employeeName: name,
-      employeeCode: code,
-      lines: empLines,
-      profile,
+      employeeKey: group.employeeKey,
+      employeeName: group.employeeName,
+      employeeCode: group.employeeCode,
+      lines: group.lines,
+      profile: group.profile,
     }))
   }
 
@@ -416,7 +486,7 @@ export async function loadPaymentStatementSummary({ tenantId, periodKey, today }
     tenant: tenantRow,
     businessEntity,
     context,
-    hero: buildPaymentStatementHero(simplified),
+    hero: buildPaymentStatementHero(simplified, yearEnd),
     blockers: buildPaymentStatementBlockers({ simplified, yearEnd }),
     simplified,
     yearEnd,
