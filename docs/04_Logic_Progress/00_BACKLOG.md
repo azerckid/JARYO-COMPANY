@@ -507,7 +507,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - Related UI Docs: [Screen Flow](../02_UI_Screens/00_SCREEN_FLOW.md) · [UI Design](../02_UI_Screens/01_UI_DESIGN.md) — "신고 준비" 화면 흐름·컴포넌트·상태.
 - Related HTML Preview: [08_filing_preparation.html](../02_UI_Screens/previews/08_filing_preparation.html) — HTML UI Preview Gate 대상(신고 준비 파이프라인 화면).
 - Related Domain: 자료수집(JC-009)·기장검토(JC-010) 공통 기반, 부가세(JC-011)·급여/원천세(JC-012)·신고지원(JC-013)·리마인드 기한(JC-016) read model 집계. 로드맵 세목 JC-024~028이 이 허브에 연결됨.
-- Prototype Review / 승인: 미정 — UI-First Gate(HTML Preview 사용자 승인) 후 Pre-Code Brief 착수.
+- Prototype Review / 승인: 화면 승인 완료(2026-07-04) — [08_filing_preparation.html](../02_UI_Screens/previews/08_filing_preparation.html) 브라우저 검토 후 승인. Pre-Code Brief 작성 완료.
 - Implementation Preconditions:
   - [x] Layer 01 방향 문서 작성 — [Filing Preparation Pipeline](../01_Concept_Design/02_FILING_PREPARATION_PIPELINE.md)
   - [x] 화면 정보구조 재확정 — 세무 일정(달력) 중심이 아니라 신고 데이터 준비 파이프라인 중심
@@ -520,8 +520,11 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [ ] 공통 기반(자료수집 -> 기장검토)과 병렬 트랙(원천세·부가세·지급명세서/연말정산·지방소득세)이 한 화면에 표시된다
   - [ ] 각 트랙이 입력·산출·handoff 기준으로 읽힌다
   - [ ] 세무 일정은 하단 보조 섹션으로 표시되고, 화면의 중심은 일정표가 아니다
+  - [ ] 사업자 유형(개인/법인/면세)별 해당 없는 세목 트랙이 흐림(dimmed)+"해당 없음"으로 표시된다
   - [ ] 최종 제출·납부는 사용자가 직접 수행한다는 책임 경계가 명시된다
   - [ ] 신규 산출 엔진·신규 DB·자동제출은 JC-029 Preview/1차 구현 범위에 포함하지 않는다
+  - [ ] 화면은 read-only이며 mutation을 수행하지 않는다
+  - [ ] 로딩·빈·오류·권한 없음 상태가 구현된다
 - Document Sync Check: 2026-07-04 재프레임 + UI-First Gate 승인 + Pre-Code Brief 작성. PR #50의 "세무 일정 허브" Preview는 "신고 준비 현황 허브"로 supersede. Context Lock 전제 6/6 충족(브라우저 검토 승인·흐림 노출 규칙·Brief 15). 남은 것: 구현(read-only 집계 화면). 저위험.
 
 ### JC-030 · 전자신고 파일 생성·검증 — 파일변환신고용 제출 파일 (우선순위 높음 · 저위험)
