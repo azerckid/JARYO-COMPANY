@@ -198,6 +198,29 @@ describe('internal reminder rule derivation', () => {
     expect(rules.find((rule) => rule.domain === 'payroll')?.subjectPreview).toContain('2026년 6월 급여')
   })
 
+  it('JC-018 P1 regression: payroll rule label matches its actual mixed send behavior', () => {
+    // 급여 규칙은 실제로 담당자+확인 필요 직원에게 발송되므로, 화면 라벨도
+    // "담당자 본인"만이 아니라 그 사실을 정확히 반영해야 한다.
+    const rules = buildInternalReminderRules({
+      tenantId: 'tenant-1',
+      clientId: 'client-1',
+      period,
+      payrollLabel: '2026년 6월 급여',
+      attentions: [],
+      storedRules: [],
+      now: DateTime.fromISO('2026-07-02T00:00:00', { zone: 'Asia/Seoul' }),
+    })
+
+    const payrollRule = rules.find((rule) => rule.domain === 'payroll')!
+    expect(payrollRule.recipientSource).toBe('mixed')
+    expect(payrollRule.recipientLabel).toBe('담당자 본인 + 확인 필요 직원')
+
+    // 다른 도메인은 v1에서 staff만 유지되고 라벨도 그대로다.
+    const vatRule = rules.find((rule) => rule.domain === 'vat')!
+    expect(vatRule.recipientSource).toBe('staff')
+    expect(vatRule.recipientLabel).toBe('담당자 본인')
+  })
+
   it('uses stored rule settings to override default enablement', () => {
     const rules = buildInternalReminderRules({
       tenantId: 'tenant-1',

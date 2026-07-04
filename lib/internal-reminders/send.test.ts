@@ -13,6 +13,7 @@ import {
   buildInternalReminderIdempotencyKey,
   composeEmployeePayrollReminderEmail,
   composeInternalReminderEmail,
+  shouldSendPayrollEmployeeReminder,
 } from './send'
 
 describe('internal reminder send helpers', () => {
@@ -88,5 +89,22 @@ describe('internal reminder send helpers', () => {
   it('prefixes [테스트] for employee reminders when mode is test', () => {
     const email = composeEmployeePayrollReminderEmail({ recipientName: '김철수', mode: 'test' })
     expect(email.subject).toBe('[테스트] 급여 정보 확인 요청')
+  })
+})
+
+describe('shouldSendPayrollEmployeeReminder (JC-018 gating)', () => {
+  it('sends to employees for payroll+mixed on manual/cron, but never on test', () => {
+    const rule = { domain: 'payroll' as const, recipientSource: 'mixed' as const }
+    expect(shouldSendPayrollEmployeeReminder(rule, 'manual')).toBe(true)
+    expect(shouldSendPayrollEmployeeReminder(rule, 'cron')).toBe(true)
+    expect(shouldSendPayrollEmployeeReminder(rule, 'test')).toBe(false)
+  })
+
+  it('never sends to employees when recipientSource is not mixed (e.g. reverted to staff)', () => {
+    expect(shouldSendPayrollEmployeeReminder({ domain: 'payroll', recipientSource: 'staff' }, 'manual')).toBe(false)
+  })
+
+  it('never sends to employees for non-payroll domains even if mixed', () => {
+    expect(shouldSendPayrollEmployeeReminder({ domain: 'vat', recipientSource: 'mixed' }, 'manual')).toBe(false)
   })
 })

@@ -86,6 +86,17 @@ export function composeInternalReminderEmail(params: {
   return { subject, text, html }
 }
 
+// JC-018: 이 규칙이 지금(mode) 확인 필요 직원에게도 발송해야 하는지 판정한다.
+// - recipientSource가 'mixed'가 아니면(v1 기본값: payroll만 mixed) 직원 발송 없음.
+// - test 모드는 staff 자체 검증용이라 직원에게는 보내지 않는다(불필요한 테스트
+//   메일 노출 방지).
+export function shouldSendPayrollEmployeeReminder(
+  rule: Pick<InternalReminderRuleRow, 'domain' | 'recipientSource'>,
+  mode: InternalReminderSendMode,
+): boolean {
+  return rule.domain === 'payroll' && rule.recipientSource === 'mixed' && mode !== 'test'
+}
+
 // JC-018: payroll 확인 필요 직원용 고정 템플릿. 허용 변수는 recipientName과
 // [테스트] 접두뿐이다. 급여 금액·세액·issueLabel 등 민감 정보는 절대 보간하지
 // 않는다(staff용 composeInternalReminderEmail과 콘텐츠 소스가 완전히 분리됨).
@@ -139,7 +150,10 @@ export async function persistInternalReminderRule({
       triggerType: rule.triggerType,
       offsetDays: rule.offsetDays,
       enabled: enabled ?? rule.enabled,
-      recipientSource: 'staff',
+      // JC-018: recipientSource를 하드코딩하지 않고 규칙 값을 그대로 저장한다.
+      // payroll 도메인은 'mixed'(담당자+확인 필요 직원)로 실제 발송 동작과
+      // DB 저장값·UI 라벨이 어긋나지 않게 한다.
+      recipientSource: rule.recipientSource,
       subjectTemplate: rule.subjectTemplate,
       bodyTemplate: rule.bodyTemplate,
       createdByStaffId: staffId,
@@ -301,7 +315,7 @@ export async function sendInternalReminderRule(params: {
   // 콘텐츠로 발송한다. staff 루프와 완전히 분리되어 서로 영향을 주지 않는다.
   // test 발송은 staff 자체 검증용이라 직원에게는 보내지 않는다(불필요한 테스트
   // 메일 노출 방지 — Brief 범위를 벗어나지 않는 안전한 기본값).
-  if (rule.domain === 'payroll' && params.mode !== 'test') {
+  if (shouldSendPayrollEmployeeReminder(rule, params.mode)) {
     const attentionEmployees = await loadPayrollAttentionEmployees({
       tenantId: params.summary.tenant.id,
       clientId: businessEntity.id,

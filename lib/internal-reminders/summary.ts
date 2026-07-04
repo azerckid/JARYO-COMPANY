@@ -306,7 +306,9 @@ export function buildInternalReminderRules(params: {
       triggerType: definition.triggerType,
       offsetDays: definition.offsetDays,
       enabled: definition.enabled,
-      recipientSource: 'staff' as const,
+      // JC-018: payroll 도메인만 mixed(담당자+확인 필요 직원). 그 외 도메인은
+      // staff만 유지한다. recipientLabel도 이 값을 그대로 반영한다(UI 정합).
+      recipientSource: (definition.domain === 'payroll' ? 'mixed' : 'staff') as InternalReminderRecipientSource,
       subjectTemplate: definition.subjectTemplate,
       bodyTemplate: definition.bodyTemplate,
       ...stored,
@@ -327,7 +329,10 @@ export function buildInternalReminderRules(params: {
       iconLabel: domainMeta.iconLabel,
       iconClassName: domainMeta.iconClassName,
       triggerLabel: triggerLabel(merged),
-      recipientLabel: '담당자 본인',
+      // JC-018: recipientSource가 mixed면 실제로 확인 필요 직원에게도 발송되므로
+      // 그 사실을 화면에 정확히 반영한다(수신 라벨이 실제 발송 동작과 어긋나면
+      // 안 된다).
+      recipientLabel: merged.recipientSource === 'mixed' ? '담당자 본인 + 확인 필요 직원' : '담당자 본인',
       subjectPreview: renderReminderTemplate(merged.subjectTemplate, context),
       bodyPreview: renderReminderTemplate(merged.bodyTemplate, context),
       lastSentAt: latestSentAtByRuleId.get(merged.id) ?? null,

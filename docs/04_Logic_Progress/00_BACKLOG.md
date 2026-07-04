@@ -350,7 +350,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [x] 직원 명부 미매칭·이메일 없음·알림 꺼짐·퇴사자 직원은 제외되고, staff 발송에는 영향 없다.
   - [x] payroll 외 도메인은 v1에서 동작 변경이 없다(staff만 유지, `rule.domain === 'payroll'` 분기로만 확장).
   - [x] recipient_source 규칙별 설정 UI는 이번 범위에 포함하지 않는다(payroll 도메인 mixed는 코드 분기).
-- Document Sync Check: 구현 완료(2026-07-05). 구현 파일: `lib/internal-reminders/payroll-attention-employees.ts`(신규, needs_review 직원 조회·순수 필터 함수), `lib/internal-reminders/payroll-attention-employees.test.ts`(8건), `lib/internal-reminders/send.ts`(`composeEmployeePayrollReminderEmail` 신규, `writeSendLog` recipientType 매개변수화, payroll 도메인 직원 발송 루프 추가·staff 루프와 격리), `lib/internal-reminders/send.test.ts`(민감정보 미포함 테스트 2건 추가). 전체 207파일 1375건 통과, tsc/eslint/build 클린.
+- Document Sync Check: 구현 완료(2026-07-05, 리뷰 반영 포함). 구현 파일: `lib/internal-reminders/payroll-attention-employees.ts`(신규, needs_review 직원 조회·순수 필터 함수), `lib/internal-reminders/payroll-attention-employees.test.ts`(8건), `lib/internal-reminders/send.ts`(`composeEmployeePayrollReminderEmail` 신규, `writeSendLog` recipientType 매개변수화, `shouldSendPayrollEmployeeReminder` 순수 게이팅 함수 추출·`persistInternalReminderRule`이 `recipientSource`를 하드코딩 대신 그대로 저장), `lib/internal-reminders/summary.ts`(payroll 기본 규칙 `recipientSource: 'mixed'`, `recipientLabel`이 실제 발송 동작을 반영해 "담당자 본인 + 확인 필요 직원"으로 표시 — 리뷰 P1: 라벨이 "담당자 본인"으로 고정돼 실제 mixed 발송과 어긋나던 문제 수정), `lib/internal-reminders/send.test.ts`(민감정보 미포함 2건 + 게이팅 함수 3건), `lib/internal-reminders/summary.test.ts`(payroll/vat 라벨·recipientSource 회귀 1건). 전체 207파일 1379건 통과, tsc/eslint/build 클린.
 
 ### JC-019 · Provide first-run sample workspace data (첫 가입 샘플 데이터) — 신규
 
