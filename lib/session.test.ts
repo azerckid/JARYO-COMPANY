@@ -53,6 +53,7 @@ beforeAll(async () => {
       address text,
       phone text,
       analysis_notes text,
+      tax_entity_type text,
       created_at text NOT NULL
     )
   `)

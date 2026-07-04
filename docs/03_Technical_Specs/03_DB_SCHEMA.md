@@ -35,6 +35,20 @@ tenant (로그인 주체 = 회사/대표)
 - `staffId`(담당 배정)는 회사 내부 담당자 배정으로 의미 전환(세무사무소 담당자 → 회사 내부 담당자). 외부 세무사 검토자는 v1 제외.
 - **물리 rename 결정(2026-07-03, JC-005)**: 물리 테이블명은 `client`로 **유지**한다(개념만 business_entity). `client`는 앱·API·FK에 걸쳐 약 274개 파일이 참조하므로 물리 rename(`client`→`business_entity`)은 대규모·고위험 마이그레이션 대비 v1 실익이 낮다. 제품/UI 레이어는 이미 "사업장"으로 표기(JC-004 완료)하고, `businessEntityId`는 개념 명칭으로만 사용한다. 물리 rename은 다중 사업장 운영이 실제 필요해질 때 별도 마이그레이션으로 재검토한다.
 
+#### 2.1.1 `client.tax_entity_type` — 사업자 유형 (JC-032, migration 0059)
+
+사업장의 사업자 유형을 저장한다. 신고 준비 허브(JC-029)의 사업자 유형별 세목 트랙 **흐림(dimming)** 규칙의 실데이터 소스다.
+
+| 컬럼 | 타입 | 제약 | 용도 |
+|---|---|---|---|
+| `tax_entity_type` | `text` (enum) | nullable | 사업자 유형: `individual`(개인) · `corporation`(법인) · `tax_exempt`(면세 개인) |
+
+- **enum 검증은 Drizzle 레벨**에서 수행한다(SQLite 물리 컬럼은 `text`). 값 검증 zod 스키마는 `lib/validations/business-entity.ts`.
+- **`null` = 미지정** → 신고 준비 허브에서 **어떤 트랙도 흐림 처리하지 않는다**(과잉 숨김 방지). 기존 사업장은 null로 시작하고 회사 설정 화면에서 지정한다.
+- 흐림 매핑: v1은 `tax_exempt`(면세 개인)의 부가세 트랙만 "해당 없음"(사업장현황신고로 대체·JC-028). 향후 종합소득세=개인만/법인세=법인만으로 확장. [Filing Preparation Hub Pre-Code Brief §4](./15_FILING_PREPARATION_PRE_CODE_BRIEF.md) 참조.
+- 갱신 경로: `PATCH /api/settings/business-entity`(TENANT_ADMIN)가 테넌트의 최초 등록 사업장을 갱신한다(v1 테넌트당 사업장 1개 전제).
+- 물리 적용: `drizzle/0059_add_client_tax_entity_type.sql`(`ALTER TABLE client ADD COLUMN tax_entity_type text`), 배포 시 `db:push`.
+
 ### 2.2 이메일 요청·수신함 서브시스템 v1 제외
 
 회사가 스스로 자료를 수집하므로, 사무소가 고객사에 자료를 *요청*하는 이메일 흐름은 v1에서 제외한다.

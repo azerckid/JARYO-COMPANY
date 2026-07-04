@@ -234,6 +234,9 @@ export const client = sqliteTable('client', {
   phone: text('phone'),
   // 회사별 AI 분석 기준 (프롬프트형 자유 텍스트). 변경 시 과거 분석에는 미적용.
   analysisNotes: text('analysis_notes'),
+  // 사업자 유형(개인/법인/면세). 신고 준비 허브(JC-029) dimming의 실데이터 소스.
+  // null = 미지정 → 흐림 없음(전체 트랙 표시).
+  taxEntityType: text('tax_entity_type', { enum: ['individual', 'corporation', 'tax_exempt'] }),
   createdAt: text('created_at').notNull(),
 }, (table) => [
   uniqueIndex('client_tenant_email_uidx').on(table.tenantId, sql`lower(${table.email})`),

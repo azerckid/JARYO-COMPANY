@@ -44,6 +44,7 @@
 | JC-029 | done | 신고 준비 현황 허브 (신고 데이터 준비 파이프라인) | `app/(dashboard)/dashboard/filing-preparation`(신규), 각 도메인 read model, 리마인드(JC-016) | **우선순위: 높음 (JC-024보다 선행) · 저위험(read-only 현황).** 사이드바에 "신고 준비" 추가(신고지원 아래). 목적은 달력/일정표가 아니라 홈택스·위택스에 넣을 확정 데이터가 준비됐는지 보여주는 것. 공통 기반(자료수집→기장검토)과 병렬 트랙(원천세·부가세·지급명세서/연말정산·지방소득세)의 입력·산출·handoff 상태를 표시한다. 세무 일정은 보조 섹션으로 강등. 신규 산출 엔진·신규 DB·자동제출은 범위 밖. [Filing Preparation Pipeline](../01_Concept_Design/02_FILING_PREPARATION_PIPELINE.md) 참조. |
 | JC-030 | todo | 전자신고 파일 생성·검증 (파일변환신고용 제출 파일) | `lib/filing-support`, `lib/vat`·`lib/payroll-workspace` 산출물, 홈택스 전자신고 파일 규격 | **우선순위: 높음(가이드와 자동제출 사이의 현실적 다리) · 법적 리스크: 낮음.** self-filing 편의 경로를 **홈택스 입력 가이드(JC-013) → 전자신고 파일 생성·검증(JC-030) → 사용자 승인 자동제출(JC-023)** 3단계로 명시하는 중간 단계. 확정된 신고 데이터(부가세·원천세·지급명세서 등)를 홈택스 "파일변환신고"에 업로드 가능한 전자신고 파일(전자신고 규격)로 생성하고 형식·정합성을 검증해 제공한다. **자동 제출이 아님** — 사용자가 파일을 내려받아 홈택스에 직접 업로드·제출한다. 자격증명 저장·자동 로그인·자동 제출 없음(JC-023 원칙 유지). 착수 전 홈택스 전자신고 파일 규격 조사 필요(JC-023 리서치와 공유). [Product Baseline Strategic Direction](../01_Concept_Design/01_PRODUCT_BASELINE.md) · [Filing Preparation Pipeline](../01_Concept_Design/02_FILING_PREPARATION_PIPELINE.md) · [Hometax Autosubmit Research](../03_Technical_Specs/13_JC023_HOMETAX_AUTOSUBMIT_RESEARCH.md) 참조. |
 | JC-031 | todo | 레거시 GIWA upload/email 서브시스템 은퇴 (에픽) | `uploadSession`·`outbound_email`(각각 100여·수십 개 파일에 광범위하게 얽힘, 검색 범위·시점에 따라 변동) 스키마·도메인, sessions·`/upload/[token]` 포털·emails·request-events·mail-console | **에픽 · 착수 전 영향 감사 필수.** JARYO-GIWA 시절의 대형 레거시 서브시스템을 단계적으로 은퇴한다. JC-004에서 라우트 redirect 차단은 됐으나 스키마·도메인 코드가 살아있고 상호 참조가 많다(uploadSession·outbound_email이 100개 넘는 파일에 광범위 참조, 정확 수치는 검색 범위·시점에 따라 변동). chore가 아니라 별도 에픽으로, 착수 전 라우트·DB·메일·업로드 포털·테스트 영향 범위를 정밀 감사하고 단계별 삭제 계획을 세운다. 고립된 4개 레거시 cron 라우트 삭제는 이 에픽과 별개로 선행 완료(chore/remove-legacy-cron-routes). |
+| JC-032 | done | 사업자 유형 전용 필드 (신고 준비 dimming 실데이터 연결) | `client.taxEntityType`, `/api/settings/business-entity`, 회사 설정 화면, `lib/filing-preparation/summary.ts` | **우선순위: 높음(JC-029 dimming 완성) · 저위험.** JC-029 신고 준비 허브의 사업자 유형별 흐림 규칙을 실데이터에 연결한다. `client`(사업장)에 `tax_entity_type`(개인/법인/면세, nullable) 컬럼 추가(migration 0059), 회사 설정 화면에서 선택·저장(TENANT_ADMIN), 신고 준비 read model이 이 값을 직접 사용(기존 billing-profile 휴리스틱 제거). 미지정(null)이면 흐림 없음. [Filing Preparation Hub Pre-Code Brief §4](../03_Technical_Specs/15_FILING_PREPARATION_PRE_CODE_BRIEF.md) 참조. |
 
 ## Implementation Rule
 
@@ -520,12 +521,12 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [x] 공통 기반(자료수집 -> 기장검토)과 병렬 트랙(원천세·부가세·지급명세서/연말정산·지방소득세)이 한 화면에 표시된다
   - [x] 각 트랙이 입력·산출·handoff 기준으로 읽힌다
   - [x] 세무 일정은 하단 보조 섹션으로 표시되고, 화면의 중심은 일정표가 아니다
-  - [x] 사업자 유형(개인/법인/면세)별 해당 없는 세목 트랙이 흐림(dimmed)+"해당 없음"으로 표시된다(메커니즘 구현·테스트 완료; 전용 유형 필드 연결은 후속)
+  - [x] 사업자 유형(개인/법인/면세)별 해당 없는 세목 트랙이 흐림(dimmed)+"해당 없음"으로 표시된다(메커니즘 구현·테스트 완료; 전용 유형 필드 연결 완료·JC-032)
   - [x] 최종 제출·납부는 사용자가 직접 수행한다는 책임 경계가 명시된다
   - [x] 신규 산출 엔진·신규 DB·자동제출은 JC-029 Preview/1차 구현 범위에 포함하지 않는다
   - [x] 화면은 read-only이며 mutation을 수행하지 않는다
   - [x] 로딩·빈·오류·권한 없음 상태가 구현된다
-- Document Sync Check: 2026-07-04 재프레임 + UI-First Gate 승인 + Pre-Code Brief 작성. PR #50의 "세무 일정 허브" Preview는 "신고 준비 현황 허브"로 supersede. Context Lock 전제 6/6 충족(브라우저 검토 승인·흐림 노출 규칙·Brief 15). 구현 완료(2026-07-04): lib/filing-preparation/summary.ts(집계 read model + classifyBusinessType·isTrackApplicable·준비율 순수함수), /dashboard/filing-preparation(page·hub·loading·error), 사이드바 항목+layout badge. 테스트 11건·전체 1345건 통과, tsc/eslint/build 클린. 사업자 유형은 tenant_billing_profile.businessType로 분류(불명확 시 unknown=흐림 없음), 전용 유형 필드는 후속. 저위험.
+- Document Sync Check: 2026-07-04 재프레임 + UI-First Gate 승인 + Pre-Code Brief 작성. PR #50의 "세무 일정 허브" Preview는 "신고 준비 현황 허브"로 supersede. Context Lock 전제 6/6 충족(브라우저 검토 승인·흐림 노출 규칙·Brief 15). 구현 완료(2026-07-04): lib/filing-preparation/summary.ts(집계 read model + isTrackApplicable·준비율 순수함수), /dashboard/filing-preparation(page·hub·loading·error), 사이드바 항목+layout badge. 테스트 11건·전체 1345건 통과, tsc/eslint/build 클린. 사업자 유형은 JC-032로 `client.taxEntityType`에 직접 연결 완료(billing-profile 휴리스틱·classifyBusinessType 제거, 미지정 null=흐림 없음). 저위험.
 
 ### JC-030 · 전자신고 파일 생성·검증 — 파일변환신고용 제출 파일 (우선순위 높음 · 저위험)
 
@@ -568,6 +569,29 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [ ] v1 현행 기능(자료수집·기장·부가세·급여·신고지원·직원명부·리마인드·신고준비)에 영향이 없다
   - [ ] `clients`(사업장)·`billing`·jaryo-admin 등 유지 대상은 보존된다
 - Document Sync Check: 2026-07-04 등록(에픽). 선행: 고립된 레거시 cron 라우트 4개 삭제 완료(chore/remove-legacy-cron-routes). 착수 전 영향 감사 → 단계별 삭제 계획 필요. 대형 정리라 별도 착수.
+
+### JC-032 · 사업자 유형 전용 필드 — 신고 준비 dimming 실데이터 연결 (우선순위 높음 · 저위험)
+
+- Related Concept: [Product Baseline — Target Tax Coverage](../01_Concept_Design/01_PRODUCT_BASELINE.md) — 개인/법인/면세별 세목 커버리지
+- Related UI Docs: [08_filing_preparation.html](../02_UI_Screens/previews/08_filing_preparation.html) — 사업자 유형별 흐림 규칙 · 회사 설정 화면(기존)
+- Related Technical Docs: [Filing Preparation Hub Pre-Code Brief §4](../03_Technical_Specs/15_FILING_PREPARATION_PRE_CODE_BRIEF.md) — 사업자 유형↔세목 흐림 매핑
+- Related QA Docs: N/A - dimming 순수 함수(isTrackApplicable·buildTracks)는 filing-preparation 단위 테스트에서 검증
+- Prototype Review / 승인: JC-029 화면 승인(2026-07-04) 재사용. 설정 화면에 select 1개 추가(별도 UI 승인 불요).
+- Implementation Preconditions:
+  - [x] 저장 위치 결정 — `client`(사업장) 테이블 (테넌트당 사업장 1개, 신고 준비 허브가 client 기준)
+  - [x] 설정 위치 결정 — 회사 설정 화면(`/dashboard/settings` 회사 정보 카드)
+  - [x] enum 확정 — individual/corporation/tax_exempt, nullable(미지정→흐림 없음)
+- Acceptance Criteria:
+  - [x] `client.tax_entity_type` 컬럼 추가 + migration 0059
+  - [x] 회사 설정 화면에서 사업자 유형을 선택·저장한다(TENANT_ADMIN, 빈 값→null)
+  - [x] 신고 준비 read model이 `client.taxEntityType`를 직접 사용하고 billing-profile 휴리스틱을 제거한다
+  - [x] 미지정(null)이면 어떤 트랙도 흐림 처리하지 않는다
+  - [x] 면세로 지정하면 부가세 트랙이 흐림+"해당 없음"으로 링크 없이 표시된다(기존 dimming 로직 재사용)
+- Component & Library Plan:
+  - shadcn/ui components: 기존 Select 재사용(회사 설정 카드). 신규 없음
+  - New libraries: 없음
+  - shadcn preset action: N/A
+- Document Sync Check: 구현 완료(2026-07-04). 구현 파일: `lib/db/schema.ts`(client.taxEntityType), `drizzle/0059_add_client_tax_entity_type.sql`, `lib/validations/business-entity.ts`, `app/api/settings/business-entity/route.ts`, `app/(dashboard)/dashboard/settings/page.tsx`·`_components/settings-panel.tsx`, `lib/filing-preparation/summary.ts`(taxEntityType 직접 사용, classifyBusinessType 제거). 배포 시 migration 0059는 db:push로 적용(journal 미추적 규약).
 
 > 현재 기존 여섯 워크스페이스는 **UI-First Gate 통과 및 구현 완료**. JC-005는 데이터 모델 델타를 확정했다(`done`) — client→business_entity 재정의(물리명 `client` 유지·rename 지연), 기간 표현 도메인별 canonical, 신규 도메인 migration 0053~0057. JC-011에서 부가세 물리 Drizzle migration과 read model/UI 구현이 완료됐다. JC-006은 회사 홈 구현·머지 완료. JC-009는 자료수집 read model·UI 구현·머지 완료(PR #4·#5, Preview 정합 포함). JC-010은 기장검토 read model·UI 구현과 QA Result 반영 완료. JC-012는 급여 read model·UI·고지액 수동 입력/match·문서 생성·마감 guard 구현을 완료했다. JC-013은 신고지원 read model·UI·접수증 보관·체크리스트 구현과 QA Result 반영을 완료했다. JC-015는 UI Preview·화면 승인(2026-07-02)에 이어 read model·`/dashboard/employees`·추가/수정 API·`0056` migration 구현을 완료했다(급여 line은 읽기 전용 매칭, 개인정보 최소 저장). JC-016은 `internal_reminder_*` 물리 테이블, read model, `/dashboard/reminders`, 토글/테스트 발송/즉시 발송 API, provider missing 상태, idempotency key를 구현했다. 직원 명부 기반 직원 수신은 JC-018, Vercel Cron 자동 예약 실행은 JC-017 후속이다. JC-004는 노출 표면 정리(설정 GIWA CC 탭·사무소 문구 제거), dead GIWA 컴포넌트 삭제, 레거시 GIWA 라우트 10종 redirect 차단, 링크 정리, clients 용어 사업장화, 설정 업무메일 탭 정리, 사업장 상세 GIWA 탭 제거를 완료(`done`, PR #21~#25). `clients`(사업장 등록·관리)·`billing`(요금제)은 v1 필수 기능으로 유지하고, jaryo-admin은 operator allowlist로 격리된 플랫폼 콘솔이라 조치 불필요로 감사 종료했다. JC-014 실제 업로드→Blob 저장→AI 파싱→정규화 E2E 검증을 완료했다(`done`, 2026-07-03) — Gemini·Claude high confidence 합의로 파이프라인 정상 동작 확인. 유일한 인프라 후속은 OPENAI_API_KEY 429(quota) 결제 충전으로 3-provider 합의를 완전 복구하는 것(현재 2/3 graceful 동작). 2026-07-03 프로덕션 first-run E2E에서 발견된 신규 사용자 경험 후속은 JC-019(샘플 데이터 first-run), JC-020(가입 후 온보딩 라우팅), JC-021(브랜드 잔재 정리), JC-022(설정 화면 제품 언어 정리)로 등록했다.
 
