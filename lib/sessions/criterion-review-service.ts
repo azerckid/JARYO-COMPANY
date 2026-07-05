@@ -1,7 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
-  outboundEmail,
   requestItemValidation,
   staff,
   uploadSession,
@@ -25,23 +24,6 @@ type StaffRecord = {
 export type CriterionReviewResult =
   | { ok: true; validation: typeof requestItemValidation.$inferSelect; completionEligibility: ReturnType<typeof computeCompletionEligibility>; sessionStatus: string }
   | { ok: false; error: string; status: number }
-
-async function rejectStaleMissingRequestDrafts(params: {
-  sessionId: string
-  tenantId: string
-}) {
-  await db
-    .update(outboundEmail)
-    .set({ status: 'rejected' })
-    .where(
-      and(
-        eq(outboundEmail.uploadSessionId, params.sessionId),
-        eq(outboundEmail.tenantId, params.tenantId),
-        eq(outboundEmail.type, 'missing_request'),
-        eq(outboundEmail.status, 'draft'),
-      ),
-    )
-}
 
 async function loadSessionValidations(params: {
   sessionId: string
@@ -140,8 +122,6 @@ export async function reviewSessionCriterion(params: {
       .set({ status: nextSessionStatus })
       .where(and(eq(uploadSession.id, sessionId), eq(uploadSession.tenantId, tenantId)))
   }
-
-  await rejectStaleMissingRequestDrafts({ sessionId, tenantId })
 
   const [updatedValidation] = await db
     .select()

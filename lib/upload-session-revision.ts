@@ -4,7 +4,6 @@ import {
   bookkeepingClassificationRun,
   bookkeepingJournalEntryRun,
   bookkeepingMaterialAttribution,
-  outboundEmail,
   requestItemValidation,
   requestItemValidationFile,
   uploadSession,
@@ -79,18 +78,6 @@ export async function markSessionFilesRevised(params: {
         sessionEvaluation: null,
       })
       .where(and(eq(uploadSession.id, sessionId), eq(uploadSession.tenantId, tenantId)))
-
-    await tx
-      .update(outboundEmail)
-      .set({ status: 'rejected' })
-      .where(
-        and(
-          eq(outboundEmail.uploadSessionId, sessionId),
-          eq(outboundEmail.tenantId, tenantId),
-          eq(outboundEmail.type, 'missing_request'),
-          eq(outboundEmail.status, 'draft'),
-        ),
-      )
 
     await tx
       .update(bookkeepingClassificationRun)
