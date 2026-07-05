@@ -5,6 +5,7 @@ import {
   buildFilingInputGuide,
   buildFilingItems,
   buildFilingPeriod,
+  buildPayrollFilingSource,
   buildFilingReceipts,
   buildFilingChecklist,
   buildFilingItemId,
@@ -179,6 +180,19 @@ describe('filing support item derivation', () => {
 })
 
 describe('filing input guide', () => {
+  it('keeps payroll summary totals while injecting actual income/local taxes (S-30~34)', () => {
+    const merged = buildPayrollFilingSource(
+      { ...payrollSource, withholdingTaxKrw: 9_999_999 },
+      { incomeTaxKrw: 1_910_000, localIncomeTaxKrw: 190_000 },
+    )
+
+    expect(merged.employeeCount).toBe(12)
+    expect(merged.grossPayKrw).toBe(42_600_000)
+    expect(merged.withholdingTaxKrw).toBe(9_999_999)
+    expect(merged.incomeTaxKrw).toBe(1_910_000)
+    expect(merged.localIncomeTaxKrw).toBe(190_000)
+  })
+
   it('uses actual payroll income/local tax values without 10/11 approximation (S-30~34)', () => {
     const [, withholdingItem] = buildPreviewItems()
     const guide = buildFilingInputGuide({

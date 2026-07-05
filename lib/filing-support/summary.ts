@@ -10,7 +10,11 @@ import {
   tenant,
   vatPeriodSummary,
 } from '@/lib/db/schema'
-import { buildLocalIncomeTaxTotals, loadLocalIncomeTaxLines } from '@/lib/local-income-tax/summary'
+import {
+  buildLocalIncomeTaxTotals,
+  loadLocalIncomeTaxLines,
+  type LocalIncomeTaxTotals,
+} from '@/lib/local-income-tax/summary'
 
 export type FilingItemType = 'vat' | 'withholding' | 'social_insurance'
 export type FilingPackageStatus = 'locked' | 'ready' | 'generated' | 'submitted'
@@ -122,6 +126,17 @@ type PayrollFilingSource = {
   issueCount: number
   withholdingStatementStatus: 'not_generated' | 'ready' | 'generated' | 'failed'
   insuranceStatementStatus: 'not_generated' | 'ready' | 'generated' | 'failed'
+}
+
+export function buildPayrollFilingSource(
+  payrollBase: Omit<PayrollFilingSource, 'incomeTaxKrw' | 'localIncomeTaxKrw'>,
+  localIncomeTaxTotals: Pick<LocalIncomeTaxTotals, 'incomeTaxKrw' | 'localIncomeTaxKrw'> | null,
+): PayrollFilingSource {
+  return {
+    ...payrollBase,
+    incomeTaxKrw: localIncomeTaxTotals?.incomeTaxKrw ?? 0,
+    localIncomeTaxKrw: localIncomeTaxTotals?.localIncomeTaxKrw ?? 0,
+  }
 }
 
 type FilingItemOverride = {
@@ -721,16 +736,7 @@ export async function loadFilingSupportSummary({
       }))
     : null
   const payroll: PayrollFilingSource | null = payrollBase
-    ? {
-        ...payrollBase,
-        employeeCount: localIncomeTaxTotals?.readyEmployees ?? 0,
-        grossPayKrw: localIncomeTaxTotals?.grossPayKrw ?? 0,
-        incomeTaxKrw: localIncomeTaxTotals?.incomeTaxKrw ?? 0,
-        localIncomeTaxKrw: localIncomeTaxTotals?.localIncomeTaxKrw ?? 0,
-        withholdingTaxKrw: localIncomeTaxTotals
-          ? localIncomeTaxTotals.incomeTaxKrw + localIncomeTaxTotals.localIncomeTaxKrw
-          : 0,
-      }
+    ? buildPayrollFilingSource(payrollBase, localIncomeTaxTotals)
     : null
   const items = buildFilingItems({
     tenantId,
