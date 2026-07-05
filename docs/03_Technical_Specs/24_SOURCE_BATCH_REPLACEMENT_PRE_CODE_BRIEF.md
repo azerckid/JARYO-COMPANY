@@ -1,16 +1,16 @@
 # JC-031 Slice 3 Source Batch Replacement Pre-Code Brief
 > Created: 2026-07-05 23:28 KST
-> Last Updated: 2026-07-06 01:30 KST
+> Last Updated: 2026-07-06 01:55 KST
 
 ## 0. Flow Status
 
 ```text
 [Flow]
-현재: JC-031 Slice 3b 완료 — Read model이 source_batch 우선 사용으로 전환
+현재: JC-031 Slice 3c-0 완료 — Downstream FK migration 전략 감사
 Gate: 통과
 완료: Slice 1~2c, dev DB 0060·0061 적용, prod DB 0061 적용(2026-07-06, 사고 대응), Slice 3a source_batch 도입, Slice 3b read switch(5개 우선순위 read model)
-다음: Slice 3c downstream FK migration
-필요 확인: downstream 테이블별 source_batch_id 추가 순서, mergeIncludedAttributionIntoLedger(쓰기 경로) 전환 여부, prod DB 0060(sent_email_id 컬럼 제거) 적용 여부
+다음: Slice 3c-1 company-home read switch + 3c-2 수집/기장 downstream FK additive migration
+필요 확인: downstream 테이블별 source_batch_id 추가 순서, mergeIncludedAttributionIntoLedger(쓰기 경로) 전환 여부, prod DB 0060(sent_email_id 컬럼 제거) 적용 여부, migration 적용 전 prod schema 직접 확인
 권장 스킬: rules-product -> rules-dev/rules-workflow
 ```
 
@@ -94,10 +94,10 @@ Changes:
 
 Done for 3a:
 
-- [x] 모든 기존 `upload_file` row가 `source_batch_id`를 갖는다(dev DB 0061 검증: 4/4 linked).
+- [x] 모든 기존 `upload_file` row가 `source_batch_id`를 갖는다(dev/prod DB 0061 검증: upload_file linked).
 - [x] 신규 direct-upload로 생성되는 파일도 `source_batch_id`를 갖는다(`createDirectUploadSession` dual-write + upload callback 저장).
 - [x] 기존 source collection 화면과 API는 동작이 변하지 않는다(`upload_session` compatibility 유지).
-- [x] migration은 Turso에서 실제 적용 가능한 SQL이어야 하며, FK/인덱스 보존 검증을 포함한다(dev DB `foreign_key_check` 0).
+- [x] migration은 Turso에서 실제 적용 가능한 SQL이어야 하며, FK/인덱스 보존 검증을 포함한다(dev/prod DB `foreign_key_check` 0).
 
 ### Slice 3b — Read Model Switch
 
@@ -148,6 +148,51 @@ Rules:
 - 한 PR에서 모든 downstream table을 이관하지 않는다.
 - 각 table은 `add nullable source_batch_id -> backfill -> write dual -> read prefer -> tighten/delete legacy FK later` 순서를 따른다.
 - `upload_session_id` 삭제는 Slice 4 schema retirement 전까지 하지 않는다.
+- SQLite/Turso에서는 FK가 걸린 컬럼을 단순 `DROP COLUMN` 할 수 없다. Slice 3c는 additive migration만 수행하고, legacy FK/컬럼 제거가 필요하면 Slice 4에서 table rebuild 전략을 별도로 문서화한다.
+- 새 컬럼/테이블을 추가하는 PR은 머지 전 prod DB 스키마 확인을 별도 체크로 둔다. dev DB 적용 완료를 prod 적용 완료로 간주하지 않는다.
+
+#### Slice 3c-0 — Migration Strategy Audit (docs-only)
+
+목표: 3c 구현 PR이 다시 무한히 쪼개지지 않도록 downstream FK 이관 순서와 비목표를 고정한다.
+
+Audit findings:
+
+| 분류 | 대상 | 3c 판단 |
+|---|---|---|
+| read-only gap | `lib/company-home/summary.ts` | 3b 우선순위 밖에 남은 `upload_session` 직접 조회. 스키마 변경 없이 3c-1에서 `source_batch` 기준으로 전환한다. |
+| source collection validation | `request_item_validation`, `upload_item_declaration` | source lineage 성격. 3c-2에서 nullable `source_batch_id` 추가, backfill, 신규 생성 dual-write 후보. |
+| bookkeeping source outputs | `bookkeeping_material_attribution`, `bookkeeping_ledger_material_link` | 파일/세션에서 파생된 source lineage. 3c-2 또는 3c-3에서 additive FK 추가 후보. |
+| bookkeeping run/rows | `bookkeeping_classification_run`, `bookkeeping_transaction_classification`, `bookkeeping_journal_entry_run/row/voucher` | run lineage와 row lineage를 함께 다룬다. 3c-3에서 별도 PR로 처리. |
+| payroll extraction | `payroll_rule_profile_application`, `payroll_extraction_batch/row`, `payroll_excel_draft` | 순수 source-lineage read 대상은 3b에서 없다고 판단했으나, schema retirement 전에는 FK 이관 필요. 3c-4 후보. |
+| payroll employee line | `payroll_employee_line.source_batch_id` | 이름이 같지만 `payroll_extraction_batch.id`를 가리키는 기존 컬럼이다. 범용 `source_batch.id`와 혼동 금지. 3c에서 rename/재사용하지 않는다. |
+| adaptive structuring | `adaptive_structure_model.source_upload_session_id`, `adaptive_structure_model_run.upload_session_id` | 모델 provenance 성격이 강해 별도 검증 필요. 3c-5 후보 또는 Slice 4 allowlist. |
+| request-event/audit/history | `client_request_event`, `audit_proof`, quarantined session APIs | source lineage primary 전환 대상이 아니다. Slice 4 compatibility/retention 판단까지 유지한다. |
+
+Fixed 3c order:
+
+1. **3c-1 — Company-home read switch.** No migration. `company-home` summary uses `source_batch` scoping so home/source-collection/bookkeeping numbers cannot diverge.
+2. **3c-2 — Source collection validation FK additive migration.** Add nullable `source_batch_id` to `request_item_validation` and `upload_item_declaration`, backfill via `source_batch.legacy_upload_session_id`, dual-write for new rows, read prefer where safe.
+3. **3c-3 — Bookkeeping source outputs FK additive migration.** Add nullable `source_batch_id` to material attribution/link and bookkeeping run/row/voucher tables only after 3c-2 proves the pattern.
+4. **3c-4 — Payroll lineage FK audit/implementation.** Decide whether payroll extraction tables should point to 범용 `source_batch` directly or remain session-compatible until Slice 4.
+5. **3c-5 — Adaptive structuring allowlist or migration.** Do not migrate until model provenance semantics are confirmed.
+
+3c-0 Non-goals:
+
+- No runtime code change except documentation.
+- No DB migration.
+- No `upload_session_id` drop.
+- No reuse of `payroll_employee_line.source_batch_id` for the new 범용 `source_batch`.
+- No Slice 4 schema retirement.
+
+3c migration checklist for every implementation PR:
+
+- [ ] Add only nullable `source_batch_id` columns and indexes.
+- [ ] Backfill by joining `source_batch.legacy_upload_session_id = <table>.upload_session_id`.
+- [ ] Keep `upload_session_id` writes until Slice 4.
+- [ ] Dual-write `source_batch_id` only after the caller can resolve the source batch id deterministically.
+- [ ] Read prefer `source_batch_id`; fallback to `upload_session_id` only where legacy rows can still exist.
+- [ ] Before merge, confirm prod schema has all previous migrations required by the new runtime code.
+- [ ] After dev/prod migration, verify `foreign_key_check` and row counts for linked/unlinked records.
 
 **Slice 3b 리뷰에서 나온 후속 메모(비차단, 3c 계획에 반영)**:
 
