@@ -222,33 +222,6 @@ export default async function ReviewsPage({ searchParams }: PageProps) {
 
   const selectedSessionId = selectedSession?.id ?? null
 
-  if (reviewSessions.length > 0) {
-    try {
-      const { generateMissingRequestDraft } = await import('@/lib/email/missing-request')
-      const { shouldCreatePeriodGapMissingRequestDraft } = await import('@/lib/reviews/period-scope-presentation')
-
-      const periodGapDraftTargets = reviewSessions.filter((session) => (
-        session.materialAttributionSummary
-        && shouldCreatePeriodGapMissingRequestDraft(session.materialAttributionSummary, session.files.length)
-      ))
-
-      const backfillResults = await Promise.allSettled(
-        periodGapDraftTargets.map((session) => generateMissingRequestDraft(session.id, tenantId)),
-      )
-
-      for (const [index, result] of backfillResults.entries()) {
-        if (result.status === 'rejected') {
-          console.error(
-            '[dashboard/reviews] period-gap missing-request draft backfill failed',
-            { sessionId: periodGapDraftTargets[index]?.id, reason: result.reason },
-          )
-        }
-      }
-    } catch (err) {
-      console.error('[dashboard/reviews] period-gap missing-request draft backfill setup failed', err)
-    }
-  }
-
   const refreshHref = buildReviewHref({
     sessionId: selectedSessionId ?? undefined,
     q: filters.q,

@@ -34,13 +34,6 @@ export async function POST(
       console.error('[POST /api/sessions/[id]/material-attribution/start] pipeline', pipelineError)
     }
 
-    try {
-      const { generateMissingRequestDraft } = await import('@/lib/email/missing-request')
-      await generateMissingRequestDraft(sessionId, tenantId)
-    } catch (draftError) {
-      console.error('[POST /api/sessions/[id]/material-attribution/start] missing-request draft', draftError)
-    }
-
     return NextResponse.json({ ...result, pipeline })
   } catch (err) {
     console.error('[POST /api/sessions/[id]/material-attribution/start]', err)

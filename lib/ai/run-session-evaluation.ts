@@ -16,11 +16,6 @@ export async function applySessionEvaluationOutcome(params: {
   tenantId: string
   outcome: SessionEvaluationOutcome
 }) {
-  if (!params.outcome.ok) return params.outcome
-  if (params.outcome.status !== 'needs_resubmission') return params.outcome
-
-  const { generateMissingRequestDraft } = await import('@/lib/email/missing-request')
-  await generateMissingRequestDraft(params.sessionId, params.tenantId)
   return params.outcome
 }
 
