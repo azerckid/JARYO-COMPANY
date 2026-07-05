@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PATCH as patchEmail } from './emails/[id]/route'
+import { GET as getMissingRequestEmails } from './emails/missing-requests/route'
 import { POST as postMailConsoleBulkSend } from './mail-console/bulk-send/route'
 import { POST as postRequestEventSend } from './request-events/[id]/send/route'
 import { POST as postRequestEvent } from './request-events/route'
@@ -23,6 +24,17 @@ const retiredRoutes = [
 describe('retired legacy request-mail write routes', () => {
   it.each(retiredRoutes)('%s returns 410', async (_label, handler) => {
     const response = await handler()
+
+    expect(response.status).toBe(410)
+    await expect(response.json()).resolves.toMatchObject({
+      error: expect.stringContaining('레거시 고객 요청 메일 기능'),
+    })
+  })
+})
+
+describe('retired legacy request-mail read routes', () => {
+  it('GET /api/emails/missing-requests returns 410', async () => {
+    const response = await getMissingRequestEmails()
 
     expect(response.status).toBe(410)
     await expect(response.json()).resolves.toMatchObject({

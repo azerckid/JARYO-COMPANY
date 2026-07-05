@@ -250,10 +250,6 @@ export async function ReviewWorkspaceDeferredApprovalQueue({
   let drafts: ApprovalEmailRow[]
 
   try {
-    if (selectedSessionId) {
-      const { generateMissingRequestDraft } = await import('@/lib/email/missing-request')
-      await generateMissingRequestDraft(selectedSessionId, tenantId)
-    }
     drafts = await loadApprovalEmailRows(tenantId, clientDisplayNameBySessionId, selectedSessionId)
   } catch (err) {
     console.error('[ReviewWorkspaceDeferredApprovalQueue]', err)
