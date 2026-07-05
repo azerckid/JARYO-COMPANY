@@ -616,20 +616,21 @@ Technical, and QA docs first, then prepare a short implementation brief.
 
 - Related Concept: [Product Baseline — JARYO-GIWA Relationship](../01_Concept_Design/01_PRODUCT_BASELINE.md) — GIWA 재사용 자산과 회사 self-use 경계
 - Related Domain: `uploadSession`·`outbound_email`(각각 100여·수십 개 파일에 광범위하게 얽힘, 검색 범위·시점에 따라 변동) 스키마·도메인. sessions·`/upload/[token]` 포털·emails·request-events·mail-console·일부 대시보드(clients·calendar·emails) 전반에 얽힘.
+- Related Technical Docs: [Legacy Upload/Email Retirement Audit](../03_Technical_Specs/20_LEGACY_UPLOAD_EMAIL_RETIREMENT_AUDIT.md) — route/DB/mail 영향 감사와 단계별 은퇴 계획. `upload_session` 즉시 삭제 금지, 외부 포털/메일 요청 흐름부터 격리.
 - Related HTML Preview: N/A - 코드/데이터 은퇴 에픽. 사용자 화면 변경은 이미 JC-004 redirect 차단으로 처리됨.
 - Prototype Review / 승인: N/A - 내부 정리 에픽.
 - Implementation Preconditions (착수 전 영향 감사 필수):
-  - [ ] 라우트 영향 — 살아있는 sessions·upload 포털·emails·request-events·mail-console 라우트의 실사용/redirect 상태 목록화
-  - [ ] DB 영향 — `uploadSession`·`outbound_email`·연관 테이블(FK 연쇄)과 migration 은퇴 순서
-  - [ ] 메일 영향 — Resend 발송 경로 중 레거시(outbound_email) vs 현행(internal_reminder) 분리 확인
-  - [ ] 업로드 포털 영향 — `/upload/[token]` 외부 포털의 v1 제외 여부 최종 확정
-  - [ ] 테스트 영향 — 레거시 서브시스템에 묶인 테스트 목록과 삭제/이관 계획
-  - [ ] 단계별 삭제 계획 수립 (한 번에 삭제하지 않음)
+  - [x] 라우트 영향 — [Audit §3](../03_Technical_Specs/20_LEGACY_UPLOAD_EMAIL_RETIREMENT_AUDIT.md): direct-upload은 유지, `/upload/[token]`·sessions·emails·request-events·mail-console은 은퇴 후보로 분리.
+  - [x] DB 영향 — [Audit §4](../03_Technical_Specs/20_LEGACY_UPLOAD_EMAIL_RETIREMENT_AUDIT.md): `upload_session`은 현행 source lineage FK라 즉시 삭제 금지, source batch 대체 후 은퇴.
+  - [x] 메일 영향 — [Audit §5](../03_Technical_Specs/20_LEGACY_UPLOAD_EMAIL_RETIREMENT_AUDIT.md): 현행 internal_reminder는 유지, `outbound_email` 기반 고객 요청메일은 은퇴 후보.
+  - [ ] 업로드 포털 영향 — `/upload/[token]` 외부 포털의 v1 제외 여부 최종 확정(권장: v1 제외 후 quarantine, [Audit §7](../03_Technical_Specs/20_LEGACY_UPLOAD_EMAIL_RETIREMENT_AUDIT.md)).
+  - [ ] 테스트 영향 — 첫 삭제 slice 확정 후 해당 테스트 삭제/이관 계획 수립.
+  - [x] 단계별 삭제 계획 수립 — [Audit §6](../03_Technical_Specs/20_LEGACY_UPLOAD_EMAIL_RETIREMENT_AUDIT.md): Route Quarantine → Mail Retirement → Source Batch Replacement → Schema Retirement.
 - Acceptance Criteria:
   - [ ] 레거시 서브시스템이 단계적으로 제거되며 각 단계에서 tsc/lint/test가 통과한다
   - [ ] v1 현행 기능(자료수집·기장·부가세·급여·신고지원·직원명부·리마인드·신고준비)에 영향이 없다
   - [ ] `clients`(사업장)·`billing`·jaryo-admin 등 유지 대상은 보존된다
-- Document Sync Check: 2026-07-04 등록(에픽). 선행: 고립된 레거시 cron 라우트 4개 삭제 완료(chore/remove-legacy-cron-routes). 착수 전 영향 감사 → 단계별 삭제 계획 필요. 대형 정리라 별도 착수.
+- Document Sync Check: 2026-07-05 영향 감사 완료. 선행: 고립된 레거시 cron 라우트 4개 삭제 완료. 결론: `upload_session`은 현행 source lineage FK라 즉시 삭제 금지, 외부 포털/고객 요청메일 표면부터 단계적으로 격리. 남은 결정: `/upload/[token]` 외부 포털 v1 제외 승인 후 첫 삭제 slice 착수.
 
 ### JC-032 · 사업자 유형 전용 필드 — 신고 준비 dimming 실데이터 연결 (우선순위 높음 · 저위험)
 
