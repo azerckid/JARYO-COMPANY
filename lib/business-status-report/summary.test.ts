@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon'
 import { describe, expect, it } from 'vitest'
 import {
+  buildBusinessStatusAnnualSourceIssueCounts,
   buildBusinessStatusBlockers,
   buildBusinessStatusExpenseRows,
   buildBusinessStatusHandoffRows,
@@ -89,6 +90,17 @@ describe('buildBusinessStatusPreparationPercent', () => {
     expect(buildBusinessStatusPreparationPercent({ applicable: true, blockerCount: 0, confirmedRevenueCount: 0, confirmedExpenseCount: 0 })).toBe(0)
     expect(buildBusinessStatusPreparationPercent({ applicable: true, blockerCount: 0, confirmedRevenueCount: 2, confirmedExpenseCount: 2 })).toBe(100)
     expect(buildBusinessStatusPreparationPercent({ applicable: true, blockerCount: 2, confirmedRevenueCount: 2, confirmedExpenseCount: 2 })).toBe(67)
+  })
+})
+
+
+describe('buildBusinessStatusAnnualSourceIssueCounts', () => {
+  it('combines H1 and H2 source collection blockers for an annual report', () => {
+    const counts = buildBusinessStatusAnnualSourceIssueCounts([
+      { missingItems: [{ id: 'h1-a' }, { id: 'h1-b' }], completeness: { normalizationPendingCount: 1 } },
+      { missingItems: [{ id: 'h2-a' }], completeness: { normalizationPendingCount: 2 } },
+    ])
+    expect(counts).toEqual({ sourceMissingCount: 3, normalizationPendingCount: 3 })
   })
 })
 

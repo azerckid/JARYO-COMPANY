@@ -1,6 +1,6 @@
 # Business Status Report (사업장현황신고) Pre-Code Technical Brief
 > Created: 2026-07-05 21:57
-> Last Updated: 2026-07-05 22:32
+> Last Updated: 2026-07-05 22:45
 
 ## 0. Governing Principle
 
@@ -72,7 +72,7 @@ function resolveBusinessStatusEligibility(
 | `client.taxEntityType` | 면세 개인사업자 대상 여부 판정 |
 | `bookkeepingTransactionClassification` | 확정 거래의 수입금액(`direction='income'`)·매입/경비(`direction='expense'`) 집계 |
 | `bookkeepingClassificationRun` + `uploadSession` | 귀속연도에 겹치는 staff-direct 세션의 최신 completed run 선별(JC-010 패턴 재사용) |
-| `loadSourceCollectionSummary` | 자료 누락·정규화 대기 blocker 표시(자료수집 라우팅) |
+| `loadSourceCollectionSummary` | 자료 누락·정규화 대기 blocker 표시(자료수집 라우팅). 사업장현황신고는 연간 신고이므로 `YYYY-H1` + `YYYY-H2`를 각각 조회해 합산한다. |
 | `vatPeriodSummary.exemptSupplyKrw` | 선택적 보조 비교값. core source가 아니며, 값이 없어도 JC-028 화면을 막지 않는다. |
 
 기장 조회 패턴은 `loadBookkeepingReviewSummary`와 동일하게 한다.
@@ -151,7 +151,7 @@ function buildBusinessStatusExpenseRows(rows: BusinessStatusClassificationRow[])
 | 원인 | 판정 | CTA |
 |:---|:---|:---|
 | 사업자 유형 미지정 | `taxEntityType === null` | 설정 열기 |
-| 자료 누락/정규화 대기 | `loadSourceCollectionSummary().missingItems.length` 또는 `normalizationPendingCount > 0` | 자료수집 열기 |
+| 자료 누락/정규화 대기 | `YYYY-H1` + `YYYY-H2` `loadSourceCollectionSummary()`의 `missingItems.length`와 `normalizationPendingCount` 합산값 > 0 | 자료수집 열기 |
 | 기장 미확정 | classification row `status`가 `suggested`·`needs_decision`·`unclassified` | 기장검토 열기 |
 
 준비율은 저장하지 않는 파생값이다.

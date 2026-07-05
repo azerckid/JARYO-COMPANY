@@ -60,6 +60,11 @@ export type BusinessStatusHandoffRow = {
   owner: string
 }
 
+export type BusinessStatusSourceIssueCounts = {
+  sourceMissingCount: number
+  normalizationPendingCount: number
+}
+
 export type BusinessStatusReportSummary = {
   tenant: { id: string; name: string; timezone: string }
   businessEntity: { id: string; name: string; taxEntityType: TaxEntityType | null } | null
@@ -192,6 +197,16 @@ export function buildBusinessStatusBlockers(params: {
   return blockers
 }
 
+export function buildBusinessStatusAnnualSourceIssueCounts(summaries: Array<{
+  missingItems: readonly unknown[]
+  completeness: { normalizationPendingCount: number }
+}>): BusinessStatusSourceIssueCounts {
+  return summaries.reduce<BusinessStatusSourceIssueCounts>((acc, summary) => ({
+    sourceMissingCount: acc.sourceMissingCount + summary.missingItems.length,
+    normalizationPendingCount: acc.normalizationPendingCount + summary.completeness.normalizationPendingCount,
+  }), { sourceMissingCount: 0, normalizationPendingCount: 0 })
+}
+
 export function buildBusinessStatusHandoffRows(params: {
   revenueTotalKrw: number
   expenseTotalKrw: number
@@ -232,6 +247,18 @@ export function buildBusinessStatusHandoffRows(params: {
 export function resolveBusinessStatusFiscalYear(today: DateTime, periodKey?: string | null) {
   if (periodKey && /^\d{4}/.test(periodKey)) return Number(periodKey.slice(0, 4))
   return today.year
+}
+
+async function loadBusinessStatusAnnualSourceIssueCounts(params: {
+  tenantId: string
+  fiscalYear: number
+  today: DateTime
+}): Promise<BusinessStatusSourceIssueCounts> {
+  const [h1, h2] = await Promise.all([
+    loadSourceCollectionSummary({ tenantId: params.tenantId, periodKey: `${params.fiscalYear}-H1`, today: params.today }),
+    loadSourceCollectionSummary({ tenantId: params.tenantId, periodKey: `${params.fiscalYear}-H2`, today: params.today }),
+  ])
+  return buildBusinessStatusAnnualSourceIssueCounts([h1, h2])
 }
 
 async function loadBusinessStatusRows(params: { tenantId: string; clientId: string; fiscalYear: number }) {
@@ -321,17 +348,17 @@ export async function loadBusinessStatusReportSummary({ tenantId, periodKey, tod
     return emptySummary({ tenantRow, businessEntity, fiscalYear, eligibility, blockers: [] })
   }
 
-  const [classificationRows, sourceSummary] = await Promise.all([
+  const [classificationRows, sourceIssues] = await Promise.all([
     loadBusinessStatusRows({ tenantId, clientId: businessEntity.id, fiscalYear }),
-    loadSourceCollectionSummary({ tenantId, periodKey: String(fiscalYear), today: current }),
+    loadBusinessStatusAnnualSourceIssueCounts({ tenantId, fiscalYear, today: current }),
   ])
   const revenueRows = buildBusinessStatusRevenueRows(classificationRows)
   const expenseRows = buildBusinessStatusExpenseRows(classificationRows)
   const blockers = buildBusinessStatusBlockers({
     eligibility,
     classificationRows,
-    sourceMissingCount: sourceSummary.missingItems.length,
-    normalizationPendingCount: sourceSummary.completeness.normalizationPendingCount,
+    sourceMissingCount: sourceIssues.sourceMissingCount,
+    normalizationPendingCount: sourceIssues.normalizationPendingCount,
   })
   const revenueTotalKrw = sumRows(revenueRows)
   const expenseTotalKrw = sumRows(expenseRows)

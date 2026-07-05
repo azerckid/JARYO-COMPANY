@@ -2,7 +2,7 @@ import { asc, eq } from 'drizzle-orm'
 import type { DateTime } from 'luxon'
 import { buildCompanyHomePeriod, type CompanyHomePeriod } from '@/lib/company-home/summary'
 import { client, tenant } from '@/lib/db/schema'
-import { loadBusinessStatusReportAttentionCount } from '@/lib/business-status-report/summary'
+import { loadBusinessStatusReportAttentionCount, resolveBusinessStatusEligibility } from '@/lib/business-status-report/summary'
 import {
   loadInternalReminderAttentionItems,
   type InternalReminderAttention,
@@ -114,10 +114,14 @@ export function businessTypeLabel(type: FilingPrepBusinessType): string {
 }
 
 // v1: 면세 개인사업자는 부가세 트랙이 해당 없음(사업장현황신고로 대체·JC-028).
-// 그 외 트랙과 unknown 유형은 전부 해당(흐림 없음).
+// 사업장현황신고 트랙은 상세 화면의 eligibility 함수와 같은 판정을 사용한다.
+function businessStatusEligibilityFor(type: FilingPrepBusinessType) {
+  return resolveBusinessStatusEligibility(type === 'unknown' ? null : type)
+}
+
 export function isTrackApplicable(trackId: FilingPrepTrackId, type: FilingPrepBusinessType): boolean {
   if (trackId === 'vat' && type === 'tax_exempt') return false
-  if (trackId === 'business_status' && (type === 'individual' || type === 'corporation')) return false
+  if (trackId === 'business_status') return businessStatusEligibilityFor(type).state !== 'not_applicable'
   return true
 }
 

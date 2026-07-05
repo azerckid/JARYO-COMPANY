@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon'
 import { describe, expect, it } from 'vitest'
+import { resolveBusinessStatusEligibility } from '@/lib/business-status-report/summary'
 import type { InternalReminderAttention } from '@/lib/internal-reminders/summary'
 import {
   buildFilingPreparationBlockers,
@@ -133,11 +134,18 @@ describe('isTrackApplicable / inapplicableReasonFor', () => {
     }
   })
 
-  it('keeps business_status only for tax-exempt/unknown, not taxable/corporation', () => {
-    expect(isTrackApplicable('business_status', 'tax_exempt')).toBe(true)
-    expect(isTrackApplicable('business_status', 'unknown')).toBe(true)
-    expect(isTrackApplicable('business_status', 'individual')).toBe(false)
-    expect(isTrackApplicable('business_status', 'corporation')).toBe(false)
+  it('keeps business_status aligned with the detail-screen eligibility function', () => {
+    const cases = [
+      ['tax_exempt', 'tax_exempt'],
+      ['unknown', null],
+      ['individual', 'individual'],
+      ['corporation', 'corporation'],
+    ] as const
+    for (const [hubType, entityType] of cases) {
+      expect(isTrackApplicable('business_status', hubType)).toBe(
+        resolveBusinessStatusEligibility(entityType).state !== 'not_applicable',
+      )
+    }
     expect(inapplicableReasonFor('business_status', 'individual')).toContain('대상')
   })
 })
