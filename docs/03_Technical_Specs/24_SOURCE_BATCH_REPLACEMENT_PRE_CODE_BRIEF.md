@@ -149,6 +149,11 @@ Rules:
 - 각 table은 `add nullable source_batch_id -> backfill -> write dual -> read prefer -> tighten/delete legacy FK later` 순서를 따른다.
 - `upload_session_id` 삭제는 Slice 4 schema retirement 전까지 하지 않는다.
 
+**Slice 3b 리뷰에서 나온 후속 메모(비차단, 3c 계획에 반영)**:
+
+1. `lib/company-home/summary.ts`가 3b 우선순위 5곳 밖에서 `source-collection/summary.ts`(3b 전환 전)와 거의 동일한 `upload_session` 직접 조회 패턴(scopedSession·gte/lte accountingPeriod·source='staff_direct'·deletedAt)을 여전히 갖고 있다. 회사 홈 대시보드 숫자가 자료수집/기장검토 화면과 어긋날 여지가 있어, 3c 또는 별도 소규모 slice에서 같은 방식(테이블만 `source_batch`로 전환, 필터 동일 유지)으로 정리한다.
+2. Slice 3b의 `listActiveSourceBatchSessions`는 런타임에 `upload_session`으로 fallback하지 않는다 — migration 0061의 backfill + `legacy_upload_session_id` 브릿지에 전적으로 의존한다. **실제 사고(2026-07-06)**: Slice 3b 머지 시점에 prod DB에는 0061이 미적용 상태였다(dev만 적용됨). 머지 3초 뒤 자동배포로 prod가 `source_batch` 테이블 없이 이 코드를 서빙하기 시작했고, `turso db shell semuagent`로 직접 확인해 발견 — 다행히 저트래픽 구간이라 실제 500 발생 전에 포착해 즉시 prod에 0061을 적용했다(source_batch 2건 생성, upload_file 4/4 연결, `foreign_key_check` 0건, dev와 동일 결과). **교훈**: "dev DB 적용 완료" 보고를 prod까지 적용됐다는 뜻으로 오인하지 말 것 — 새 테이블/컬럼을 추가하는 모든 PR은 머지 전 `turso db shell semuagent`로 prod 스키마를 직접 확인해야 한다([[prod-db-migration-deploy-order]] 갱신). 3c 설계 시 "런타임 fallback을 둘지, backfill 완전성에 계속 의존할지"는 여전히 결정 필요하나, 급한 위험은 해소됨.
+
 Done for 3c:
 
 - 핵심 source lineage read path가 `source_batch`를 통해 end-to-end 추적 가능하다.
