@@ -33,7 +33,6 @@ export function ReviewWorkspace({
   sessionNotFound = false,
   attributionPromptCard,
   deferredPreviews,
-  deferredApprovalQueue,
 }: {
   items: ReviewRequestListItem[]
   query: string
@@ -45,7 +44,6 @@ export function ReviewWorkspace({
   sessionNotFound?: boolean
   attributionPromptCard?: ReactNode
   deferredPreviews?: ReactNode
-  deferredApprovalQueue?: ReactNode
 }) {
   const [pendingSessionId, setPendingSessionId] = useState<string | null>(null)
   const lastPage = Math.max(1, Math.ceil(totalSessions / pageSize))
@@ -148,7 +146,6 @@ export function ReviewWorkspace({
           ) : (
             <>
               {attributionPromptCard}
-              {deferredApprovalQueue}
               {deferredPreviews}
             </>
           )}
