@@ -25,10 +25,7 @@ import type { DisplayStatus } from '@/lib/status-tone'
 import { ReviewWorkspace } from './_components/review-workspace'
 import { ReviewAttributionSavedPromptCard } from './_components/review-attribution-saved-prompt-card'
 import { ReviewWorkspaceDeferredFallback } from './_components/review-workspace-deferred-fallback'
-import {
-  ReviewWorkspaceDeferredApprovalQueue,
-  ReviewWorkspaceDeferredPreviews,
-} from './_components/review-workspace-deferred-panels'
+import { ReviewWorkspaceDeferredPreviews } from './_components/review-workspace-deferred-panels'
 import { deriveReviewAdaptiveStructuringEligibility } from '@/lib/reviews/adaptive-structuring-eligibility'
 import { getReviewRequestMethodLabel } from './_components/review-request-method'
 import { sortReviewSessions } from '@/lib/reviews/review-session-order'
@@ -200,10 +197,6 @@ export default async function ReviewsPage({ searchParams }: PageProps) {
   const dependents = await loadSessionDependents(tenantId, sessionIds)
 
   const reviewSessions = sortReviewSessions(buildReviewSessions({ rows: sessionRows, ...dependents }))
-  const clientDisplayNameBySessionId = Object.fromEntries(
-    reviewSessions.map((reviewSession) => [reviewSession.id, reviewSession.clientName]),
-  )
-
   const matchedSession = filters.sessionId
     ? reviewSessions.find((reviewSession) => reviewSession.id === filters.sessionId) ?? null
     : null
@@ -305,19 +298,6 @@ export default async function ReviewsPage({ searchParams }: PageProps) {
             />
           </Suspense>
         )
-      }
-      deferredApprovalQueue={
-        <Suspense
-          key={`approval-${selectedSessionId ?? 'none'}`}
-          fallback={<ReviewWorkspaceDeferredFallback section="approval" />}
-        >
-          <ReviewWorkspaceDeferredApprovalQueue
-            tenantId={tenantId}
-            selectedSessionId={selectedSessionId}
-            clientDisplayNameBySessionId={clientDisplayNameBySessionId}
-            refreshHref={refreshHref}
-          />
-        </Suspense>
       }
     />
   )
