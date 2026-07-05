@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createClient, type Client } from '@libsql/client'
 import { drizzle } from 'drizzle-orm/libsql'
+import { and, eq } from 'drizzle-orm'
 import * as appSchema from '@/lib/db/schema'
 
 let client: Client
@@ -55,47 +56,24 @@ async function seed(rows: Array<{
   }
 }
 
+async function findDeclarations(tenantId: string, uploadSessionId: string) {
+  const { uploadItemDeclaration } = appSchema
+  return testDb
+    .select({ checklistItemId: uploadItemDeclaration.checklistItemId })
+    .from(uploadItemDeclaration)
+    .where(and(
+      eq(uploadItemDeclaration.tenantId, tenantId),
+      eq(uploadItemDeclaration.uploadSessionId, uploadSessionId),
+    ))
+}
+
 beforeEach(async () => {
   await client.execute('DELETE FROM upload_item_declaration')
 })
 
-describe('listSessionItemDeclarations', () => {
-  it('해당 (tenant, session)의 선언만 가져온다', async () => {
-    const { listSessionItemDeclarations } = await import('./item-declaration')
-    await seed([
-      { tenantId: 't1', uploadSessionId: 's1', checklistItemId: 'i1', declaration: 'none', note: '없음' },
-      { tenantId: 't1', uploadSessionId: 's1', checklistItemId: 'i2', declaration: 'later' },
-      { tenantId: 't1', uploadSessionId: 's2', checklistItemId: 'i1', declaration: 'none' },
-      { tenantId: 't2', uploadSessionId: 's1', checklistItemId: 'i1', declaration: 'none' },
-    ])
-
-    const result = await listSessionItemDeclarations({ tenantId: 't1', uploadSessionId: 's1' })
-
-    expect(result).toHaveLength(2)
-    expect(result.map((r) => r.checklistItemId).sort()).toEqual(['i1', 'i2'])
-    const none = result.find((r) => r.checklistItemId === 'i1')
-    expect(none).toEqual({ checklistItemId: 'i1', declaration: 'none', note: '없음' })
-  })
-
-  it('tenant와 session을 뒤바꿔 부르면 0건이다(인자 순서 회귀 방지)', async () => {
-    const { listSessionItemDeclarations } = await import('./item-declaration')
-    await seed([{ tenantId: 't1', uploadSessionId: 's1', checklistItemId: 'i1', declaration: 'none' }])
-
-    // tenantId 자리에 session id, uploadSessionId 자리에 tenant id를 넣은 경우
-    const swapped = await listSessionItemDeclarations({ tenantId: 's1', uploadSessionId: 't1' })
-    expect(swapped).toHaveLength(0)
-  })
-
-  it('선언이 없으면 빈 배열', async () => {
-    const { listSessionItemDeclarations } = await import('./item-declaration')
-    const result = await listSessionItemDeclarations({ tenantId: 't1', uploadSessionId: 's-empty' })
-    expect(result).toEqual([])
-  })
-})
-
 describe('clearUploadItemDeclaration', () => {
   it('해당 (tenant, session, item) row만 지운다', async () => {
-    const { listSessionItemDeclarations, clearUploadItemDeclaration } = await import('./item-declaration')
+    const { clearUploadItemDeclaration } = await import('./item-declaration')
     await seed([
       { tenantId: 't1', uploadSessionId: 's1', checklistItemId: 'i1', declaration: 'none' },
       { tenantId: 't1', uploadSessionId: 's1', checklistItemId: 'i2', declaration: 'later' },
@@ -106,19 +84,19 @@ describe('clearUploadItemDeclaration', () => {
     await clearUploadItemDeclaration({ tenantId: 't1', uploadSessionId: 's1', checklistItemId: 'i1' })
 
     // 같은 세션의 다른 항목은 남는다
-    const s1 = await listSessionItemDeclarations({ tenantId: 't1', uploadSessionId: 's1' })
+    const s1 = await findDeclarations('t1', 's1')
     expect(s1.map((r) => r.checklistItemId)).toEqual(['i2'])
     // 다른 세션/테넌트의 같은 항목은 영향 없음
-    expect(await listSessionItemDeclarations({ tenantId: 't1', uploadSessionId: 's2' })).toHaveLength(1)
-    expect(await listSessionItemDeclarations({ tenantId: 't2', uploadSessionId: 's1' })).toHaveLength(1)
+    expect(await findDeclarations('t1', 's2')).toHaveLength(1)
+    expect(await findDeclarations('t2', 's1')).toHaveLength(1)
   })
 
   it('tenant/session이 뒤섞이면 아무것도 지우지 않는다', async () => {
-    const { listSessionItemDeclarations, clearUploadItemDeclaration } = await import('./item-declaration')
+    const { clearUploadItemDeclaration } = await import('./item-declaration')
     await seed([{ tenantId: 't1', uploadSessionId: 's1', checklistItemId: 'i1', declaration: 'none' }])
 
     await clearUploadItemDeclaration({ tenantId: 's1', uploadSessionId: 't1', checklistItemId: 'i1' })
 
-    expect(await listSessionItemDeclarations({ tenantId: 't1', uploadSessionId: 's1' })).toHaveLength(1)
+    expect(await findDeclarations('t1', 's1')).toHaveLength(1)
   })
 })
