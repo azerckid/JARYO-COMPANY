@@ -1,0 +1,119 @@
+# Legacy Mail Side-effect Audit
+> Created: 2026-07-05 16:39
+> Last Updated: 2026-07-05 16:39
+
+## 0. Flow Status
+
+```text
+[Flow]
+현재: JC-031 Slice 2b — Mail Side-effect Audit / Context Lock
+Gate: 진행 중
+완료: Slice 1~1c 외부 포털 quarantine, Slice 2a 레거시 요청메일 쓰기 API 410 차단
+다음: Slice 2b-1 보충요청 초안 생성 side effect 제거
+필요 확인: transaction-purpose 확인 요청을 self-use 내부 작업으로 재설계할지 여부
+권장 스킬: rules-product -> rules-dev/rules-workflow per deletion slice
+```
+
+## 1. Purpose
+
+Slice 2a는 레거시 고객 요청메일을 새로 만들거나 보내는 주요 API 쓰기 경로를 410 Gone으로 닫았다.
+그러나 `outbound_email` 신규 생성 가능성은 완전히 사라지지 않았다.
+
+남은 위험은 두 종류다.
+
+1. 평가/검토 파이프라인 내부에서 `missing_request` 초안을 자동 생성하는 side effect
+2. 거래 용도 확인(`transaction_purpose_request`) 발송 시 `outbound_email`을 생성하고 `sent_email_id` FK로 묶는 경로
+
+이 문서는 코드 삭제 전 남은 의존성을 분리하고, 다음 slice를 안전한 순서로 고정한다.
+
+## 2. Non-goals
+
+- `outbound_email` 테이블 삭제
+- `upload_session` 테이블 삭제 또는 source lineage 변경
+- direct-upload 자료수집 경로 변경
+- 업무메일(`work-emails`) 또는 내부 리마인드(`internal_reminder_*`) 변경
+- 거래 용도 확인 도메인의 모든 테이블 즉시 삭제
+
+## 3. Remaining `missing_request` Side Effects
+
+| 경로 | 현재 상태 | side effect | Slice 2b 판단 |
+|---|---|---|---|
+| `app/api/sessions/draft/route.ts` | Slice 2a에서 POST 410 처리됨 | 과거에는 `generateMissingRequestDraft` 직접 호출 | 이미 차단. 삭제 후보는 후속 dead-code 정리 |
+| `lib/ai/run-session-evaluation.ts` | `needs_resubmission` 결과일 때 `applySessionEvaluationOutcome`이 동적 import로 초안 생성 | `outbound_email(type='missing_request', status='draft')` insert/delete | **Slice 2b-1 제거 대상.** 평가 결과는 그대로 반환하고 메일 초안 생성만 제거 |
+| `app/api/sessions/[id]/material-attribution/start/route.ts` | 귀속기간 검토 후 non-fatal로 초안 생성 시도 | `missing_request` draft insert/delete | **Slice 2b-1 제거 대상.** 귀속기간/ledger pipeline은 유지하고 메일 side effect만 제거 |
+| `app/(dashboard)/dashboard/reviews/page.tsx` | `reviews/layout.tsx`가 `/dashboard`로 redirect되어 UI 도달 불가 | 기간 gap 대상에 대해 수동 초안 생성 | 후속 UI dead-code 정리 후보. Slice 2b-1에서 호출 제거 또는 페이지 삭제 전 static import 의존성 확인 |
+| `app/(dashboard)/dashboard/reviews/_components/review-workspace-deferred-panels.tsx` | `reviews` 하위라 도달 불가 | 선택 세션 초안 생성 | 후속 UI dead-code 정리 후보 |
+| `app/api/emails/missing-requests/route.ts` | GET만 남음 | 기존 draft 조회 | 생성 경로 제거 후 410/삭제 후보. 기존 데이터 조회 보존 필요성 없음 |
+| `lib/upload-session-revision.ts` | 파일 revision 시 draft를 `rejected` 처리 | 남은 draft 상태 정리 | 생성 경로 제거 후 남은 기존 draft 처리 정책과 함께 단순화 가능 |
+| `lib/sessions/criterion-review-service.ts` | 기준 검토 후 stale draft를 `rejected` 처리 | 남은 draft 상태 정리 | 생성 경로 제거 후 단순화 가능. 단, criterion review 자체는 기장검토 로직이라 보존 |
+
+### Slice 2b-1 Acceptance
+
+- `generateMissingRequestDraft`가 런타임 파이프라인에서 호출되지 않는다.
+- `runSessionEvaluationPipeline`은 `needs_resubmission` 결과를 유지하되 메일 초안을 생성하지 않는다.
+- `material-attribution/start`는 귀속기간 검토와 ledger pipeline만 수행하고 메일 초안 side effect를 갖지 않는다.
+- `app/api/emails/missing-requests`는 신규 draft가 생기지 않는 상태와 정합하게 410 또는 삭제된다.
+- `direct-upload`, 기장검토, 급여, 신고준비 read model에는 영향이 없다.
+
+## 4. Transaction-purpose `outbound_email` Dependency
+
+거래 용도 확인은 `missing_request`와 다른 도메인이지만, 발송 경로가 여전히 `outbound_email`에 결합되어 있다.
+
+| 경로 | 현재 상태 | `outbound_email` 결합 | 판단 |
+|---|---|---|---|
+| `app/api/sessions/[id]/transaction-purpose-requests/route.ts` | draft 생성. 발송 아님 | 없음 | send 차단 전까지는 낮은 위험. 다만 `/dashboard/sessions` 하위 UI가 redirect라 v1 핵심 경로 아님 |
+| `app/api/transaction-purpose-requests/[id]/route.ts` | draft 조회/수정 | 없음 | send 차단 뒤 dead-code 정리 후보 |
+| `app/api/transaction-purpose-requests/[id]/send/route.ts` | 담당자 승인 후 Resend 발송 | `sendPurposeRequest`가 `outbound_email(type='transaction_purpose_request')` insert 후 `sent_email_id` 저장 | **Slice 2b-2 차단 대상.** 먼저 POST를 410 처리 |
+| `lib/bookkeeping/transaction-purpose-service.ts` | draft 생성/수정/발송 서비스 | `sendPurposeRequest`만 `outbound_email` 생성 | send 차단 뒤 발송 함수 제거. draft/row 테이블은 classification answer 적용 로직 확인 후 정리 |
+| `bookkeeping_transaction_purpose_request.sent_email_id` | `outbound_email.id` FK | schema-level FK | Slice 4 전에는 삭제 금지. self-use 내부 작업 모델로 재설계 후 FK 제거 |
+| `app/api/upload/purpose-request*` | Slice 1b에서 410 차단 | 고객 답변 포털 차단됨 | public answer 경로는 이미 닫힘 |
+
+### Slice 2b-2 Acceptance
+
+- `POST /api/transaction-purpose-requests/[id]/send`가 410 Gone을 반환한다.
+- `sendPurposeRequest`가 더 이상 런타임 route에서 호출되지 않는다.
+- `bookkeeping_transaction_purpose_request` draft/row와 classification answer 적용 코드는 삭제하지 않는다.
+- `sent_email_id` FK는 스키마에서 유지한다. 제거는 Slice 4 또는 별도 migration gate에서만 한다.
+
+## 5. Read Surfaces That Still Mention `outbound_email`
+
+다음 표면은 read-only 또는 hidden UI 성격이다. 즉시 삭제보다 생성/발송 차단 후 정리하는 순서가 안전하다.
+
+- `app/(dashboard)/dashboard/emails/*` — `emails/layout.tsx` redirect로 차단된 레거시 메일 화면.
+- `app/(dashboard)/dashboard/reviews/*` — `reviews/layout.tsx` redirect로 차단된 레거시 리뷰 화면 일부가 missing-request draft를 읽음.
+- `app/(dashboard)/dashboard/calendar/page.tsx` — 레거시 request-event/outbound-email 상태를 읽음. 신고 준비 허브로 대체된 주변부.
+- `app/(dashboard)/dashboard/clients/page.tsx` — 사업장 목록에서 일부 outbound-email 상태를 읽음. business entity 유지 대상이라 삭제 전 별도 UI 영향 확인 필요.
+- `lib/payroll/load-payroll-derived-status.ts` / `load-payroll-summary-by-event-id.ts` — payroll event의 이메일 상태를 파생 상태로 읽음. payroll live 경로와 섞일 수 있어 Slice 3~4 전까지 보수적으로 유지.
+
+## 6. Recommended Order
+
+1. **Slice 2b-1 — Missing-request side effect 제거**
+   - `run-session-evaluation`과 `material-attribution/start`에서 `generateMissingRequestDraft` 호출 제거
+   - `app/api/emails/missing-requests`를 410 처리 또는 삭제
+   - hidden reviews UI의 수동 초안 생성 호출은 dead-code 정리 후보로 표시
+2. **Slice 2b-2 — Transaction-purpose send quarantine**
+   - `/api/transaction-purpose-requests/[id]/send` 410 처리
+   - `sendPurposeRequest` 런타임 호출 제거 확인
+   - draft/row 및 classification answer 적용 로직은 유지
+3. **Slice 2b-3 — Legacy mail UI/read cleanup**
+   - `dashboard/emails`, hidden `reviews` deferred mail panels, calendar/client outbound-email read를 영향별로 제거
+4. **Slice 4 준비 — Schema retirement gate**
+   - `outbound_email` FK 제거 migration은 source lineage 이관 및 transaction-purpose 재설계 후에만 수행
+
+## 7. Verification Plan
+
+각 코드 slice마다 다음을 확인한다.
+
+- `rg "generateMissingRequestDraft" app lib` 결과가 의도한 dead-code 후보만 남는지 확인
+- `rg "sendPurposeRequest" app lib` 결과가 route runtime에서 제거됐는지 확인
+- `npx tsc --noEmit`
+- `npm test -- --run`
+- `npm run lint`
+- build는 live dev server 충돌 가능성이 없을 때만 수행
+
+## 8. Related Documents
+
+- [Legacy Upload/Email Retirement Audit](./20_LEGACY_UPLOAD_EMAIL_RETIREMENT_AUDIT.md)
+- [DB Schema](./03_DB_SCHEMA.md)
+- [Bookkeeping Review Pre-Code Brief](./06_BOOKKEEPING_REVIEW_PRE_CODE_BRIEF.md)
+- [Backlog JC-031](../04_Logic_Progress/00_BACKLOG.md)
