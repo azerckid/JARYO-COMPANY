@@ -1,6 +1,6 @@
 # JC-031 Slice 4-2 Upload Session Column Retirement Pre-Code Brief
 > Created: 2026-07-06 19:26 KST
-> Last Updated: 2026-07-06 19:45 KST
+> Last Updated: 2026-07-06 20:20 KST
 
 ## 0. Flow Status
 
@@ -8,9 +8,9 @@
 [Flow]
 현재: JC-031 Slice 4-2a 완료 — redirect-blocked session/request context residue 제거
 Gate: 통과
-완료: Slice 1~3c, Slice 4-0~4-1, Slice 4-2-0~4-2a(이번 PR)
+완료: Slice 1~3c, Slice 4-0~4-1, Slice 4-2-0~4-2a(이번 PR), prod DB migration 0060 적용(2026-07-06)
 다음: Slice 4-2b AI/review criteria context 이관 여부 결정
-필요 확인: prod DB migration 0060 적용 여부
+필요 확인: 없음
 권장 스킬: rules-product -> rules-dev/rules-workflow
 ```
 

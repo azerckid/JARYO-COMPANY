@@ -1,6 +1,6 @@
 # JC-031 Slice 4 Schema Retirement Allowlist
 > Created: 2026-07-06 15:25 KST
-> Last Updated: 2026-07-06 19:26 KST
+> Last Updated: 2026-07-06 20:20 KST
 
 ## 0. Flow Status
 
@@ -8,9 +8,9 @@
 [Flow]
 현재: JC-031 Slice 4-2a 완료 — redirect-blocked session/request context residue 제거
 Gate: 통과
-완료: Slice 1~3c, Slice 4-0~4-1, Slice 4-2-0~4-2a
+완료: Slice 1~3c, Slice 4-0~4-2a, prod DB migration 0060 적용(2026-07-06)
 다음: Slice 4-2b AI/review criteria context 이관 여부 결정
-필요 확인: prod DB migration 0060 적용 여부, /dashboard/sessions/new 및 request-event snapshot 유지 여부
+필요 확인: 없음
 권장 스킬: rules-product -> rules-dev/rules-workflow
 ```
 
@@ -263,7 +263,7 @@ Slice 4 각 sub-slice PR 머지 후:
 
 | 항목 | 상태 |
 |---|---|
-| prod DB migration 0060 적용 여부 | **미확인** — Slice 2c `sent_email_id` drop; Slice 4 착수 전 SELECT 확인 |
+| prod DB migration 0060 적용 여부 | **해소(2026-07-06)** — dev는 이미 적용, prod는 `turso db shell semuagent`로 table rebuild 직접 적용·검증(`foreign_key_check` 0건) |
 | `lib/completion.ts` 호출처 | `matches/[matchId]/route.ts` — 세션 완료 판정(C) |
 | read prefer `source_batch_id` on downstream tables | 3c에서 deferred; 4-4 전 micro-slice 가능 |
 | `docs/03_DB_SCHEMA.md` 전면 갱신 | 4-4/4-5 시점 |
