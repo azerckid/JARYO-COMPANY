@@ -1,16 +1,16 @@
 # Legacy Mail Side-effect Audit
 > Created: 2026-07-05 16:39
-> Last Updated: 2026-07-06 19:26 KST
+> Last Updated: 2026-07-06 20:20 KST
 
 ## 0. Flow Status
 
 ```text
 [Flow]
-현재: JC-031 Slice 4-2-0 완료 — upload_session 컬럼 retirement 범위와 차단 조건 고정
-Gate: Pre-Code Brief / docs-only / migration 미착수
-완료: Slice 1~3c, Slice 4-0~4-1, Slice 4-2-0
+현재: JC-031 Slice 4-2a 완료 — redirect-blocked session/request context residue 제거
+Gate: 통과
+완료: Slice 1~3c, Slice 4-0~4-2a, prod DB migration 0060 적용(2026-07-06)
 다음: Slice 4-2b AI/review criteria context 이관 결정
-필요 확인: prod DB migration 0060 적용 여부, /dashboard/sessions/new 및 request-event snapshot 유지 여부
+필요 확인: 없음
 권장 스킬: rules-product -> rules-dev/rules-workflow
 ```
 
