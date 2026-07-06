@@ -1,6 +1,6 @@
 # JC-031 Slice 3 Source Batch Replacement Pre-Code Brief
 > Created: 2026-07-05 23:28 KST
-> Last Updated: 2026-07-06 19:45 KST
+> Last Updated: 2026-07-06 20:05 KST
 
 ## 0. Flow Status
 
@@ -8,11 +8,13 @@
 [Flow]
 현재: JC-031 Slice 4-2a 완료 — redirect-blocked session/request context residue 제거
 Gate: 통과
-완료: Slice 1~3c, Slice 4-0~4-2a
+완료: Slice 1~3c, Slice 4-0~4-2a, prod DB migration 0060 적용(2026-07-06, table rebuild)
 다음: Slice 4-2b AI/review criteria context 이관 결정
-필요 확인: prod DB migration 0060 적용 여부
+필요 확인: 없음(직전 open item 해소)
 권장 스킬: rules-product -> rules-dev/rules-workflow
 ```
+
+**migration 0060 prod 적용 기록(2026-07-06):** `bookkeeping_transaction_purpose_request`의 `sent_email_id`→`outbound_email` FK를 table rebuild로 제거. dev DB는 이미 적용된 상태였고(0행), prod는 미적용 상태(0행, `sent_email_id` 컬럼·FK 존재)였다. 사용자 승인 후 `turso db shell semuagent`로 직접 rebuild(CREATE `__new_*` → INSERT SELECT → DROP → RENAME → 인덱스 3개 재생성) 적용. 검증: 신규 schema가 dev와 일치, 인덱스 3개 재생성 확인, row count 0, `foreign_key_check` 0건, Vercel 런타임 에러 0건.
 
 ## 1. Purpose
 
