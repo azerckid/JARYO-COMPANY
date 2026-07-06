@@ -652,14 +652,14 @@ Technical, and QA docs first, then prepare a short implementation brief.
 
 - Related Concept: [Product Baseline §3 Filing Paths](../01_Concept_Design/01_PRODUCT_BASELINE.md) — Path 2 자료기와 연결.
 - Related Domain: JC-029 · JC-024~028 · JC-030 Validation · JARYO-GIWA.
-- Related Technical Docs: [JC-034 Scope Gate](../03_Technical_Specs/34_JC034_GIWA_HANDOFF_PACKAGE_SCOPE_GATE.md)
+- Related Technical Docs: [JC-034 Scope Gate](../03_Technical_Specs/34_JC034_GIWA_HANDOFF_PACKAGE_SCOPE_GATE.md) · [JC-034 Pre-Code Brief](../03_Technical_Specs/35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md)
 - Related Completion Contract: [Completion Contracts §3 / JC-034](../03_Technical_Specs/22_OPEN_BACKLOG_COMPLETION_CONTRACTS.md)
 - Related HTML Preview: [08_filing_preparation.html](../02_UI_Screens/previews/08_filing_preparation.html) — Path 2 handoff export 패널 (#jc-034-handoff-export)
 - Prototype Review / 승인: [x] — `08_filing_preparation.html` JC-034 패널·3 Filing Paths (2026-07-07)
 - Implementation Preconditions:
   - [x] Filing Path 2 · v1 ZIP 범위 확정
   - [x] **UI-First Gate**: [08_filing_preparation.html](../02_UI_Screens/previews/08_filing_preparation.html) — 사용자 승인(2026-07-07)
-  - [ ] Pre-Code Brief
+  - [x] **Pre-Code Brief**: [35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md](../03_Technical_Specs/35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md) — 승인(2026-07-07)
   - [ ] JC-030 Validation 연동
 - Acceptance Criteria (v1):
   - [ ] ZIP Export (manifest + tracks + README)

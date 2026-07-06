@@ -7,9 +7,10 @@
 ```text
 [Flow]
 현재: Filing Path 2 — 세무회계사무소 연결 (자료기와 / JARYO-GIWA)
-Gate: Pre-Code Brief 승인 전 코드 착수 금지
+Gate: 본 Brief 승인 후 코드 착수
 완료: UI-First Gate — 08_filing_preparation.html Path 2 패널
-다음: Pre-Code Brief (manifest Zod · per-track CSV)
+완료: Pre-Code Brief — [35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md](./35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md)
+다음: 구현 Slice 1 (schemas + CSV builders + tests)
 v1 범위: ZIP Export only (API·실시간 연동 없음)
 ```
 
@@ -88,8 +89,8 @@ JC-034 must reuse `lib/efiling-simplified-wage` validation where 간이지급 is
 ## 7. Blocking Decisions Before Implementation
 
 - [x] UI-First Gate: handoff export panel on 신고 준비 허브 — [08_filing_preparation.html](../02_UI_Screens/previews/08_filing_preparation.html) (#jc-034-handoff-export), 승인 2026-07-07
-- [ ] Pre-Code Brief: exact file names, manifest Zod schema, per-track CSV columns
-- [ ] First tax-type scope for v1 ZIP: **간이지급명세서 반기** + 원천세·부가세 summary (minimum)
+- [x] Pre-Code Brief: [35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md](./35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md) — manifest Zod, per-track CSV, API·audit (2026-07-07)
+- [x] First tax-type scope for v1 ZIP: **간이지급명세서 반기** + 원천세·부가세 summary (minimum)
 - [ ] Copy review: no `대행`, `알선`, `국세청 검증 완료` claims
 - [ ] QA scenarios for tenant isolation, empty tracks, validation failure blocking export
 
@@ -107,5 +108,6 @@ JC-034 must reuse `lib/efiling-simplified-wage` validation where 간이지급 is
 - **Concept_Design**: [Filing Preparation Pipeline](../01_Concept_Design/02_FILING_PREPARATION_PIPELINE.md)
 - **Technical_Specs**: [E-Filing Scope Gate](./19_EFILING_FILE_GENERATION_SCOPE_GATE.md) — JC-030 Validation / Path 1 / Path 3
 - **Technical_Specs**: [JC-030 PII Policy](./27_JC030_EFILING_FILE_PII_POLICY.md)
+- **Technical_Specs**: [JC-034 Pre-Code Brief](./35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md)
 - **Logic_Progress**: [Backlog JC-034](../04_Logic_Progress/00_BACKLOG.md)
 - **Logic_Progress**: [Completion Contracts §3 JC-034](./22_OPEN_BACKLOG_COMPLETION_CONTRACTS.md)

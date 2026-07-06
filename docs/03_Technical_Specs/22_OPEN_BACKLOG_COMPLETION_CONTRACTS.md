@@ -212,7 +212,7 @@ implementation not started.
 May start implementation only after:
 
 - [x] UI-First Gate for handoff export panel (신고 준비) — [08_filing_preparation.html](../02_UI_Screens/previews/08_filing_preparation.html), approved 2026-07-07
-- [ ] Pre-Code Brief with manifest Zod schema and per-track CSV/Excel columns
+- [x] Pre-Code Brief with manifest Zod schema and per-track CSV/Excel columns — [35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md](./35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md), approved 2026-07-07
 - [ ] Copy approved: existing firm only, no marketplace/referral language
 - [ ] JC-030 Validation integrated for 간이지급 v1 scope
 
@@ -304,6 +304,7 @@ If a later audit finds another legacy surface, it must be classified into one of
 - [JC-023 Hometax Auto-submit Research](./13_JC023_HOMETAX_AUTOSUBMIT_RESEARCH.md)
 - [E-Filing File Generation Scope Gate](./19_EFILING_FILE_GENERATION_SCOPE_GATE.md)
 - [JC-034 GIWA Handoff Package Scope Gate](./34_JC034_GIWA_HANDOFF_PACKAGE_SCOPE_GATE.md)
+- [JC-034 GIWA Handoff Pre-Code Brief](./35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md)
 - [JC-030 E-Filing File PII Policy](./27_JC030_EFILING_FILE_PII_POLICY.md)
 - [JC-030 Simplified Wage E-Filing Layout Acquisition](./28_JC030_SIMPLIFIED_WAGE_EFILING_LAYOUT_ACQUISITION.md)
 - [Legacy Upload/Email Retirement Audit](./20_LEGACY_UPLOAD_EMAIL_RETIREMENT_AUDIT.md)
