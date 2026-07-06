@@ -199,7 +199,8 @@ Remaining slices:
    - `upload_session` deletion is not part of Slice 3; it remains a compatibility surface until Slice 4.
 3. **Slice 4 — Schema retirement**
    - **4-0 complete:** allowlist audit in [Slice 4 Schema Retirement Allowlist](./25_SLICE4_SCHEMA_RETIREMENT_ALLOWLIST.md). `upload_session` 117 TS/TSX refs categorized; `outbound_email` runtime INSERT paths none.
-   - **4-1 next:** dead code removal (`createSessionAndSend`, `missing-request` module) — no DB migration.
+   - **4-1 complete:** removed `createSessionAndSend`, `lib/email/missing-request.ts`, `period-gap-missing-request`, and `missing-request-targets` modules. `session-service.ts` retains only `createDirectUploadSession`. No DB migration.
+   - **4-2 next:** `upload_session` legacy portal/mail column retirement (table rebuild).
    - Remove or quarantine remaining `outbound_email`, request-event, mail-console, and legacy upload-session schema pieces after FK migration.
    - Keep only explicitly approved compatibility surfaces, if any, and document why they remain.
 
