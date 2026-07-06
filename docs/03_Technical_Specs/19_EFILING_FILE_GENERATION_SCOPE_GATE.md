@@ -1,29 +1,28 @@
 # E-Filing File Generation Scope Gate
 > Created: 2026-07-05 11:18
-> Last Updated: 2026-07-07 00:35 KST
+> Last Updated: 2026-07-07 04:10 KST
 
 ## 0. Flow Status
 
 ```text
 [Flow]
-현재: JC-030 Slice 1 — HWP 참조본·필드 매핑·Pre-Code Brief 초안
-Gate: Brief 사용자 승인 전 — 코드 착수 금지
-완료: UI-First Gate, PII, Layout Acquisition, Field Mapping(29), Pre-Code Brief(30)
-다음: Brief 승인 → 구현 슬라이스 1a
-필요 확인: 제출 직전 홈택스 최신 HWP·NTS-CRYPTO 스펙(슬라이스 2)
+현재: 3 Filing Paths 확정 — Path 1(plain 파일)·Path 2(GIWA ZIP)·Path 3(인증·암호화, 미래)
+완료: Validation + Path 1 plain·검증·홈택스 안내 (Slices 1a–2a·3)
+다음: JC-034 Path 2 ZIP · UI Path 1/2/3 노출 · Path 3 Slice 2b는 인증 후
 ```
 
 ## 1. Purpose
 
-JC-030은 현행 신고지원(JC-013)의 **홈택스 입력 가이드**와 최종 로드맵(JC-023)의
-**사용자 승인 기반 자동제출** 사이에 놓이는 중간 단계다. 목표는 확정된 신고 준비 데이터를
-홈택스 **파일변환신고** 또는 관련 전자신고 업로드 흐름에 넣을 수 있는 파일로 만들고,
-제출 전 형식·정합성 오류를 사용자에게 보여주는 것이다.
+JC-030은 [Product Baseline §3 Filing Paths](../01_Concept_Design/01_PRODUCT_BASELINE.md)의
+**공통 검증**과 **Path 1·3 파일 생성**을 담당한다.
 
-다만 이 기능은 세무 계산 화면과 달리 외부 규격에 강하게 종속된다. 최신 전자신고 파일
-레이아웃과 적합성 검정 요건이 확인되지 않은 상태에서 생성기를 구현하면, 화면상으로는 파일을
-만들어도 실제 홈택스 업로드에서 거절될 위험이 크다. 따라서 본 문서는 **바로 코딩하지 않고**
-v1 대상과 차단 조건을 먼저 고정한다.
+| 구성 | Filing Path | 설명 |
+|---|---|---|
+| **Validation** | Path 1 & 2 공통 | 레이아웃·정합성 검증 후 다운로드/ZIP |
+| **Path 1** | 양식 파일 + 홈택스 안내 | plain 전자신고 파일·변환제출 가이드 (**현재**) |
+| **Path 3** | 인증·암호화 파일 | fcrypt·적합성 검정 후 홈택스 업로드 파일 (**미래**) |
+
+Path 2 (GIWA handoff ZIP)는 **JC-034**가 담당하며, JC-030 Validation 출력을 소비한다.
 
 ## 2. Official Source Check (2026-07-05)
 
@@ -64,15 +63,23 @@ v1 대상과 차단 조건을 먼저 고정한다.
 
 ## 4. v1 Direction
 
-JC-030 v1은 **근로소득 간이지급명세서 전자신고 파일 생성·검증**을 1순위 후보로 둔다.
-이유는 다음과 같다.
+JC-030 v1 tax type remains **근로소득 간이지급명세서**.
 
-1. JC-024가 이미 `지급명세서/연말정산 준비` 데이터를 live로 제공한다.
-2. 국세청 안내에서 근로소득 간이지급명세서의 제출의무·기한·주기가 공식 확인된다.
-3. self-filing 보조 경계가 비교적 명확하다. SemuAgent는 파일 생성·검증까지만 하고,
-   사용자가 홈택스에서 직접 업로드·제출한다.
+### Validation (Path 1 & 2 공통)
 
-단, 실제 구현 착수 전 아래 차단 조건이 반드시 닫혀야 한다.
+1. JC-024 live data → layout validation via `lib/efiling-simplified-wage`.
+2. Output feeds Path 1 plain download and Path 2 JC-034 ZIP.
+
+### Path 1 — 양식 파일 + 홈택스 안내 (현재)
+
+1. Plain SC file generation + pre-validation UI (implemented on main).
+2. Hometax file-conversion upload guide (JC-013 alignment).
+3. UI must state plain-file limits until Path 3 certification.
+
+### Path 3 — 인증·암호화 파일 (미래)
+
+1. Slice **2b** fcrypt + 적합성 검정 — start only after certification path is clear.
+2. Completes Path 1 for users who need guaranteed Hometax-accepting encrypted files.
 
 ## 5. Blocking Decisions Before Implementation
 
@@ -104,10 +111,19 @@ JC-024에서 주민등록번호는 저장·검증 범위 밖으로 명시했다.
 
 ### 5.3 적합성 검정·표시 문구
 
-파일 생성기가 적합성 검정 전이라면 UI 문구는 다음 경계를 지킨다.
+**Validation (Path 1 & 2):** 적합성 검정은 SemuAgent 제품 범위 밖(Path 3 전용).
 
-- 허용: `전자신고 파일 후보`, `파일변환신고 전 사전검증`, `홈택스 업로드 전 확인`
+- 허용: `사무소 전달 전 검증`, `전달 패키지용 레코드`, `양식 파일 후보`, `홈택스 업로드 전 확인`
 - 금지: `홈택스 제출 보장`, `국세청 검증 완료`, `자동 신고`, `대리 제출`
+
+**Path 1 (self-filing plain file):**
+
+- 허용: `전자신고 양식 파일`, `파일변환신고 전 사전검증`, `홈택스 업로드 안내`
+- 금지: Path 3 없이 `국세청 검증 완료` 주장
+
+**Path 3 (future encrypted):**
+
+- `국세청 검증 완료`는 실제 인증 후에만 사용
 
 ## 6. UI Gate Direction
 
@@ -119,8 +135,8 @@ UI-First Gate에서는 신규 독립 화면보다 **신고지원/지급명세서
 2. 데이터 상태: JC-024 준비 완료 인원, 확인 필요 인원, 식별정보 입력 필요 여부
 3. 파일 규격 상태: 최신 규격 확보 여부, 귀속연도/제출주기
 4. 검증 결과: 필수 필드 누락, 금액 불일치, 제출주기 오류, 식별정보 누락
-5. CTA: `파일 생성 준비` / `검증 결과 보기` / `홈택스 업로드 안내`
-6. 책임 경계: 자동 제출 아님, 자격증명 저장 없음, 사용자가 직접 업로드·제출
+5. CTA: `양식 파일 다운로드`(Path 1) / `사무소에 전달`(Path 2) / `검증 결과 보기`
+6. 책임 경계: Path 1=사용자 직접 업로드 · Path 2=사무소 대리신고 · Path 3=미래 인증 파일
 
 ## 7. Pre-Code Brief Gate Requirements
 
@@ -136,7 +152,9 @@ Pre-Code Brief는 아래가 확정된 뒤 작성한다.
 
 ## 8. Related Documents
 
-- **Concept_Design**: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md) — self-filing 3단계 다리
+- **Concept_Design**: [Product Baseline §3 Filing Paths](../01_Concept_Design/01_PRODUCT_BASELINE.md)
+- **Concept_Design**: [Filing Preparation Pipeline](../01_Concept_Design/02_FILING_PREPARATION_PIPELINE.md)
+- **Technical_Specs**: [JC-034 GIWA Handoff Scope Gate](./34_JC034_GIWA_HANDOFF_PACKAGE_SCOPE_GATE.md)
 - **Technical_Specs**: [JC-023 Hometax Autosubmit Research](./13_JC023_HOMETAX_AUTOSUBMIT_RESEARCH.md) — 파일변환신고·적합성 검정 리서치
 - **Technical_Specs**: [JC-030 E-Filing File PII Policy](./27_JC030_EFILING_FILE_PII_POLICY.md) — PII 일회성 입력 정책
 - **Technical_Specs**: [JC-030 Simplified Wage E-Filing Layout Acquisition](./28_JC030_SIMPLIFIED_WAGE_EFILING_LAYOUT_ACQUISITION.md) — 간이지급 레이아웃 입수 경로
