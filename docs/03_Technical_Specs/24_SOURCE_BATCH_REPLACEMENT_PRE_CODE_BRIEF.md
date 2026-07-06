@@ -1,16 +1,16 @@
 # JC-031 Slice 3 Source Batch Replacement Pre-Code Brief
 > Created: 2026-07-05 23:28 KST
-> Last Updated: 2026-07-06 14:22 KST
+> Last Updated: 2026-07-06 15:00 KST
 
 ## 0. Flow Status
 
 ```text
 [Flow]
-현재: JC-031 Slice 3c-4a 구현 완료 — Payroll extraction FK additive migration(이번 PR)
+현재: JC-031 Slice 3c-5 완료 — Adaptive structuring Slice 4 allowlist 결정
 Gate: 통과
-완료: Slice 1~2c, dev/prod DB 0061·0062·0063 적용, Slice 3a source_batch 도입, Slice 3b read switch, Slice 3c-0 전략 감사, Slice 3c-1 company-home read switch(PR #103, INTERNAL_SOURCE_BATCH_READ_KINDS), Slice 3c-2 source collection validation FK(PR #104), Slice 3c-3 bookkeeping FK(PR #105), Slice 3c-4 payroll lineage decision(PR #106), Slice 3c-4a payroll extraction FK 구현(이번 PR)
-다음: PR 머지 후 dev/prod DB 0064 적용·검증 → Slice 3c-5 adaptive structuring allowlist/migration
-필요 확인: prod DB 0060 적용 여부, 0064 적용 전 prod 0061~0063 스키마 확인(이번 PR에서 완료)
+완료: Slice 1~2c, dev/prod DB 0061·0062·0063·0064 적용, Slice 3a~3b, Slice 3c-0~3c-4a(PR #107), Slice 3c-5 감사(이번 PR)
+다음: Slice 4 schema retirement 준비 — `upload_session` allowlist·table rebuild 전략
+필요 확인: Slice 4 allowlist 초안(`adaptive_structure_*` 포함), prod DB 0060 적용 여부
 권장 스킬: rules-product -> rules-dev/rules-workflow
 ```
 
@@ -165,7 +165,7 @@ Audit findings:
 | bookkeeping run/rows | `bookkeeping_classification_run`, `bookkeeping_transaction_classification`, `bookkeeping_journal_entry_run/row/voucher` | run lineage와 row lineage를 함께 다룬다. 3c-3에서 별도 PR로 처리. |
 | payroll extraction | `payroll_rule_profile_application`, `payroll_extraction_batch/row`, `payroll_excel_draft` | 순수 source-lineage read 대상은 3b에서 없다고 판단했으나, schema retirement 전에는 FK 이관 필요. 3c-4 감사에서 3c-4a additive FK 대상 확정. |
 | payroll employee line | `payroll_employee_line.source_batch_id` | 이름이 같지만 `payroll_extraction_batch.id`를 가리키는 기존 컬럼이다. 범용 `source_batch.id`와 혼동 금지. 3c에서 rename/재사용하지 않는다. |
-| adaptive structuring | `adaptive_structure_model.source_upload_session_id`, `adaptive_structure_model_run.upload_session_id` | 모델 provenance 성격이 강해 별도 검증 필요. 3c-5 후보 또는 Slice 4 allowlist. |
+| adaptive structuring | `adaptive_structure_model.source_upload_session_id`, `adaptive_structure_model_run.upload_session_id` | 모델 provenance/적용 audit 성격. **3c-5 결정:** 범용 source lineage FK 이관 대상 아님 → Slice 4 allowlist. |
 | request-event/audit/history | `client_request_event`, `audit_proof`, quarantined session APIs | source lineage primary 전환 대상이 아니다. Slice 4 compatibility/retention 판단까지 유지한다. |
 
 Fixed 3c order:
@@ -173,9 +173,9 @@ Fixed 3c order:
 1. **3c-1 — Company-home read switch.** No migration. `company-home` summary uses `source_batch` scoping so home/source-collection/bookkeeping numbers cannot diverge. **완료(2026-07-06, PR #103):** `INTERNAL_SOURCE_BATCH_READ_KINDS = ['staff_direct', 'sample_data']`로 first-run 샘플 회귀까지 포함.
 2. **3c-2 — Source collection validation FK additive migration.** **완료(2026-07-06, PR #104):** nullable `source_batch_id`를 `request_item_validation`·`upload_item_declaration`에 추가, `source_batch.legacy_upload_session_id` 기준 backfill, 신규 생성 dual-write. dev/prod DB 0062 적용·검증 완료.
 3. **3c-3 — Bookkeeping source outputs FK additive migration.** **구현 완료(2026-07-06, PR #105):** nullable `source_batch_id`를 `bookkeeping_material_attribution`, `bookkeeping_ledger_material_link`, `bookkeeping_classification_run`, `bookkeeping_transaction_classification`, `bookkeeping_journal_entry_run`, `bookkeeping_journal_entry_row`, `bookkeeping_journal_entry_voucher`에 추가하고 migration 0063으로 backfill. 신규 material attribution, classification run/row, journal run/voucher, first-run sample은 deterministic `source_batch_id`를 dual-write한다. `bookkeeping_journal_entry_voucher_line`은 voucher child라 직접 source lineage FK 대상이 아니며, `bookkeeping_ledger_month.last_upload_session_id`는 상태 snapshot이라 이번 slice 범위 밖.
-4. **3c-4 — Payroll lineage FK audit/decision.** **완료(이번 PR):** 아래 "Slice 3c-4 — Payroll Lineage Decision"으로 payroll extraction table의 범용 `source_batch` 이관 범위를 고정한다.
-5. **3c-4a — Payroll extraction FK additive migration.** **구현 완료(이번 PR):** Add nullable generic `source_batch_id` only to the selected payroll extraction tables, backfill from `source_batch.legacy_upload_session_id`, and dual-write new rows. Do not touch `payroll_employee_line.source_batch_id`.
-6. **3c-5 — Adaptive structuring allowlist or migration.** Do not migrate until model provenance semantics are confirmed.
+4. **3c-4 — Payroll lineage FK audit/decision.** **완료(2026-07-06, PR #106):** 아래 "Slice 3c-4 — Payroll Lineage Decision"으로 payroll extraction table의 범용 `source_batch` 이관 범위를 고정한다.
+5. **3c-4a — Payroll extraction FK additive migration.** **완료(2026-07-06, PR #107):** nullable generic `source_batch_id`를 선택 payroll extraction 테이블에 추가, backfill, dual-write. dev/prod DB 0064는 **머지 전** 적용·검증 완료.
+6. **3c-5 — Adaptive structuring allowlist or migration.** **완료(이번 PR):** additive migration 없음. `adaptive_structure_model`·`adaptive_structure_model_run`의 session FK는 **Slice 4 allowlist**로 분류한다. 아래 "Slice 3c-5 — Adaptive Structuring Decision" 참고.
 
 3c-0 Non-goals:
 
@@ -209,15 +209,58 @@ Fixed 3c order:
 - Read switch는 session-scoped payroll APIs가 아직 많으므로 3c-4a의 필수 목표가 아니다. 먼저 FK/backfill/dual-write를 완료하고, Slice 4 allowlist에서 남은 `upload_session_id` 의존을 판단한다.
 - `payroll_employee_line.source_batch_id`의 이름이 혼동을 유발하지만, FK 제약이 있는 컬럼 rename/drop은 SQLite/Turso table rebuild가 필요하므로 Slice 4 전까지 건드리지 않는다.
 
-3c-4a 구현 결과(이번 PR):
+3c-4a 구현 결과(PR #107, main `e3df193`):
 
 - Migration 0064: `payroll_rule_profile_application`, `payroll_extraction_batch`, `payroll_extraction_row`, `payroll_excel_draft`에 nullable `source_batch_id -> source_batch.id`와 tenant/source index를 추가한다.
 - Backfill: 네 테이블 모두 `source_batch.legacy_upload_session_id = <table>.upload_session_id` 기준으로 기존 row를 연결한다.
 - Dual-write: `executePayrollExtraction`이 batch/row/rule application에 `sourceBatchIdForLegacyUploadSession(sessionId)`를 기록하고, payroll draft 생성 route가 `payroll_excel_draft.source_batch_id`를 기록한다.
 - First-run sample: payroll용 `source_batch_payroll_202606` row를 payroll extraction batch/row에도 기록한다.
 - `payroll_employee_line.source_batch_id`는 변경하지 않았다.
-- 머지 전 prod 확인: 0061~0063 스키마(`source_batch`, validation/declaration FK, bookkeeping FK)가 prod에 존재함을 읽기 전용 query로 확인했다.
-- 머지 후 필요: dev/prod DB에 migration 0064 적용 후 네 테이블 backfill count와 `foreign_key_check`를 확인한다.
+- **머지 전 prod 확인:** 0061~0063 스키마 존재 확인(이전 마이그레이션).
+- **머지 전 이번 마이그레이션 적용:** dev·prod 모두 0064 미적용 상태를 직접 확인 후, 승인받아 dev→prod 순으로 0064 적용·backfill·`foreign_key_check` 검증 완료. 그 다음 PR #107 머지. 런타임 에러 없음.
+
+#### Slice 3c-5 — Adaptive Structuring Decision (docs-only)
+
+목표: `adaptive_structure_*` 테이블이 범용 `source_batch` downstream FK 이관 대상인지, Slice 4 allowlist로 남길지 결정한다.
+
+감사 결과:
+
+| 대상 | 현재 컬럼 | 실제 의미 | read model 영향 |
+|---|---|---|---|
+| `adaptive_structure_model` | `source_upload_session_id` (NOT NULL FK) | 모델 contract를 **학습·검증한 원천 세션** provenance. payroll(`target_workflow='payroll'`)·review/bookkeeping(`'bookkeeping'`)가 **같은 테이블 공유**. | 3b read model(자료수집·기장검토·회사 홈 등)에서 **사용하지 않음** |
+| `adaptive_structure_model` | `source_upload_file_ids` (JSON) | provenance 파일 목록. session과 별도로 파일 단위 추적. | 동일 |
+| `adaptive_structure_model_run` | `upload_session_id` | 승인 모델을 **어느 세션 추출에 적용했는지** audit 요약(성공/차단/ambiguous). row 원본 데이터는 `payroll_extraction_row` 등에만 존재. | 동일 |
+| 모델 매칭 | tenant 전체 approved 모델 + workbook signature | `findApprovedPayrollAdaptiveModelMatch`는 session lineage가 아니라 **워크북 서명**으로 매칭. | source_batch read scope와 무관 |
+
+런타임 경로(조사):
+
+- `lib/payroll/adaptive-structuring-registry.ts` — `createProposedPayrollAdaptiveModel`: session당 proposed/approved 멱등 조회·`sourceUploadSessionId` 기록
+- `lib/payroll/adaptive-structuring-apply.ts` — `applyApprovedPayrollAdaptiveModel`·`recordAdaptiveModelRun`: run audit에 `uploadSessionId` 기록
+- `lib/reviews/adaptive-structuring-registry.ts` / `lib/reviews/adaptive-structuring-apply.ts` — review workflow 동일 패턴(`REVIEW_ADAPTIVE_TARGET_WORKFLOW = 'bookkeeping'`)
+- first-run sample은 adaptive model/run row를 **시드하지 않음**
+
+3c-5 결정:
+
+| 대상 | 결정 | 이유 |
+|---|---|---|
+| `adaptive_structure_model.source_upload_session_id` | **Slice 4 allowlist 유지** | source collection lineage가 아니라 **모델 provenance** 포인터. 3c-2~4a와 달리 read aggregation·downstream FK 체인에 없음. |
+| `adaptive_structure_model_run.upload_session_id` | **Slice 4 allowlist 유지** | 적용 audit 전용. `payroll_extraction_batch.source_batch_id`(3c-4a)로 추출 lineage는 이미 연결됨. |
+| nullable `source_batch_id` additive migration | **이번 slice에서 하지 않음** | dual-write만 추가하고 read 이점이 없음. `source_upload_session_id` NOT NULL FK와 의미 중복. |
+| 3c-5b 구현 PR | **없음** | 결론이 allowlist이므로 migration/code 변경 불필요. |
+
+Slice 4에서 할 일(3c-5 후속):
+
+- `adaptive_structure_model.source_upload_session_id`·`adaptive_structure_model_run.upload_session_id`를 **compatibility/provenance allowlist**에 명시
+- table rebuild 시 provenance 컬럼명 정리 또는 `source_batch_id` 추가 여부를 그때 재판단(지금은 YAGNI)
+- `rg upload_session|uploadSession` allowlist 문서에 payroll/review adaptive 경로 포함
+
+3c-5 Non-goals:
+
+- No runtime code change.
+- No DB migration.
+- No `source_batch_id` on adaptive tables in Slice 3.
+
+**Slice 3c downstream FK 이관은 3c-5로 종료**한다. 남은 `upload_session` 의존은 Slice 4 allowlist·schema retirement 범위다.
 
 3c migration checklist for every implementation PR:
 
@@ -226,8 +269,8 @@ Fixed 3c order:
 - [x] Keep `upload_session_id` writes until Slice 4. (3c-2·3c-3·3c-4a 구현 완료)
 - [x] Dual-write `source_batch_id` only after the caller can resolve the source batch id deterministically. (3c-2 완료, 3c-3는 `sourceBatchIdForLegacyUploadSession(sessionId)` 또는 first-run sample의 explicit `sourceBatchId` 사용, 3c-4a는 payroll extraction/draft path에 `sourceBatchIdForLegacyUploadSession(sessionId)` 사용)
 - [ ] Read prefer `source_batch_id`; fallback to `upload_session_id` only where legacy rows can still exist.
-- [x] Before merge, confirm prod schema has all previous migrations required by the new runtime code. (3c-4a: prod 0061·0062·0063 present before adding runtime writes)
-- [ ] After dev/prod migration, verify `foreign_key_check` and row counts for linked/unlinked records. (3c-4a: 0064 적용 후 확인 필요)
+- [x] Before merge, confirm prod schema has all previous migrations required by the new runtime code. (3c-4a: prod 0061·0062·0063 present; **0064는 머지 전 dev/prod 적용**)
+- [x] After dev/prod migration, verify `foreign_key_check` and row counts for linked/unlinked records. (3c-4a: 0064 dev/prod 적용·검증 완료, PR #107 머지 후 런타임 에러 없음)
 
 **Slice 3b 리뷰에서 나온 후속 메모(비차단, 3c 계획에 반영)**:
 
@@ -239,8 +282,10 @@ Fixed 3c order:
 Done for 3c:
 
 - 핵심 source lineage read path가 `source_batch`를 통해 end-to-end 추적 가능하다.
+- downstream additive FK 이관(validation·bookkeeping·payroll extraction)은 3c-2~3c-4a에서 완료했다.
+- `adaptive_structure_model`·`adaptive_structure_model_run`은 provenance/audit로 Slice 4 allowlist에 남긴다(3c-5).
 - 남은 `upload_session` 참조는 compatibility/legacy/request-event/audit allowlist로 분류된다.
-- `rg upload_session|uploadSession` 결과가 allowlist 문서와 일치한다.
+- `rg upload_session|uploadSession` 결과가 allowlist 문서와 일치한다(Slice 4에서 완료).
 
 ## 5. Non-goals
 

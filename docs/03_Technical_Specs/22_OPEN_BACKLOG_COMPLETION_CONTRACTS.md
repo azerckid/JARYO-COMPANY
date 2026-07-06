@@ -174,7 +174,7 @@ Non-goals before done:
 
 Type: 기반 정리.
 
-Current state: Slice 1 through Slice 3c-4a implemented in code. Slice 3 Pre-Code Brief is fixed in [Source Batch Replacement Pre-Code Brief](./24_SOURCE_BATCH_REPLACEMENT_PRE_CODE_BRIEF.md). Slice 3c-4 fixed the payroll lineage migration scope; Slice 3c-4a adds payroll extraction source_batch FK columns and dual-write. DB migration 0064 must be applied after merge.
+Current state: Slice 1 through Slice 3c-5 documented. Slice 3 Pre-Code Brief is fixed in [Source Batch Replacement Pre-Code Brief](./24_SOURCE_BATCH_REPLACEMENT_PRE_CODE_BRIEF.md). Slice 3c downstream FK migration is complete: validation, bookkeeping, payroll extraction additive FK (3c-2~3c-4a); adaptive structuring remains on `upload_session_id` as Slice 4 allowlist (3c-5).
 
 Remaining slices:
 
@@ -191,7 +191,8 @@ Remaining slices:
    - **3c-2 complete:** `request_item_validation` and `upload_item_declaration` have nullable `source_batch_id`, migration 0062 backfill, and new-row dual-write; dev/prod DB validation completed.
    - **3c-3 implemented:** bookkeeping material/link/run/row/voucher tables receive nullable `source_batch_id` via additive migration 0063 and deterministic dual-write; dev/prod DB validation completed. Read prefer remains later work.
    - **3c-4 decision complete:** payroll lineage must add generic `source_batch_id -> source_batch.id` only to `payroll_extraction_batch`, `payroll_extraction_row`, `payroll_rule_profile_application`, and `payroll_excel_draft`. Existing `payroll_employee_line.source_batch_id` points to `payroll_extraction_batch.id` and must not be reused for generic source lineage.
-   - **3c-4a implemented:** migration 0064 adds nullable `source_batch_id` to the selected payroll extraction tables, backfills by `legacy_upload_session_id`, and dual-writes extraction batch/rows/rule application/draft. dev/prod DB 0064 application is required after merge.
+   - **3c-4a complete:** migration 0064 adds nullable `source_batch_id` to the selected payroll extraction tables, backfills by `legacy_upload_session_id`, and dual-writes extraction batch/rows/rule application/draft. dev/prod DB 0064 applied and validated before PR #107 merge.
+   - **3c-5 decision complete:** `adaptive_structure_model.source_upload_session_id` and `adaptive_structure_model_run.upload_session_id` are provenance/audit pointers, not generic source-lineage FK targets. No additive migration in Slice 3; classify for Slice 4 allowlist.
    - Migrate `upload_file` and downstream bookkeeping/payroll/review references away from legacy `upload_session` where they only need source lineage.
    - Preserve direct-upload behavior and historical traceability.
    - Execute in the fixed order from Brief 24: **3a schema/backfill/dual-write -> 3b read model switch -> 3c-0 migration strategy -> 3c-1..3c-5 downstream FK migration**. Payroll is split into 3c-4 decision and 3c-4a additive FK implementation.
