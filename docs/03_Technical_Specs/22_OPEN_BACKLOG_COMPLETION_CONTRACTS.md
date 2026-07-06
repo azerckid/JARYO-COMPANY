@@ -201,7 +201,8 @@ Remaining slices:
    - **4-0 complete:** allowlist audit in [Slice 4 Schema Retirement Allowlist](./25_SLICE4_SCHEMA_RETIREMENT_ALLOWLIST.md). `upload_session` 116 TS/TSX refs categorized; `outbound_email` runtime INSERT paths none.
    - **4-1 complete:** removed `createSessionAndSend`, `lib/email/missing-request.ts`, `period-gap-missing-request`, `missing-request-targets`, and `lib/validations/session.ts`. `session-service.ts` retains only `createDirectUploadSession`. No DB migration.
    - **4-2-0 complete:** [Upload Session Column Retirement Pre-Code Brief](./26_UPLOAD_SESSION_COLUMN_RETIREMENT_PRE_CODE_BRIEF.md) confirms immediate table rebuild is unsafe. `token_hash/upload_url/expires_at/request_kind/request_event_id/request_email_*` and AI/review context columns still have runtime readers or compatibility responsibilities.
-   - **4-2a next:** decide and implement legacy `sessions/new` / request-email context surface cleanup or migration.
+   - **4-2a complete:** removed redirect-blocked `sessions/new`, `extract-criteria` API, and `direct-send` module. Live `request_email_*` paths documented for 4-2b.
+   - **4-2b next:** decide AI/review criteria context migration vs compatibility retention.
    - **4-2c later:** perform `upload_session` table rebuild only after target columns have runtime read/write 0 and prod migration plan.
    - Remove or quarantine remaining `outbound_email`, request-event, mail-console, and legacy upload-session schema pieces after FK migration.
    - Keep only explicitly approved compatibility surfaces, if any, and document why they remain.

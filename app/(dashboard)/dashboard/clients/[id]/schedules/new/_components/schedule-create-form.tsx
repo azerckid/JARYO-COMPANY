@@ -64,9 +64,7 @@ export function ScheduleCreateForm({
 }: Props) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
-  const [extracting, setExtracting] = useState(false)
   const [error, setError] = useState('')
-  const [criteriaError, setCriteriaError] = useState('')
   const [selectedTemplateId, setSelectedTemplateId] = useState('')
   const defaultCcGroup = ccGroups.find((group) => group.isDefault) ?? ccGroups[0] ?? null
   const [selectedCcGroupId, setSelectedCcGroupId] = useState(defaultCcGroup?.id ?? '')
@@ -153,35 +151,6 @@ export function ScheduleCreateForm({
       return { type: 'day_of_month', dayOfMonth: Number(form.dueDayOfMonth) }
     }
     return { type: 'days_after_period_end', daysAfterPeriodEnd: Number(form.dueDaysAfter) }
-  }
-
-  const handleExtractCriteria = async () => {
-    setCriteriaError('')
-    if (!form.emailBody.trim()) {
-      setCriteriaError('메일 본문을 먼저 입력해 주세요.')
-      return
-    }
-    setExtracting(true)
-    try {
-      const res = await fetch('/api/sessions/extract-criteria', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requestEmailSubject: form.emailSubject,
-          requestEmailBody: form.emailBody,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setCriteriaError(data.error ?? '기준 정리에 실패했습니다.')
-        return
-      }
-      setForm((prev) => ({ ...prev, analysisCriteria: data.criteria ?? '' }))
-    } catch {
-      setCriteriaError('네트워크 오류가 발생했습니다.')
-    } finally {
-      setExtracting(false)
-    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -521,26 +490,15 @@ export function ScheduleCreateForm({
         </div>
 
         <div>
-          <div className="flex items-center justify-between gap-3 mb-1">
-            <label className="block text-sm font-medium text-gray-700">본문에서 추출한 AI 판단 기준</label>
-            <button
-              type="button"
-              onClick={handleExtractCriteria}
-              disabled={extracting || !form.emailBody.trim()}
-              className="shrink-0 rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            >
-              {extracting ? '정리 중...' : '본문 기준 정리'}
-            </button>
-          </div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">AI 판단 기준</label>
           <textarea
             value={form.analysisCriteria}
             onChange={(e) => setForm((prev) => ({ ...prev, analysisCriteria: e.target.value }))}
             maxLength={10000}
             rows={6}
-            placeholder="메일 본문 작성 후 '본문 기준 정리'를 누르면 AI가 기준 초안을 정리합니다."
+            placeholder="제출 자료 AI 검토에 사용할 기준을 직접 입력합니다."
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
           />
-          {criteriaError && <p className="mt-1 text-xs text-red-600">{criteriaError}</p>}
         </div>
       </section>
 

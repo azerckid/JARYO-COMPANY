@@ -1,16 +1,16 @@
 # JC-031 Slice 4-2 Upload Session Column Retirement Pre-Code Brief
 > Created: 2026-07-06 19:26 KST
-> Last Updated: 2026-07-06 19:26 KST
+> Last Updated: 2026-07-06 19:45 KST
 
 ## 0. Flow Status
 
 ```text
 [Flow]
-현재: JC-031 Slice 4-2-0 준비 완료 — upload_session 컬럼 retirement 범위와 차단 조건 고정
-Gate: Pre-Code Brief / docs-only / migration 미착수
-완료: Slice 1~3c, Slice 4-0~4-1, Slice 4-2-0
-다음: Slice 4-2a legacy session/request context surface 정리 결정 및 구현
-필요 확인: prod DB migration 0060 적용 여부, /dashboard/sessions/new 및 request-event snapshot 유지 여부
+현재: JC-031 Slice 4-2a 완료 — redirect-blocked session/request context residue 제거
+Gate: 통과
+완료: Slice 1~3c, Slice 4-0~4-1, Slice 4-2-0~4-2a(이번 PR)
+다음: Slice 4-2b AI/review criteria context 이관 여부 결정
+필요 확인: prod DB migration 0060 적용 여부
 권장 스킬: rules-product -> rules-dev/rules-workflow
 ```
 
@@ -41,15 +41,31 @@ Slice 4-2의 원래 표현은 `upload_session` 레거시 portal/mail 컬럼 reti
 
 이 snapshot은 참고용일 뿐이다. row count가 0이어도 runtime code가 계속 쓰거나 읽으면 컬럼 삭제는 금지다. 삭제 기준은 **prod row count 0 + runtime read/write 0 + migration rollback plan**이다.
 
-### 2.2 Route Surface Finding
+### 2.2 Route Surface Finding (4-2-0)
 
-`app/(dashboard)/dashboard/sessions/layout.tsx`는 `/dashboard`로 redirect하므로 `/dashboard/sessions/new` UI는 도달 불가능하다. 그러나 `sessions/new/page.tsx`와 `SessionCreateForm`은 아직 남아 있고, request-event 생성/발송 snapshot(`emailSubjectSnapshot`, `emailBodySnapshot`, `ccEmailSnapshot`, `analysisCriteriaSnapshot`)을 호출하는 코드가 존재한다.
+`app/(dashboard)/dashboard/sessions/layout.tsx`는 `/dashboard`로 redirect하므로 `/dashboard/sessions/new` UI는 도달 불가능했다. 4-2a에서 page/component를 삭제했다.
 
-이 경로는 live UI가 아니므로 바로 사용자 기능으로 보지는 않지만, table rebuild 전에는 아래 중 하나로 결정해야 한다.
+### 2.3 Slice 4-2a Audit And Removal (2026-07-06)
 
-1. redirect leaf만 남기고 page/component/API residue를 삭제한다.
-2. 필요한 context를 `source_batch` 또는 별도 internal review context로 이관한다.
-3. compatibility로 유지하되 삭제 대상 컬럼에서 제외한다.
+| 대상 | redirect | 호출처(4-2a 전) | 4-2a 결정 |
+|---|---|---|---|
+| `sessions/new/page.tsx`, `SessionCreateForm` | `sessions/layout` | request-events POST/send (이미 410) | **삭제** |
+| `lib/sessions/direct-send.ts` | — | 테스트만 | **삭제** |
+| `POST /api/sessions/extract-criteria` | — | `sessions/new`, `schedules/new`, `request-templates/new` forms (모두 redirect-blocked layout) | **삭제** |
+| `schedule-create-form`, `template-create-form` extract 버튼 | `schedules/layout`, `request-templates/layout` | extract-criteria API | **extract UI 제거**, 수동 criteria textarea 유지 |
+
+4-2a 이후에도 `request_email_*` **write/read live path**가 남아 table rebuild 금지:
+
+| 경로 | 역할 |
+|---|---|
+| `lib/services/session-service.ts` `createDirectUploadSession` | direct-upload synthetic `request_email_subject/body` write |
+| `lib/review/default-criteria-data.ts` | subject/body에서 work type 추론 |
+| `lib/ai/session-eval.ts` | evaluation prompt input |
+| `lib/bookkeeping/classification-service.ts` | classification prompt context |
+| `lib/reviews/build-review-sessions.ts`, `adaptive-structuring-eligibility-context.ts` | review workspace context |
+| `sessions/[id]/_components/session-detail.tsx` | display (layout redirect로 도달 불가하나 코드 잔존) |
+
+**4-2b**에서 criteria/review context 이관을 검토하기 전까지 `request_email_*` 컬럼 삭제는 금지다.
 
 ## 3. Column Retirement Classification
 
@@ -68,7 +84,7 @@ Slice 4-2의 원래 표현은 `upload_session` 레거시 portal/mail 컬럼 reti
 
 | 후보 | 조건 | 가능한 처리 |
 |---|---|---|
-| `request_email_subject`, `request_email_body`, `request_email_cc` | `/dashboard/sessions/new` residue, review/session display, AI/default criteria 사용처를 제거/이관하고 `rg` runtime 0 확인 | `upload_session` table rebuild로 제거 |
+| `request_email_subject`, `request_email_body`, `request_email_cc` | 4-2a에서 redirect-blocked surface 제거 완료. **남은 live path:** direct-upload write, AI/review/bookkeeping read | 4-2b 이관 후 4-2c rebuild |
 | `extracted_criteria`, `additional_criteria` | AI/review criteria context를 `client.analysis_notes` 또는 별도 internal review context로 대체하고 기존 row migration 정책 확정 | 제거 또는 유지 결정 |
 | `analysis_notes`, `session_evaluation` | prod row 2건이 실제 보유. session detail/evaluation UX에서 더 이상 필요 없거나 이관 완료 | 제거 또는 compatibility 유지 |
 
@@ -81,7 +97,7 @@ Slice 4-2의 원래 표현은 `upload_session` 레거시 portal/mail 컬럼 reti
 | Sub-slice | 범위 | DB migration | 완료 조건 |
 |---|---|---|---|
 | **4-2-0** | 이 문서. 컬럼별 운명과 blocker 고정 | 없음 | 삭제 금지 컬럼/후보 컬럼 문서화, 기존 allowlist/backlog sync |
-| **4-2a** | `sessions/new` 및 request-email/context residue 결정 | 없음 또는 코드 삭제만 | redirect-blocked UI residue 삭제 또는 context 이관 결정. `request_email_*` runtime read/write 감소 |
+| **4-2a** | `sessions/new` 및 request-email/context residue 결정 | 없음 또는 코드 삭제만 | **완료(이번 PR):** redirect-blocked UI/API 삭제, live `request_email_*` path 문서화 |
 | **4-2b** | AI/review criteria context 이관 여부 결정 | 필요 시 additive migration | `analysis_notes`/criteria/sessionEvaluation을 유지할지 새 모델로 옮길지 확정 |
 | **4-2c** | 실제 `upload_session` table rebuild | rebuild migration | 제거 대상 컬럼 runtime read/write 0, prod row migration plan, dev/prod `foreign_key_check` |
 
@@ -113,7 +129,7 @@ Slice 4-2의 원래 표현은 `upload_session` 레거시 portal/mail 컬럼 reti
 - [x] 즉시 table rebuild 금지 사유가 문서화된다.
 - [x] 4-2가 4-2-0/4-2a/4-2b/4-2c로 쪼개지고, 각 완료 조건이 명확하다.
 - [x] 기존 allowlist, completion contract, backlog가 새 브리프를 참조한다.
-- [ ] 4-2a에서 legacy session/request context surface가 실제로 제거 또는 이관된다.
+- [x] 4-2a에서 legacy session/request context surface가 실제로 제거 또는 이관된다(redirect-blocked residue 삭제, live path는 4-2b로 이관).
 - [ ] 4-2c에서 삭제 대상 컬럼의 runtime read/write 0건이 증명된다.
 
 ## 8. Related Documents

@@ -6,10 +6,10 @@
 
 ```text
 [Flow]
-현재: JC-031 Slice 4-2-0 완료 — upload_session 컬럼 retirement 범위와 차단 조건 고정
-Gate: Pre-Code Brief / docs-only / migration 미착수
-완료: Slice 1~3c, Slice 4-0~4-1, Slice 4-2-0
-다음: Slice 4-2a legacy session/request context surface 정리 결정 및 구현
+현재: JC-031 Slice 4-2a 완료 — redirect-blocked session/request context residue 제거
+Gate: 통과
+완료: Slice 1~3c, Slice 4-0~4-1, Slice 4-2-0~4-2a
+다음: Slice 4-2b AI/review criteria context 이관 여부 결정
 필요 확인: prod DB migration 0060 적용 여부, /dashboard/sessions/new 및 request-event snapshot 유지 여부
 권장 스킬: rules-product -> rules-dev/rules-workflow
 ```
@@ -242,7 +242,7 @@ Phase 7 (4-5)    upload_session table retirement 또는 compatibility view
 | **4-0** | allowlist 감사 (이 문서) | 없음 | Slice 3c 완료 |
 | **4-1** | dead code: `createSessionAndSend`, `missing-request` 모듈 등 | 없음 | **완료** |
 | **4-2-0** | `upload_session` 컬럼 retirement brief: 삭제 후보와 차단 조건 고정 | 없음 | **완료** — [Brief 26](./26_UPLOAD_SESSION_COLUMN_RETIREMENT_PRE_CODE_BRIEF.md) |
-| **4-2a** | redirect-blocked `sessions/new`·request-email/context residue 정리 결정 및 구현 | 없음 또는 코드 삭제 | 4-2-0, 사용자 승인 |
+| **4-2a** | redirect-blocked `sessions/new`·`extract-criteria`·`direct-send` residue 제거 | 없음 | **완료** |
 | **4-2b** | AI/review criteria context 이관 또는 compatibility 유지 결정 | 필요 시 additive migration | 4-2a |
 | **4-2c** | 조건 충족된 `upload_session` 레거시 컬럼 제거 | rebuild migration | 삭제 대상 컬럼 runtime read/write 0 |
 | **4-3** | `outbound_email`, request-event schema retirement | drop/rebuild | runtime INSERT 0 (현재 충족) |
