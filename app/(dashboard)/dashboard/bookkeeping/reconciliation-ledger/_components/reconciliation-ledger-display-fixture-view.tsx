@@ -4,6 +4,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import {
   buildReconciliationDisplaySourceCounts,
+  countCashReceiptDisplayRows,
   countReconciliationDisplayRows,
   filterReconciliationDisplayRows,
   reconciliationDisplayFilterHref,
@@ -15,6 +16,7 @@ import type {
   ReconciliationLedgerDisplayModel,
   ReconciliationLedgerRow,
   ReconciliationNextAction,
+  ReconciliationPeriodMode,
   ReconciliationSource,
   ReconciliationTaxBlockerSummary,
 } from '@/lib/bookkeeping-review/reconciliation-display-model'
@@ -22,6 +24,7 @@ import { cn } from '@/lib/utils'
 
 const panelClass = 'overflow-hidden rounded-xl border border-company-border bg-company-surface shadow-company-card'
 const disabledActionNote = 'Slice 2b 전까지 저장·확정이 비활성화됩니다.'
+const disabledPeriodNote = 'Slice 2a-5에서 기간 전환 및 실데이터 조회가 연결됩니다.'
 
 type Tone = 'ok' | 'warn' | 'danger' | 'muted'
 
@@ -65,7 +68,9 @@ export function ReconciliationLedgerDisplayFixtureView({
   const rows = displayModel.rows
   const filteredRows = filterReconciliationDisplayRows(rows, activeFilter)
   const sourceCounts = buildReconciliationDisplaySourceCounts(rows)
+  const cashReceiptCount = countCashReceiptDisplayRows(rows)
   const periodLabel = rows[0]?.periodLabel ?? '기간 미정'
+  const periodMode = rows[0]?.periodMode ?? 'quarter'
   const checklist = displayModel.closingChecklist
   const readinessPercent = checklist.isReadyForPath1
     ? 100
@@ -79,8 +84,10 @@ export function ReconciliationLedgerDisplayFixtureView({
 
   return (
     <div className="flex min-h-full flex-col bg-company-bg">
-      <FixtureTopbar companyName={companyName} periodLabel={periodLabel} />
+      <FixtureTopbar companyName={companyName} />
       <div className="flex w-full max-w-[1320px] flex-col gap-5 px-7 pt-6 pb-12">
+        <PeriodScopeControl activeMode={periodMode} periodLabel={periodLabel} />
+
         <section className={cn(panelClass, 'grid gap-6 px-6 py-5 lg:grid-cols-[minmax(0,1fr)_360px]')}>
           <div>
             <p className="text-xs font-semibold text-company-fg-muted">Path 1 데이터 준비 관문 · Fixture</p>
@@ -116,11 +123,7 @@ export function ReconciliationLedgerDisplayFixtureView({
           <SourceSummaryCard label="통장 내역" count={sourceCounts.bank} sub="입출금 대조" />
           <SourceSummaryCard label="카드 승인" count={sourceCounts.card} sub="계정·거래처 확인" />
           <SourceSummaryCard label="세금계산서" count={sourceCounts.tax_invoice} sub="매출·매입 증빙" />
-          <SourceSummaryCard
-            label="현금영수증"
-            count={sourceCounts.cash_receipt + sourceCounts.receipt}
-            sub="공제·제외 검토"
-          />
+          <SourceSummaryCard label="현금영수증" count={cashReceiptCount} sub="공제·제외 검토" />
           <SourceSummaryCard
             label="제외 검토"
             count={countReconciliationDisplayRows(rows, (row) => row.evidenceActionState === 'excluded' || row.blockers.some((b) => b.code === 'exclude_reason_required'))}
@@ -136,7 +139,7 @@ export function ReconciliationLedgerDisplayFixtureView({
             <DisplayTabChip active={activeFilter === 'tax_invoice'} count={sourceCounts.tax_invoice} filter="tax_invoice" label="세금계산서" />
             <DisplayTabChip
               active={activeFilter === 'cash_receipt'}
-              count={sourceCounts.cash_receipt + sourceCounts.receipt}
+              count={cashReceiptCount}
               filter="cash_receipt"
               label="현금영수증"
             />
@@ -223,7 +226,7 @@ export function ReconciliationLedgerDisplayFixtureView({
   )
 }
 
-function FixtureTopbar({ companyName, periodLabel }: { readonly companyName: string; readonly periodLabel: string }) {
+function FixtureTopbar({ companyName }: { readonly companyName: string }) {
   return (
     <div className="sticky top-0 z-10 flex flex-wrap items-center gap-4 border-b border-company-border bg-company-surface px-7 py-3.5">
       <div>
@@ -236,11 +239,77 @@ function FixtureTopbar({ companyName, periodLabel }: { readonly companyName: str
         </p>
         <h1 className="text-base font-semibold text-foreground">자료대조원장 · Fixture</h1>
       </div>
-      <span className="text-[13px] font-medium text-company-fg-muted">{companyName}</span>
-      <div className="ml-auto rounded-lg border border-company-border-strong bg-company-surface px-3 py-1.5 text-[13px] font-medium text-foreground">
-        {periodLabel}
-      </div>
+      <span className="ml-auto text-[13px] font-medium text-company-fg-muted">{companyName}</span>
     </div>
+  )
+}
+
+const periodModeOptions: Array<{ mode: ReconciliationPeriodMode; label: string }> = [
+  { mode: 'month', label: '월' },
+  { mode: 'quarter', label: '분기' },
+  { mode: 'half_year', label: '반기' },
+  { mode: 'year', label: '연' },
+  { mode: 'custom', label: '사용자 지정' },
+]
+
+function PeriodScopeControl({
+  activeMode,
+  periodLabel,
+}: {
+  readonly activeMode: ReconciliationPeriodMode
+  readonly periodLabel: string
+}) {
+  return (
+    <section className={cn(panelClass, 'flex flex-wrap items-center gap-3 px-4 py-3')}>
+      <div className="min-w-[180px]">
+        <p className="text-[11px] font-semibold text-company-fg-subtle">기간 단위</p>
+        <p className="mt-0.5 text-[13px] font-semibold text-foreground">{periodLabel}</p>
+      </div>
+      <div className="inline-flex flex-wrap gap-1 rounded-[9px] bg-[#f1f1f2] p-[3px]">
+        {periodModeOptions.map((option) => (
+          <button
+            key={option.mode}
+            aria-pressed={activeMode === option.mode}
+            className={cn(
+              'cursor-not-allowed rounded-[7px] px-3 py-1.5 text-[12.5px] font-semibold',
+              activeMode === option.mode
+                ? 'bg-company-surface text-foreground shadow-company-card'
+                : 'text-company-fg-muted',
+            )}
+            disabled
+            title={disabledPeriodNote}
+            type="button"
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-2 md:ml-auto">
+        <input
+          aria-label="기간 시작일"
+          className="w-[132px] cursor-not-allowed rounded-lg border border-company-border bg-company-nav-hover px-2.5 py-2 text-[12.5px] text-company-fg-subtle"
+          disabled
+          placeholder="시작일"
+          title={disabledPeriodNote}
+        />
+        <span className="text-[12px] text-company-fg-muted">~</span>
+        <input
+          aria-label="기간 종료일"
+          className="w-[132px] cursor-not-allowed rounded-lg border border-company-border bg-company-nav-hover px-2.5 py-2 text-[12.5px] text-company-fg-subtle"
+          disabled
+          placeholder="종료일"
+          title={disabledPeriodNote}
+        />
+        <button
+          className="cursor-not-allowed rounded-lg border border-company-border bg-company-nav-hover px-3 py-2 text-xs font-semibold text-company-fg-subtle"
+          disabled
+          title={disabledPeriodNote}
+          type="button"
+        >
+          기간 적용
+        </button>
+      </div>
+    </section>
   )
 }
 

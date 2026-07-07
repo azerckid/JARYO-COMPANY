@@ -22,6 +22,14 @@ export function normalizeReconciliationDisplayFilter(value: string | undefined):
   return parsed.success ? parsed.data : 'all'
 }
 
+export function isCashReceiptDisplaySource(source: ReconciliationSource): boolean {
+  return source === 'cash_receipt' || source === 'receipt'
+}
+
+export function countCashReceiptDisplayRows(rows: ReconciliationLedgerRow[]): number {
+  return rows.filter((row) => isCashReceiptDisplaySource(row.source)).length
+}
+
 export function filterReconciliationDisplayRows(
   rows: ReconciliationLedgerRow[],
   filter: ReconciliationDisplayFilter,
@@ -39,6 +47,9 @@ export function filterReconciliationDisplayRows(
         row.evidenceActionState === 'excluded'
         || row.blockers.some((blocker) => blocker.code === 'exclude_reason_required'),
     )
+  }
+  if (filter === 'cash_receipt') {
+    return rows.filter((row) => isCashReceiptDisplaySource(row.source))
   }
   return rows.filter((row) => row.source === filter)
 }

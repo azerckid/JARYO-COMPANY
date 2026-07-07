@@ -23,4 +23,10 @@ describe('reconciliation display filters', () => {
     expect(reconciliationDisplayFilterHref('evidence_required')).toContain('display=fixture')
     expect(reconciliationDisplayFilterHref('evidence_required')).toContain('source=evidence_required')
   })
+
+  it('filters cash_receipt tab across cash_receipt and receipt sources', () => {
+    const filtered = filterReconciliationDisplayRows(rows, 'cash_receipt')
+    expect(filtered.length).toBeGreaterThan(0)
+    expect(filtered.every((row) => row.source === 'cash_receipt' || row.source === 'receipt')).toBe(true)
+  })
 })
