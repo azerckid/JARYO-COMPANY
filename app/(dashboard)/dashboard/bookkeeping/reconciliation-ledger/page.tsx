@@ -1,9 +1,5 @@
 import { redirect } from 'next/navigation'
 import { requireTenantSession } from '@/lib/auth-helpers'
-import {
-  isReconciliationDisplayFixtureMode,
-  loadReconciliationLedgerDisplayFixture,
-} from '@/lib/bookkeeping-review/reconciliation-display-loader'
 import { loadBookkeepingReviewSummary } from '@/lib/bookkeeping-review/summary'
 import { BookkeepingReviewBusinessEntityEmptyState } from '../_components/bookkeeping-review'
 import { ReconciliationLedgerView, normalizeReconciliationFilter } from './_components/reconciliation-ledger'
@@ -12,15 +8,11 @@ type PageProps = {
   searchParams: Promise<{
     period?: string
     source?: string
-    display?: string
   }>
 }
 
 export default async function ReconciliationLedgerPage({ searchParams }: PageProps) {
-  const { period, source, display } = await searchParams
-  const displayModel = isReconciliationDisplayFixtureMode(display)
-    ? loadReconciliationLedgerDisplayFixture()
-    : null
+  const { period, source } = await searchParams
   let tenantId: string
 
   try {
@@ -40,11 +32,5 @@ export default async function ReconciliationLedgerPage({ searchParams }: PagePro
     return <BookkeepingReviewBusinessEntityEmptyState tenantName={summary.tenant.name} />
   }
 
-  return (
-    <ReconciliationLedgerView
-      activeFilter={normalizeReconciliationFilter(source)}
-      displayModel={displayModel}
-      summary={summary}
-    />
-  )
+  return <ReconciliationLedgerView activeFilter={normalizeReconciliationFilter(source)} summary={summary} />
 }

@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { z } from 'zod'
-import type { ReconciliationLedgerDisplayModel } from '@/lib/bookkeeping-review/reconciliation-display-model'
 import type { BookkeepingReviewQueueRow, BookkeepingReviewSummary } from '@/lib/bookkeeping-review/summary'
 import { cn } from '@/lib/utils'
 
@@ -31,10 +30,9 @@ const chipClass: Record<Tone, string> = {
 export interface ReconciliationLedgerViewProps {
   readonly activeFilter: ReconciliationFilter
   readonly summary: BookkeepingReviewSummary
-  readonly displayModel?: ReconciliationLedgerDisplayModel | null
 }
 
-export function ReconciliationLedgerView({ activeFilter, summary, displayModel = null }: ReconciliationLedgerViewProps) {
+export function ReconciliationLedgerView({ activeFilter, summary }: ReconciliationLedgerViewProps) {
   const rows = summary.rows
   const filteredRows = filterReconciliationRows(rows, activeFilter)
   const sourceCounts = buildSourceCounts(rows)
@@ -76,14 +74,6 @@ export function ReconciliationLedgerView({ activeFilter, summary, displayModel =
         <div className="rounded-[10px] border border-[#fed7aa] bg-[#fff7ed] px-3.5 py-3 text-[12.5px] text-[#9a3412]">
           자료대조원장은 신고 준비 화면이 아니라 기장검토 하위 관문입니다. 여기서 확정된 거래원장을 부가세·사업장현황신고·지방소득세 등 Path 1 양식 생성 화면이 읽습니다.
         </div>
-
-        {displayModel ? (
-          <div className="rounded-[10px] border border-[#bfdbfe] bg-[#eff6ff] px-3.5 py-3 text-[12.5px] text-[#1e40af]">
-            Display fixture 모드 (Slice 2a-0): 원장 {displayModel.rows.length}건, 다음 할 일{' '}
-            {displayModel.nextActions.length}건, 일괄 제안 {displayModel.batchSuggestionGroups.length}그룹.
-            저장·확정 버튼은 Slice 2b 전까지 비활성입니다.
-          </div>
-        ) : null}
 
         <section className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
           <SourceSummaryCard label="통장 내역" count={sourceCounts.bank} sub="입출금 대조" />

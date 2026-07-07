@@ -14,13 +14,18 @@ const disabledActions = {
   canConfirmMatch: false,
 } satisfies ReconciliationLedgerRow['actions']
 
+type ReconciliationWorkPanelConclusionInput = Omit<
+  ReconciliationWorkPanelConclusion,
+  'actionEnabled' | 'disabledReason'
+>
+
 function panelConclusion(
-  partial: ReconciliationWorkPanelConclusion,
+  partial: ReconciliationWorkPanelConclusionInput,
 ): ReconciliationWorkPanelConclusion {
   return {
+    ...partial,
     actionEnabled: false,
     disabledReason: 'Slice 2a-0 fixture — 저장은 Slice 2b에서 활성화됩니다.',
-    ...partial,
   }
 }
 
