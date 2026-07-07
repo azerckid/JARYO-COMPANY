@@ -155,7 +155,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [x] QA 테스트 시나리오 작성 (Layer 5) — [Bookkeeping Review Test Scenarios](../05_QA_Validation/04_BOOKKEEPING_REVIEW_TEST_SCENARIOS.md)
   - [x] 자료대조원장 Phase 2 행동 계약 작성 — [Reconciliation Ledger Phase 2 Brief](../03_Technical_Specs/41_RECONCILIATION_LEDGER_V2_PRE_CODE_BRIEF.md)
   - [ ] 자료대조원장 Slice 2a read model 착수 전 검토 — 입출금↔증빙 후보·blocker 파생
-  - [ ] 자료대조원장 반복 패턴 추천 계약 검토 — 전월/최근 확정 이력 기반 추천, 자동 확정 금지
+  - [x] 자료대조원장 반복 패턴 추천 계약 검토 — 전월/최근 확정 이력 기반 추천, 확정 row 정의, AI 추천과 패턴 추천 관계, 자동 확정 금지
   - [ ] 자료대조원장 Slice 2b mutation mapping 착수 전 검토 — 계정확정·소명·제외 사유 저장
   - [ ] 자료대조원장 Slice 2c durable match-link schema 필요 여부 판단
 - Acceptance Criteria:

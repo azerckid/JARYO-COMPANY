@@ -110,7 +110,7 @@ Path 1 file generation must read the resolved completion state, not a candidate 
 
 | Slice | Goal | DB change | User-visible result |
 |:---|:---|:---:|:---|
-| 2a | Reconciliation read model and candidate display | No | Rows show source, linked evidence candidates, match state, and blockers |
+| 2a | Reconciliation read model and candidate display | No | Rows show source, linked evidence candidates, previous-period pattern suggestions, match state, and blockers |
 | 2b | Account/exclusion/explanation actions | No preferred | Existing classification and attribution APIs are reused where possible |
 | 2c | Persisted reconciliation links, only if required | Additive only | User-confirmed bank-to-evidence links survive reloads and audits |
 
@@ -260,6 +260,14 @@ why a candidate was suggested.
 자료대조원장은 사용자가 전월 또는 최근 기간에 확정한 거래 처리 패턴을 다음 기간의 추천 근거로 사용할 수 있다. 이 기능의 목적은 반복 거래의 추론 확률을 높이는 것이며, 사용자의 최종 확인을 대체하지 않는다.
 
 Pattern inputs are limited to the same tenant and business entity. Suggested signals may include normalized counterparty, memo/description tokens, source type, direction, amount band, evidence type, final account, exclusion reason, and staff memo keywords. Cross-tenant or cross-company learning is not allowed.
+
+Confirmed pattern inputs are defined narrowly:
+
+- Account pattern: `status='confirmed'` with a non-null `finalAccount`.
+- Exclusion pattern: `status='excluded'` with an exclusion reason or staff memo that explains why it was excluded.
+- Evidence pattern: a user-confirmed evidence connection. Before Slice 2c persists durable links, this can only be derived from existing confirmed evidence metadata and must be labeled as a recommendation, not a confirmed link.
+
+Pattern recommendations supplement, but do not replace, the current AI/rules account recommendation. `recommendedAccount` reflects the current-row AI/rules suggestion; `patternSuggestion` reflects historical user-confirmed behavior. If they disagree, the UI must show the disagreement and ask the user to choose. Neither source may silently confirm the row.
 
 The UI must show the basis, for example:
 
