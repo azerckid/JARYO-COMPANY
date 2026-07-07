@@ -26,9 +26,7 @@ import {
   evidenceFinderSourceOptions,
   formatKrwAmount,
   formatRemainingDifferenceLabel,
-  hasAiEvidenceSuggestion,
   listEvidenceFinderBrowseRows,
-  matchCandidateReasonLabel,
   shouldShowEvidenceFinder,
   type EvidenceFinderSource,
 } from '@/lib/bookkeeping-review/reconciliation-work-panel'
@@ -45,15 +43,6 @@ const chipClass: Record<Tone, string> = {
   muted: 'border-company-border bg-company-nav-hover text-company-fg-muted',
 }
 
-const sourceShortLabels: Record<ReconciliationLedgerRow['source'], string> = {
-  bank: '통장',
-  card: '카드',
-  tax_invoice: '세금계산서',
-  receipt: '현금영수증',
-  cash_receipt: '현금영수증',
-  other: '기타',
-}
-
 export interface ReconciliationEvidenceCellProps {
   readonly onOpenEvidencePicker: (source: EvidenceFinderSource) => void
   readonly onOpenExplanation: () => void
@@ -65,52 +54,14 @@ export function ReconciliationEvidenceCell({
   onOpenExplanation,
   row,
 }: ReconciliationEvidenceCellProps) {
-  const aiSuggestion = hasAiEvidenceSuggestion(row) ? row.candidates[0] : null
   const statusChip = evidenceActionChipLabel(row.evidenceActionState)
-  const remainingDifferenceKrw = computeRemainingDifferenceKrw(row.amountKrw, row.candidates)
   const showEvidenceFinder = shouldShowEvidenceFinder(row)
 
   return (
-    <div className="flex min-w-[168px] flex-col gap-1.5" onClick={(event) => event.stopPropagation()}>
-      {aiSuggestion ? (
-        <div className="rounded-[10px] border border-[#bfdbfe] bg-[#eff6ff] p-2">
-          <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1d4ed8]">
-            <Sparkles className="size-3" />
-            AI 연결 제안
-          </p>
-          <p className="mt-1 text-[12px] font-semibold text-foreground">{candidateSummary(aiSuggestion)}</p>
-          <p className="mt-0.5 text-[11px] text-company-fg-muted">
-            {aiSuggestion.counterparty ?? '거래처 미정'} · {matchCandidateReasonLabel(aiSuggestion.reason)}
-          </p>
-          {remainingDifferenceKrw !== null && remainingDifferenceKrw !== 0 ? (
-            <p className="mt-1 text-[11px] font-medium text-[#b45309]">
-              {formatRemainingDifferenceLabel(remainingDifferenceKrw)}
-            </p>
-          ) : null}
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <button
-              className="cursor-not-allowed rounded-md border border-company-border-strong bg-company-surface px-2 py-1 text-[11px] font-semibold text-company-fg-subtle"
-              disabled
-              title={disabledActionNote}
-              type="button"
-            >
-              연결 확인
-            </button>
-            <button
-              className="cursor-not-allowed rounded-md border border-company-border bg-company-nav-hover px-2 py-1 text-[11px] font-semibold text-company-fg-subtle"
-              disabled
-              title={disabledActionNote}
-              type="button"
-            >
-              아님
-            </button>
-          </div>
-        </div>
-      ) : null}
-
+    <div className="flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
       {row.evidenceActionState === 'explanation_required' ? (
         <button
-          className="w-fit rounded-md border border-[#fde68a] bg-[#fffbeb] px-2.5 py-1 text-[11.5px] font-semibold text-[#b45309] hover:bg-[#fef3c7]"
+          className="rounded-md border border-[#fde68a] bg-[#fffbeb] px-2 py-1 text-[11.5px] font-semibold text-[#b45309] hover:bg-[#fef3c7]"
           onClick={onOpenExplanation}
           type="button"
         >
@@ -125,7 +76,7 @@ export function ReconciliationEvidenceCell({
           className="text-[11.5px] font-semibold text-[#2563eb] hover:underline"
           href="/dashboard/direct-upload?period=2026-q1&source=tax_invoice"
         >
-          자료수집 이동
+          자료수집
         </Link>
       ) : null}
 
@@ -452,8 +403,4 @@ function StatusChip({ tone, children }: { readonly tone: Tone; readonly children
       {children}
     </span>
   )
-}
-
-function candidateSummary(candidate: ReconciliationLedgerRow['candidates'][number]) {
-  return `${sourceShortLabels[candidate.source]} · ${candidate.date?.slice(5, 10) ?? '-'} · ${formatKrwAmount(candidate.amountKrw)}`
 }

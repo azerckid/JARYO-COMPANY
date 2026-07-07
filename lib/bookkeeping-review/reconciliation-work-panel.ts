@@ -105,6 +105,10 @@ export function shouldShowEvidenceFinder(row: ReconciliationLedgerRow): boolean 
     return false
   }
 
+  if (row.evidenceActionState === 'linked') {
+    return false
+  }
+
   return (
     row.evidenceActionState === 'evidence_required'
     || hasAiEvidenceSuggestion(row)
@@ -120,7 +124,7 @@ export function evidenceActionChipLabel(
   }
 
   if (state === 'linked') {
-    return { label: '증빙 연결됨', tone: 'ok' }
+    return { label: '증빙있음', tone: 'ok' }
   }
   if (state === 'evidence_required') {
     return { label: '증빙 필요', tone: 'danger' }

@@ -6,6 +6,7 @@ import {
   hasAiEvidenceSuggestion,
   listEvidenceFinderBrowseRows,
   matchesEvidenceFinderSource,
+  shouldShowEvidenceFinder,
 } from './reconciliation-work-panel'
 
 describe('reconciliation-work-panel', () => {
@@ -28,6 +29,21 @@ describe('reconciliation-work-panel', () => {
     expect(row).toBeDefined()
     expect(hasAiEvidenceSuggestion(row!)).toBe(true)
     expect(evidenceActionChipLabel(row!.evidenceActionState)).toBeNull()
+  })
+
+  it('shows 증빙있음 for linked rows and hides evidence finder', () => {
+    expect(evidenceActionChipLabel('linked')?.label).toBe('증빙있음')
+
+    const linkedRow = {
+      ...RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows[0]!,
+      evidenceActionState: 'linked' as const,
+      workPanelConclusion: {
+        ...RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows[0]!.workPanelConclusion,
+        primaryAction: 'review_only' as const,
+      },
+    }
+
+    expect(shouldShowEvidenceFinder(linkedRow)).toBe(false)
   })
 
   it('lists browse rows for evidence finder by source', () => {
