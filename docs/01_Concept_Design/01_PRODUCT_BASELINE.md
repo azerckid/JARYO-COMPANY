@@ -1,30 +1,30 @@
 # SemuAgent Product Baseline
 > Created: 2026-07-01 17:55
-> Last Updated: 2026-07-07 04:20 KST
+> Last Updated: 2026-07-07 23:04 KST
 
 ## Purpose
 
 SemuAgent helps a small company use AI-assisted workflows to prepare tax filing
-materials, then complete filing through one of **three product paths**:
+materials, then complete filing through **Path 1 first**:
 
-`source collection -> classification/bookkeeping -> VAT calculation -> payroll -> review/approval -> filing-material package -> (Path 1 | 2 | 3)`
+`source collection -> classification/bookkeeping -> VAT calculation -> payroll -> review/approval -> filing-material package -> Path 1`
 
 SemuAgent is not automatic tax filing and is not a tax-representative marketplace.
 Final Hometax submission and payment remain outside SemuAgent unless a separately
 approved JC-023 flow exists.
 
-## 3 Filing Paths (신고 3경로)
+## Filing Path Priority (신고 완료 경로 우선순위)
 
-공통 **데이터 준비**(자료수집·기장·부가세·급여·신고 준비) 이후, 사용자는 아래 세 경로
-중 하나(또는 병행)로 신고를 마친다. 세 경로는 **동등한 제품 방향**이며 시점만 다르다.
+공통 **데이터 준비**(자료수집·기장·부가세·급여·신고 준비) 이후, 베타에서는 **Path 1만** 제공한다.
+Path 2는 Path 1 베타 테스트 이후 검토하고, Path 3은 정부 적합성 검정·인증 경로가 확인되기 전까지 착수하지 않는다.
 
 | Path | 이름 | SemuAgent 역할 | 제출 주체 | 백로그 | 시점 |
 |---|---|---|---|---|---|
-| **1** | 양식 파일 + 홈택스 업로드 안내 | 국세청 전자신고 **양식 파일 생성**(평문)·검증 + 홈택스 **작성·업로드 단계 안내** | 사업자 | JC-013, JC-030 Path 1 | **현재** |
-| **2** | 세무회계사무소 연결 (자료기와) | **handoff ZIP 패키지** Export → JARYO-GIWA에서 검토 | 수임 사무소 (검정 SW) | JC-034 | **현재** (v1 ZIP) |
-| **3** | 인증 후 암호화 파일 업로드 | **적합성 검정**·NTS fcrypt 등으로 홈택스 업로드 가능 **암호화 파일** 생성 | 사업자 | JC-030 Path 3 | **미래** |
+| **1** | 양식 파일 + 홈택스 업로드 안내 | 국세청 전자신고 **양식 파일 생성**(평문)·검증 + 홈택스 **업로드 단계 안내** | 사업자 | JC-013, JC-030 Path 1 | **현재·베타 범위** |
+| **2** | 세무회계사무소 연결 (자료기와) | **handoff ZIP 패키지** Export → JARYO-GIWA에서 검토 | 수임 사무소 (검정 SW) | JC-034 | **Path 1 베타 이후** |
+| **3** | 인증 후 암호화 파일 업로드 | **적합성 검정**·NTS fcrypt 등으로 홈택스 업로드 가능 **암호화 파일** 생성 | 사업자 | JC-030 Path 3 | **미정·인증 후** |
 
-### Path 1 — 양식 다운로드·작성·업로드 안내 (파일은 SemuAgent가 생성)
+### Path 1 — 양식 파일 생성·업로드 안내 (파일은 SemuAgent가 생성)
 
 홈택스·국세청에 **전자신고 양식(전산매체 규격)** 이 있으므로, SemuAgent가 확정 데이터로
 **파일을 만들어 준다**. 사용자는 홈택스 파일변환신고 등 메뉴에서 **직접 업로드·제출**한다.
@@ -59,7 +59,7 @@ Path 1 파일 다운로드와 Path 2 ZIP Export **모두** 전에, 확정 데이
 ## Public SEO Positioning
 
 - Primary title: `SemuAgent - 작은 회사를 위한 AI 세무 에이전트`
-- One-line description: 작은 회사가 AI로 증빙·기장·부가세·급여를 정리하고, 홈택스 양식 파일을 만들거나 수임 세무사무소(자료기와)에 넘긴다.
+- One-line description: 작은 회사가 AI로 증빙·기장·부가세·급여를 정리하고, 먼저 홈택스 업로드용 양식 파일을 만든다.
 - Core search intents: `AI 세무`, `세무신고 준비`, `홈택스 신고 보조`, `전자신고 파일`, `신고자료 정리`, `자가 기장`, `세무사무소 자료 전달`.
 - Public positioning: SemuAgent is an AI-assisted tax-preparation workflow for small companies, not an accounting-firm client-management product, not a tax-agent marketplace, and not an automatic Hometax submission agent.
 - Canonical URL source: public metadata, robots, and sitemap use `NEXT_PUBLIC_SITE_URL`; the local fallback is `https://semuagent.app` until the production domain is finalized.
@@ -67,14 +67,14 @@ Path 1 파일 다운로드와 Path 2 ZIP Export **모두** 전에, 확정 데이
 ## Primary Users
 
 **타깃 세그먼트: 개인사업자 및 직원 10인 이하 소규모 법인.** SemuAgent는 이 규모 사업자의
-**신고 준비 데이터**를 한 제품에서 정리·검토한 뒤, **Path 1(직접 신고)** 또는 **Path 2(수임 사무소)**
-로 이어준다. Path 3은 동일 제품의 미래 확장이다.
+**신고 준비 데이터**를 한 제품에서 정리·검토한 뒤, 베타에서는 **Path 1(홈택스 업로드용 양식·파일)**
+로 이어준다. Path 2는 Path 1 베타 이후, Path 3은 인증 경로 확인 이후의 미래 확장이다.
 
 - CEO or owner-manager who wants direct visibility into accounting status
 - Finance/accounting staff who prepare materials before the filing deadline
 - Operations staff handling receipts, payroll, and tax materials
 - Users who file directly via Hometax (Path 1)
-- Users with an existing external tax accountant or accounting firm (Path 2 via JARYO-GIWA, not in-app marketplace)
+- Users who may later hand prepared data to an existing external tax accountant or accounting firm (Path 2 via JARYO-GIWA, post-beta)
 
 ## Target Tax Coverage — 개인사업자 · 소규모 법인(≤10인)
 
@@ -116,8 +116,8 @@ Path 1 파일 다운로드와 Path 2 ZIP Export **모두** 전에, 확정 데이
 - Classify transactions and generate reviewable bookkeeping entries.
 - Prepare VAT-period summaries and supporting schedules.
 - Calculate payroll from structured company payroll inputs.
-- Generate filing-material packages for **Path 1** (e-filing files + Hometax guide) and **Path 2** (GIWA handoff ZIP, JC-034).
-- Provide Hometax entry guidance and e-filing file validation (JC-030 Path 1).
+- Generate filing-material packages for **Path 1** (e-filing files + Hometax upload guide).
+- Provide Hometax upload guidance and e-filing file validation (JC-030 Path 1).
 - Store submission receipts, payment notices, and audit trail.
 - Use AI-assisted automation for source classification, missing-item checks,
   reminders, and filing-preparation updates.
@@ -134,8 +134,8 @@ Path 1 파일 다운로드와 Path 2 ZIP Export **모두** 전에, 확정 데이
 
 ## Strategic Direction (Post-MVP)
 
-MVP 이후에도 신고 완료는 위 **3 Filing Paths** 로 고정한다. 자동제출(JC-023)은 Path 1/3의
-**추가 로드맵**이며 MVP 밖이다.
+Path 1 베타 이후에 Path 2를 검토하고, Path 3은 정부 적합성 검정·인증 경로가 확인된 뒤에만 검토한다.
+자동제출(JC-023)은 Path 1/3의 **추가 로드맵**이며 MVP 밖이다.
 
 | Path | 현재 실행 우선순위 | 다음 마일스톤 |
 |---|---|---|

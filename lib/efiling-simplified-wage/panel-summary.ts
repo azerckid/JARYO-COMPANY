@@ -21,6 +21,22 @@ export type EfilingValidationDisplayItem = {
   ruleId?: ValidationIssue['ruleId']
 }
 
+export type EfilingFilledFormPreviewRow = {
+  id: string
+  label: string
+  value: string
+  note?: string
+}
+
+export type EfilingFilledFormEmployeeRow = {
+  employeeKey: string
+  employeeName: string
+  workPeriodLabel: string
+  grossPayKrw: number
+  recognizedBonusKrw: number
+  residentIdStatus: string
+}
+
 export type SimplifiedWageEfilingSummary = {
   context: ReportingContext
   stats: {
@@ -33,6 +49,10 @@ export type SimplifiedWageEfilingSummary = {
   activeStep: 1
   formatChecks: EfilingFormatCheck[]
   validationItems: EfilingValidationDisplayItem[]
+  filledFormPreview: {
+    rows: EfilingFilledFormPreviewRow[]
+    employees: EfilingFilledFormEmployeeRow[]
+  }
   hasBlockingDataIssues: boolean
   fileNamePreview: string | null
   businessRegistrationMasked: string | null
@@ -75,6 +95,11 @@ function simplifiedStatusMessage(status: string): string {
     default:
       return '준비 미완료'
   }
+}
+
+function formatYmd(value: string): string {
+  if (!/^\d{8}$/.test(value)) return value
+  return `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`
 }
 
 export function buildSimplifiedWageEfilingSummary(params: {
@@ -174,6 +199,22 @@ export function buildSimplifiedWageEfilingSummary(params: {
   const fileNamePreview =
     regDigits.length === 10 ? buildFileName(business.businessRegistrationNumber!) : null
 
+  const readyEmployees = simplified
+    .filter((r) => r.status === 'ready')
+    .map((r) => ({ employeeKey: r.employeeKey, employeeName: r.employeeName }))
+  const readyEmployeeKeys = new Set(readyEmployees.map((r) => r.employeeKey))
+  const filledEmployeeRows: EfilingFilledFormEmployeeRow[] = employees
+    .filter((emp) => readyEmployeeKeys.has(emp.employeeKey))
+    .map((emp) => ({
+      employeeKey: emp.employeeKey,
+      employeeName: emp.employeeName,
+      workPeriodLabel: `${formatYmd(emp.workPeriodStart)} ~ ${formatYmd(emp.workPeriodEnd)}`,
+      grossPayKrw: emp.grossPayKrw,
+      recognizedBonusKrw: emp.recognizedBonusKrw,
+      residentIdStatus: '파일 생성 직전 일회성 입력',
+    }))
+  const readyGrossPayTotal = filledEmployeeRows.reduce((sum, row) => sum + row.grossPayKrw, 0)
+
   return {
     context,
     stats: {
@@ -182,12 +223,25 @@ export function buildSimplifiedWageEfilingSummary(params: {
       piiInputCount,
       totalEmployees: simplified.length,
     },
-    readyEmployees: simplified
-      .filter((r) => r.status === 'ready')
-      .map((r) => ({ employeeKey: r.employeeKey, employeeName: r.employeeName })),
+    readyEmployees,
     activeStep: 1,
     formatChecks,
     validationItems,
+    filledFormPreview: {
+      rows: [
+        { id: 'file-name', label: '파일명', value: fileNamePreview ?? '사업자등록번호 확인 필요' },
+        { id: 'tax-type', label: '신고 양식', value: '근로소득 간이지급명세서' },
+        { id: 'period', label: '귀속기간', value: context.halfRangeLabel },
+        { id: 'submitted-on', label: '작성 기준일', value: formatYmd(submittedOn) },
+        { id: 'business-number', label: '사업자등록번호', value: business.maskedBusinessRegistrationNumber ?? '설정 필요' },
+        { id: 'business-name', label: '상호', value: business.businessName || '설정 필요' },
+        { id: 'representative-name', label: '대표자', value: business.representativeName || '설정 필요' },
+        { id: 'employee-count', label: '소득자 수', value: `${filledEmployeeRows.length}명`, note: '준비 완료 직원만 파일에 포함' },
+        { id: 'gross-pay-total', label: '지급총액 합계', value: `${readyGrossPayTotal.toLocaleString('ko-KR')}원` },
+        { id: 'obligor-id', label: '원천징수의무자 식별번호', value: '파일 생성 직전 일회성 입력', note: 'DB 저장 안 함' },
+      ],
+      employees: filledEmployeeRows,
+    },
     hasBlockingDataIssues: hasBlockingIssues(dataIssues) || attentionCount > 0,
     fileNamePreview,
     businessRegistrationMasked: business.maskedBusinessRegistrationNumber,

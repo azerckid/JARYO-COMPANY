@@ -151,7 +151,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 | Responsibility Banner | 커스텀 `FilingResponsibilityBanner` | `card` 계열 컨테이너 + 상태 아이콘 |
 | Filing Item Card/List | 커스텀 `FilingItemList` / `FilingItemCard` | `card` + `badge` + `button` |
 | Filing Package Actions | 커스텀 `FilingPackageActions` | `button` + 공용 `LockedActionButton` |
-| Filing Preparation Values | 커스텀 `FilingPreparationValues` | 단계 리스트 + `button`(값 복사) |
+| Filing Preparation Values | 커스텀 `FilingPreparationValues` | 단계 리스트 + 확인 CTA |
 | Receipt Storage | 커스텀 `FilingReceiptList` / `ReceiptUploadButton` | 파일 입력 + `button` + `badge` |
 | Post-filing Checklist | 커스텀 `FilingChecklist` | checkbox/버튼형 토글 + 상태 텍스트 |
 | State(로딩/빈/오류) | 공용 재사용 | `skeleton` + `button` |
@@ -205,7 +205,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 - 회사 홈: **읽기 전용** — Server Component에서 데이터 페치, 클라이언트 상태 최소.
 - 자료수집: 업로드/정규화 **mutation 발생** — 업로드 진행·오류는 로컬 컴포넌트 상태 + `sonner` 토스트. 목록 갱신은 서버 재검증.
 - 급여: 직원 line 수정·고지액 import/match·명세서 생성·마감 **mutation 발생** — 로컬 입력 상태 + `sonner` 토스트, 성공 후 서버 재검증.
-- 신고지원: 접수증 업로드/삭제·체크리스트 토글 **mutation 발생** — 성공 후 서버 재검증. 준비값 복사는 클라이언트 clipboard만 사용하고 DB mutation 없음.
+- 신고지원: 접수증 업로드/삭제·체크리스트 토글 **mutation 발생** — 성공 후 서버 재검증. 홈택스 직접입력용 준비값 복사는 제공하지 않음.
 - 기간 컨텍스트는 URL 파라미터로 관리(전역 스토어 미도입).
 
 ## 10. 미결/후속

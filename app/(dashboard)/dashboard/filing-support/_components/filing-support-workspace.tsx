@@ -19,7 +19,6 @@ import type {
 import { cn } from '@/lib/utils'
 import {
   FilingChecklistToggle,
-  FilingPreparationValueCopyButton,
   FilingReceiptDeleteButton,
   FilingReceiptUploadButton,
 } from './filing-actions'
@@ -196,7 +195,6 @@ function PreparationValuesCard({ guide, periodKey }: { readonly guide: FilingPre
         ))}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <FilingPreparationValueCopyButton payload={guide.copyPayload} />
         <Link
           href={`/dashboard/payroll?period=${periodKey}`}
           className="rounded-lg border border-company-border-strong bg-company-surface px-3 py-2 text-center text-[12px] font-semibold text-foreground hover:bg-company-nav-hover"

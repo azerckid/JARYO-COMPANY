@@ -47,8 +47,56 @@ export function SimplifiedWageEfilingPanel({ efiling }: { readonly efiling: Simp
       <div className="grid gap-2 border-b border-[#e9e5ff] px-[18px] py-4 sm:grid-cols-2 lg:grid-cols-4">
         <StepCard step={1} title="데이터 확인" desc="JC-024 반기 집계·누락 검토" />
         <StepCard step={2} active title="식별정보 입력" desc="요청 동안만 사용 · DB·로그 미저장" />
-        <StepCard step={3} title="사전검증" desc="파일변환신고 전 형식·정합성 확인" />
+        <StepCard step={3} active title="양식 채움 확인" desc="파일에 들어갈 값 눈으로 확인" />
         <StepCard step={4} active title="다운로드 · 홈택스 안내" desc="plain 후보 다운로드 · 직접 확인" />
+      </div>
+
+      <div className="border-b border-[#e9e5ff] px-[18px] py-4">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+          <h4 className="text-[13px] font-semibold">양식에 채워질 값 확인</h4>
+          <p className="text-[11.5px] text-company-fg-subtle">다운로드 전에 SemuAgent가 파일에 넣을 값을 확인합니다.</p>
+        </div>
+        <div className="mt-3 grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+          <div className="rounded-[10px] border border-company-border bg-company-surface p-3.5">
+            <dl className="grid gap-2 text-[12px]">
+              {efiling.filledFormPreview.rows.map((row) => (
+                <div key={row.id} className="grid grid-cols-[112px_1fr] gap-2 border-b border-company-border/70 pb-2 last:border-b-0 last:pb-0">
+                  <dt className="text-company-fg-subtle">{row.label}</dt>
+                  <dd className="font-medium text-foreground">
+                    {row.value}
+                    {row.note ? <span className="ml-1 font-normal text-company-fg-subtle">({row.note})</span> : null}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          <div className="overflow-hidden rounded-[10px] border border-company-border bg-company-surface">
+            <table className="w-full border-collapse text-left text-[12px]">
+              <thead className="bg-[#fafafa] text-[11px] text-company-fg-subtle">
+                <tr>
+                  <th className="px-3 py-2 font-semibold">소득자</th>
+                  <th className="px-3 py-2 font-semibold">근로기간</th>
+                  <th className="px-3 py-2 text-right font-semibold">지급총액</th>
+                  <th className="px-3 py-2 font-semibold">식별정보</th>
+                </tr>
+              </thead>
+              <tbody>
+                {efiling.filledFormPreview.employees.length > 0 ? efiling.filledFormPreview.employees.map((row) => (
+                  <tr key={row.employeeKey} className="border-t border-company-border">
+                    <td className="px-3 py-2 font-medium">{row.employeeName}</td>
+                    <td className="px-3 py-2 text-company-fg-muted">{row.workPeriodLabel}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{formatKrw(row.grossPayKrw)}</td>
+                    <td className="px-3 py-2 text-company-fg-muted">{row.residentIdStatus}</td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={4} className="px-3 py-4 text-center text-company-fg-muted">파일에 포함할 준비 완료 직원이 없습니다.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-4 px-[18px] py-4 lg:grid-cols-2">
@@ -120,6 +168,10 @@ function EfilingStat({ label, value, sub }: { label: string; value: string; sub:
       <p className={STAT_SUB}>{sub}</p>
     </div>
   )
+}
+
+function formatKrw(value: number) {
+  return `${value.toLocaleString('ko-KR')}원`
 }
 
 function StepCard({

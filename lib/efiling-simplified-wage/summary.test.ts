@@ -180,6 +180,21 @@ describe('buildSimplifiedWageEfilingSummary', () => {
     expect(summary.validationItems.some((i) => i.ruleId === 'V-08')).toBe(true)
     expect(summary.fileNamePreview).toBe('SC1234567890')
     expect(summary.formatChecks.some((c) => c.tone === 'muted')).toBe(true)
+    expect(summary.filledFormPreview.rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: '신고 양식', value: '근로소득 간이지급명세서' }),
+        expect.objectContaining({ label: '소득자 수', value: '1명' }),
+        expect.objectContaining({ label: '지급총액 합계', value: '42,000,000원' }),
+      ]),
+    )
+    expect(summary.filledFormPreview.employees).toEqual([
+      expect.objectContaining({
+        employeeName: 'KimRep',
+        workPeriodLabel: '2026-01-01 ~ 2026-06-30',
+        grossPayKrw: 42_000_000,
+        residentIdStatus: '파일 생성 직전 일회성 입력',
+      }),
+    ])
   })
 
   it('omits PII pending when no ready employees', () => {

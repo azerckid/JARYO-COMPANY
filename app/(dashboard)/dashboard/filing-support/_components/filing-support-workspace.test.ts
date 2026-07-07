@@ -123,7 +123,7 @@ describe('filing support workspace static contract (JC-013)', () => {
     for (const token of [
       '신고 항목 · 첨부 패키지',
       '신고 준비값 확인 · 원천세',
-      '준비값 복사',
+      '급여 산출물 확인',
       '제출 접수증 보관',
       '사후 체크리스트',
       '화면 상태 예시',

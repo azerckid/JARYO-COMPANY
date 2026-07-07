@@ -61,7 +61,6 @@ export type FilingPreparationValues = {
   description: string
   targetItemType: FilingItemType
   steps: FilingPreparationStep[]
-  copyPayload: string
   downloadActionLabel: string | null
 }
 
@@ -399,13 +398,6 @@ export function buildFilingPreparationValues(params: {
   const grossPayKrw = params.payroll?.grossPayKrw ?? 0
   const incomeTaxKrw = params.payroll?.incomeTaxKrw ?? 0
   const localIncomeTaxKrw = params.payroll?.localIncomeTaxKrw ?? 0
-  const copyPayload = [
-    `${params.period.payrollLabel} 원천세 신고 준비값`,
-    `간이세액 대상: ${employeeCount.toLocaleString('ko-KR')}명`,
-    `총지급액: ${formatKrw(grossPayKrw)}`,
-    `징수세액: ${formatKrw(incomeTaxKrw)}`,
-    `지방소득세: ${formatKrw(localIncomeTaxKrw)}`,
-  ].join('\n')
 
   return {
     title: '신고 준비값 확인 · 원천세',
@@ -447,7 +439,6 @@ export function buildFilingPreparationValues(params: {
         done: false,
       },
     ],
-    copyPayload,
     downloadActionLabel: params.withholdingItem.status === 'ready' || params.withholdingItem.status === 'submitted'
       ? '지급명세서 다운로드'
       : null,

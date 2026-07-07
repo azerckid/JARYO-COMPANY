@@ -59,7 +59,7 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 | S-30 | payroll employeeCount=12 | 원천세 가이드 렌더 | 인원 12명 표시 | PASS·단위 |
 | S-31 | payroll grossPayKrw=42,600,000 | 원천세 가이드 렌더 | 총지급액 42,600,000원 표시 | PASS·단위 |
 | S-32 | payroll withholdingTaxKrw=2,100,000 | 원천세 가이드 렌더 | 소득세/지방소득세 합계 또는 세부 값 표시 | PASS·단위 |
-| S-33 | "준비값 복사" | 클릭 | clipboard 복사만 수행, DB mutation 없음 | PASS·구현 |
+| S-33 | 신고 준비값 확인 영역 | 렌더 | 확정 값은 화면에 표시되지만 홈택스 직접입력용 복사 버튼은 제공하지 않음 | PASS·구현 |
 | S-34 | 홈택스 가이드 영역 | 렌더 | "자동 제출 아님" 문구 표시 | PASS·구현 |
 
 ### 2.5 접수증 보관

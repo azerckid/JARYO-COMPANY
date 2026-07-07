@@ -123,6 +123,20 @@
   .fg-step .num { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: .04em; }
   .fg-step .name { font-size: 12.5px; font-weight: 650; margin-top: 4px; }
   .fg-step .desc { font-size: 11px; color: var(--fg-muted); margin-top: 4px; }
+  .fg-preview { padding: 16px 18px; border-bottom: 1px solid var(--border); }
+  .fg-preview-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:12px; }
+  .fg-preview-head h4 { font-size:13px; font-weight:700; }
+  .fg-preview-head span { font-size:11.5px; color:var(--fg-subtle); }
+  .fg-preview-grid { display:grid; grid-template-columns:.85fr 1.15fr; gap:14px; }
+  .fg-kv, .fg-filled-table { border:1px solid var(--border); border-radius:10px; background:#fff; overflow:hidden; }
+  .fg-kv-row { display:grid; grid-template-columns:120px 1fr; gap:10px; padding:9px 12px; border-bottom:1px solid var(--border); font-size:12px; }
+  .fg-kv-row:last-child { border-bottom:0; }
+  .fg-kv-row .k { color:var(--fg-subtle); }
+  .fg-kv-row .v { font-weight:650; }
+  .fg-filled-table table { width:100%; border-collapse:collapse; font-size:12px; }
+  .fg-filled-table th { text-align:left; background:#fafafa; color:var(--fg-subtle); font-size:11px; padding:9px 10px; }
+  .fg-filled-table td { padding:10px; border-top:1px solid var(--border); }
+  .fg-filled-table .num { text-align:right; font-variant-numeric:tabular-nums; }
   .fg-body { padding: 16px 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .fg-box { border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
   .fg-box h4 { font-size: 12.5px; font-weight: 650; margin-bottom: 8px; }
@@ -149,6 +163,7 @@
     .fg-stat { border-right: 0; border-bottom: 1px solid var(--border); }
     .fg-stat:last-child { border-bottom: 0; }
     .fg-steps { grid-template-columns: 1fr; }
+    .fg-preview-grid { grid-template-columns: 1fr; }
     .fg-body { grid-template-columns: 1fr; }
   }
 </style>
@@ -228,7 +243,7 @@
         <div class="fg-head">
           <div>
             <h3>간이지급명세서(근로소득) 전자신고 양식 파일</h3>
-            <p>확정된 반기 집계를 바탕으로 <b>Path 1</b> 전자신고 양식 파일을 생성합니다. 사용자는 홈택스 <b>변환 파일제출</b>에서 직접 업로드·제출합니다. <b>Path 3</b>(인증·암호화 파일) 완료 전에는 plain 파일 한계가 있을 수 있습니다. 사무소 handoff는 <a href="08_filing_preparation.html#jc-034-handoff-export" style="color:var(--accent);font-weight:600">신고 준비 Path 2</a>를 사용합니다.</p>
+            <p>확정된 반기 집계를 바탕으로 <b>Path 1</b> 전자신고 양식 파일을 생성합니다. 사용자는 홈택스 <b>변환 파일제출</b>에서 직접 업로드·제출합니다. <b>Path 2</b>는 Path 1 베타 이후, <b>Path 3</b>(인증·암호화 파일)은 정부 적합성 검정·인증 경로 확인 이후입니다.</p>
           </div>
           <div class="fg-actions">
             <button type="button" class="btn">검증 결과 보기</button>
@@ -265,13 +280,38 @@
           </div>
           <div class="fg-step">
             <div class="num">STEP 3</div>
-            <div class="name">사전검증</div>
-            <div class="desc">파일변환신고 전 형식·정합성 확인</div>
+            <div class="name">양식 채움 확인</div>
+            <div class="desc">파일에 들어갈 값 눈으로 확인</div>
           </div>
           <div class="fg-step">
             <div class="num">STEP 4</div>
             <div class="name">다운로드 · 홈택스 안내</div>
             <div class="desc">사용자 직접 변환제출</div>
+          </div>
+        </div>
+        <div class="fg-preview">
+          <div class="fg-preview-head"><h4>양식에 채워질 값 확인</h4><span>다운로드 전에 SemuAgent가 파일에 넣을 값을 확인합니다.</span></div>
+          <div class="fg-preview-grid">
+            <div class="fg-kv">
+              <div class="fg-kv-row"><div class="k">파일명</div><div class="v">SC1234567890</div></div>
+              <div class="fg-kv-row"><div class="k">신고 양식</div><div class="v">근로소득 간이지급명세서</div></div>
+              <div class="fg-kv-row"><div class="k">귀속기간</div><div class="v">2026-01 ~ 2026-06</div></div>
+              <div class="fg-kv-row"><div class="k">사업자등록번호</div><div class="v">123-**-*****0</div></div>
+              <div class="fg-kv-row"><div class="k">상호/대표자</div><div class="v">샘플컴퍼니(주) · 김대표</div></div>
+              <div class="fg-kv-row"><div class="k">소득자 수</div><div class="v">3명 <span class="muted">(준비 완료 직원만 포함)</span></div></div>
+              <div class="fg-kv-row"><div class="k">지급총액 합계</div><div class="v">81,600,000원</div></div>
+              <div class="fg-kv-row"><div class="k">원천징수의무자 식별번호</div><div class="v">파일 생성 직전 일회성 입력</div></div>
+            </div>
+            <div class="fg-filled-table">
+              <table>
+                <thead><tr><th>소득자</th><th>근로기간</th><th class="num">지급총액</th><th>식별정보</th></tr></thead>
+                <tbody>
+                  <tr><td>김대표</td><td>2026-01-01 ~ 2026-06-30</td><td class="num">42,000,000원</td><td>파일 생성 직전 일회성 입력</td></tr>
+                  <tr><td>이수민</td><td>2026-01-01 ~ 2026-06-30</td><td class="num">21,600,000원</td><td>파일 생성 직전 일회성 입력</td></tr>
+                  <tr><td>박지훈</td><td>2026-01-01 ~ 2026-06-30</td><td class="num">18,000,000원</td><td>파일 생성 직전 일회성 입력</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
         <div class="fg-body">
@@ -316,7 +356,7 @@
         </div>
       </section>
 
-      <section class="boundary"><b>3 Filing Paths</b> — Path 1: 위 JC-030 패널(plain 양식 파일·홈택스 안내). Path 2: <a href="08_filing_preparation.html#jc-034-handoff-export" style="color:#1e40af;font-weight:600">신고 준비 JC-034 ZIP</a>. Path 3: 인증·암호화 파일(미래). 연말정산 정산액 계산·자동 제출은 범위 밖입니다.</section>
+      <section class="boundary"><b>Path 1 베타 범위</b> — 위 JC-030 패널에서 홈택스 업로드용 양식·파일에 채워질 값을 확인하고 파일을 내려받습니다. Path 2(수임 사무소 전달)는 Path 1 베타 이후, Path 3(인증 후 암호화 파일)은 정부 적합성 검정·인증 경로 확인 이후입니다. 연말정산 정산액 계산·자동 제출은 범위 밖입니다.</section>
 
       <div class="section-head"><h2>화면 상태 예시</h2><span class="hint">구현 시 동일한 상태 문구를 사용합니다</span></div>
       <section class="states">
