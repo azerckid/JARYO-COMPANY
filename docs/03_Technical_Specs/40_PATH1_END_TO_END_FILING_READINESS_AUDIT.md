@@ -99,8 +99,7 @@ transaction candidates. But the product still needs an explicit checklist for:
 - missing evidence for a bank movement,
 - tax-invoice-only evidence that has not appeared in bank/card records.
 
-This should be a user-facing "자료 대조" or "신고 전 대조" gate before a tax
-form can be marked ready.
+This is now positioned as the **기장검토 하위 "자료대조원장"** gate before a tax form can be marked ready, not as a 신고 준비 child screen.
 
 ### 5.2 Private or business-unrelated exclusion needs one shared language
 
@@ -137,14 +136,14 @@ considered beta-ready.
 
 The next product work should be Path 1 completion, not Path 2 and not Path 3.
 
-1. **원천세 Path 1 complete**
+1. **Path 1 data readiness gate — 자료대조원장**
+   - Add a single readiness contract under 기장검토 that every tax-type file checks before
+     download: source completeness, reconciliation, exclusion reasons, account
+     confirmation, tax-specific review.
+2. **원천세 Path 1 complete**
    - Finish official layout acquisition.
    - Add filled-form preview for the withholding form.
    - Enable file download only after validation passes.
-2. **Path 1 data readiness gate**
-   - Add a single readiness contract that every tax-type file checks before
-     download: source completeness, reconciliation, exclusion reasons, account
-     confirmation, tax-specific review.
 3. **Reconciliation/exclusion UX**
    - Make bank/card/tax-invoice matching and private-use exclusion visible and
      actionable instead of leaving them as scattered lower-level statuses.
