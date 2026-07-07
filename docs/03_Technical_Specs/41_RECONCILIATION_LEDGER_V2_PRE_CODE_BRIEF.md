@@ -1,6 +1,6 @@
 # Reconciliation Ledger Phase 2 Pre-Code Technical Brief
 > Created: 2026-07-08 02:01 KST
-> Last Updated: 2026-07-08 03:12 KST
+> Last Updated: 2026-07-08 03:25 KST
 
 ## 0. Purpose
 
@@ -38,10 +38,11 @@ The right work panel must include:
 
 1. Selected transaction summary: source, date, counterparty, description, amount, current account, and remaining difference.
 2. Auto-suggested evidence: concrete evidence rows with amount/date/counterparty match reasons, not just a count.
-3. Evidence finder: source selector for 세금계산서, 현금영수증, 체크카드/카드, plus search, date filter, amount filter, and row-level connect actions.
-4. Account confirmation: recommended account, searchable account selector, and optional repeat/apply-to-similar control.
-5. Explanation and exclusion: business-use memo, personal/private, business-unrelated, duplicate, wrong-period, internal-transfer, or other exclusion reasons.
-6. Save state: confirmed only when evidence, account, counterparty, explanation/exclusion, and period relevance are resolved as needed.
+3. Previous-period pattern recommendation: prior confirmed rows that explain likely account, evidence source, counterparty, or exclusion reason. The recommendation must show its historical basis and remain user-confirmed.
+4. Evidence finder: source selector for 세금계산서, 현금영수증, 체크카드/카드, plus search, date filter, amount filter, and row-level connect actions.
+5. Account confirmation: recommended account, searchable account selector, and optional repeat/apply-to-similar control.
+6. Explanation and exclusion: business-use memo, personal/private, business-unrelated, duplicate, wrong-period, internal-transfer, or other exclusion reasons.
+7. Save state: confirmed only when evidence, account, counterparty, explanation/exclusion, and period relevance are resolved as needed.
 
 Terminology note: the UI may label the evidence source as **체크카드/카드** for user clarity, but implementation reuses the existing `card` source type. No separate `check_card` DB enum or source type is introduced in this slice.
 
@@ -56,6 +57,7 @@ The current implementation is only the first read-only step. The following funct
 | Evidence finder | From a bank/card row, choose 세금계산서/현금영수증/체크카드 and select evidence rows | Missing | Right work panel with source selector, search, date/amount filters, add/select, remaining difference |
 | Explanation memo | Let user explain unclear business use for a transaction | Missing | Row-level modal/panel field saved as memo in v1 |
 | Bank usage-description memo | Let user write what a bank movement was for when evidence is weak or context is unclear | Missing | Same work panel memo area; make it visible in audit/readiness |
+| Previous-period pattern recommendation | Learn from prior confirmed rows such as same counterparty, memo, amount range, evidence type, account, or exclusion decision | Missing | Show the prior-period basis and let the user accept, change, or reject; never auto-confirm |
 | AI account recommendation | AI/rules first assign likely account category | Partial/existing source | Show recommended account and confidence; do not hide uncertainty |
 | User account selection | If AI cannot decide or confidence is low, user chooses account | Partial/existing source | Highlight uncertain rows and expose searchable account selector in this screen |
 | Private/business-unrelated detection | Flag likely personal or low-business-use payments, e.g. cinema, beauty salon, PC room, leisure-like spending | Missing | Heuristic/AI review flag; user must confirm business use or exclude |
@@ -82,6 +84,8 @@ Path 1 file generation must read the resolved completion state, not a candidate 
   reconciliation ledger.
 - Show likely links between bank deposits/withdrawals and supporting evidence
   such as tax invoices, card approvals, receipts, and cash receipts.
+- Show previous-period confirmed pattern recommendations for repeated counterparties,
+  descriptions, amount ranges, evidence types, accounts, and exclusion decisions.
 - Separate clear matches, ambiguous candidates, missing evidence, duplicate
   evidence, and exclusion candidates.
 - Let the user confirm or change account categories for filing-relevant rows.
@@ -98,6 +102,8 @@ Path 1 file generation must read the resolved completion state, not a candidate 
   login.
 - Official Path 1 file generation itself. That remains JC-030.
 - New AI write engine that automatically confirms matches without user review.
+- Auto-confirming accounts, evidence links, or exclusions solely because a prior
+  period pattern matched.
 - Tax/legal judgment beyond presenting data and requiring user confirmation.
 
 ## 2. Slice Plan
@@ -189,6 +195,22 @@ type ReconciliationMatchCandidate = {
     | 'manual_reference'
 }
 
+type ReconciliationPatternSuggestion = {
+  suggestedAccount: string | null
+  suggestedEvidenceSource: ReconciliationSource | null
+  suggestedExclusionReason: ReconciliationExclusionReason | null
+  confidence: 'high' | 'medium' | 'low'
+  basisLabel: string
+  matchedCount: number
+  lastSeenPeriod: string | null
+  reason:
+    | 'same_counterparty_prior_account'
+    | 'same_counterparty_prior_evidence'
+    | 'same_memo_amount_pattern'
+    | 'prior_exclusion_pattern'
+    | 'recurring_internal_transfer'
+}
+
 type ReconciliationLedgerRow = {
   id: string
   source: ReconciliationSource
@@ -204,6 +226,7 @@ type ReconciliationLedgerRow = {
   exclusionReason: ReconciliationExclusionReason | null
   matchState: ReconciliationMatchState
   candidates: ReconciliationMatchCandidate[]
+  patternSuggestion: ReconciliationPatternSuggestion | null
   blockers: Array<{ code: ReconciliationBlockerCode; label: string }>
   actions: {
     canConfirmAccount: boolean
@@ -232,11 +255,27 @@ Slice 2a shows candidates; it does not silently confirm them. A candidate count 
 Amounts and dates are matching signals, not legal conclusions. The UI must show
 why a candidate was suggested.
 
+## 5.1 Previous-Period Pattern Learning Rules
+
+자료대조원장은 사용자가 전월 또는 최근 기간에 확정한 거래 처리 패턴을 다음 기간의 추천 근거로 사용할 수 있다. 이 기능의 목적은 반복 거래의 추론 확률을 높이는 것이며, 사용자의 최종 확인을 대체하지 않는다.
+
+Pattern inputs are limited to the same tenant and business entity. Suggested signals may include normalized counterparty, memo/description tokens, source type, direction, amount band, evidence type, final account, exclusion reason, and staff memo keywords. Cross-tenant or cross-company learning is not allowed.
+
+The UI must show the basis, for example:
+
+- "지난달 같은 거래처 3건을 여비교통비로 확정"
+- "최근 3개월간 이 거래처는 현금영수증과 연결"
+- "지난달 같은 장소를 업무무관으로 제외"
+- "반복 내부이체 패턴으로 보임"
+
+A pattern recommendation can raise confidence, preselect a likely account, suggest an evidence source, or flag likely exclusion review. It must not automatically confirm the row, create a durable evidence link, or exclude the row without user action. If the user changes the suggestion, the changed decision becomes the newer learning signal for future periods.
+
 ## 6. User Actions
 
 | Action | Description | Preferred implementation |
 |:---|:---|:---|
 | Confirm account | User accepts or changes `finalAccount` | Existing account classification row PATCH |
+| Apply pattern suggestion | User accepts, changes, or rejects a prior-period recommendation | Reuse account/evidence/exclusion actions; no auto-confirm |
 | Explain use | User writes usage/business purpose memo | `staffMemo` for v1 |
 | Exclude row | User marks personal/private, business-unrelated, duplicate, wrong period, etc. | `status='excluded'` + required reason/memo; map to existing memo first |
 | Open evidence finder | User chooses 세금계산서 / 현금영수증 / 체크카드 and searches evidence rows | Row-level work panel or bottom drawer |
@@ -285,9 +324,10 @@ Phase 2 implementation should keep that layout:
 3. Source tabs: all, bank, card, tax invoice, cash receipt, missing evidence,
    exclusion review.
 4. Unified ledger table. The linked-evidence column must show either an actual linked evidence item, an actionable concrete candidate, or "증빙 찾기". It must not stop at "후보 N건".
-5. Right work panel for the selected row. It handles match candidates, evidence search, account confirmation, explanation, and exclusion while keeping the ledger table visible. On narrow screens this may collapse into a drawer.
-6. Evidence finder inside the work panel opened from "증빙 찾기": source selector (세금계산서/현금영수증/체크카드), search/date filters, evidence table, add/select action, selected total, remaining difference, save/cancel.
-7. Tax-file readiness panel.
+5. Previous-period pattern chip or panel row: show the historical basis such as last month/recent months, matched count, prior account/evidence/exclusion decision, and confidence.
+6. Right work panel for the selected row. It handles match candidates, evidence search, account confirmation, explanation, and exclusion while keeping the ledger table visible. On narrow screens this may collapse into a drawer.
+7. Evidence finder inside the work panel opened from "증빙 찾기": source selector (세금계산서/현금영수증/체크카드), search/date filters, evidence table, add/select action, selected total, remaining difference, save/cancel.
+8. Tax-file readiness panel.
 
 The table may initially be read-only in Slice 2a, but the labels must be honest:
 inactive search or settings controls must look disabled until implemented.
@@ -297,6 +337,7 @@ inactive search or settings controls must look disabled until implemented.
 - The user can see which bank movements match or fail to match tax invoices,
   card approvals, cash receipts, or receipts.
 - The user can see why a match candidate was suggested.
+- The user can see previous-period pattern recommendations with their basis, and those recommendations do not auto-confirm rows.
 - From a bank row, the user can open "증빙 찾기", choose 세금계산서/현금영수증/체크카드, search rows, select evidence, and see the remaining difference before saving.
 - The final UI does not use candidate counts as the main answer; it shows concrete candidate rows and actions.
 - Ambiguous matches are not auto-confirmed.
