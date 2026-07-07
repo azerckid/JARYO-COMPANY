@@ -1,6 +1,6 @@
 # Reconciliation Ledger Phase 2 Pre-Code Technical Brief
 > Created: 2026-07-08 02:01 KST
-> Last Updated: 2026-07-08 05:23 KST
+> Last Updated: 2026-07-08 05:34 KST
 
 ## 0. Purpose
 
@@ -165,7 +165,7 @@ Traceability legend:
 
 | Step | Slice | Goal | Covers | Done when |
 |:---|:---|:---|:---|:---|
-| 2a-0 | 2a-lite | Display contract + fixture | §0.4, §4 display types, Preview 12, P: workbench review | `ReconciliationLedgerDisplayModel` is Zod-validated with fixture data based on Preview 12; UI consumes this model only; no DB/API mutation and no hidden save behavior |
+| 2a-0 | 2a-lite | Display contract + fixture | §0.4, §4 display types, Preview 12, P: workbench review | `ReconciliationLedgerDisplayModel` is Zod-validated with fixture data based on Preview 12, including row-level `workPanelConclusion`; UI consumes this model only; no DB/API mutation and no hidden save behavior |
 | 2a-2 | 2a-lite | UI shell and honest labels | U:1-4; P: hero, source summary, ledger table columns; §0.4 next-action queue, tax blocker reasons, closing checklist | Readiness hero, source summary, next-action queue, period scope control, action tabs, table chips, tax blocker reasons, and closing checklist render from the display model; inactive controls stay disabled until their step lands |
 | 2a-3 | 2a-lite | Right work panel (display only) | U:6-7; §0.1; §0.3; P: work panel, concrete candidates, pattern basis; §0.4 one-line panel conclusion | Selecting a row opens the panel with a one-line conclusion first, then transaction summary, concrete evidence rows, remaining difference, and `patternSuggestion` basis; "후보 N건" is not the primary answer |
 | 2a-4 | 2a-lite | Evidence finder browse + AI display shell | G: evidence finder, AI account recommendation, private/business-unrelated detection; §5.3; A: AI non-blocking, 증빙 찾기 flow; §0.4 source-collection back link | Finder opens from the panel in read/browse mode with source selector and filters from fixture/display data; AI/heuristic recommendation areas show reasons or manual-review fallback; missing-source problems show a 자료수집 backlink; save/connect buttons remain disabled until 2b-2 |
@@ -290,6 +290,21 @@ type ReconciliationClosingChecklist = {
   isReadyForPath1: boolean
 }
 
+type ReconciliationWorkPanelConclusion = {
+  headline: string
+  basisLabel: string
+  primaryAction:
+    | 'connect_evidence'
+    | 'confirm_account'
+    | 'write_explanation'
+    | 'exclude'
+    | 'mark_exception'
+    | 'open_source_collection'
+    | 'review_only'
+  actionEnabled: boolean
+  disabledReason: string | null
+}
+
 type ReconciliationLedgerDisplayModel = {
   rows: ReconciliationLedgerRow[]
   nextActions: ReconciliationNextAction[]
@@ -351,6 +366,7 @@ type ReconciliationLedgerRow = {
   evidenceActionState: ReconciliationEvidenceActionState
   candidates: ReconciliationMatchCandidate[]
   patternSuggestion: ReconciliationPatternSuggestion | null
+  workPanelConclusion: ReconciliationWorkPanelConclusion
   blockers: Array<{ code: ReconciliationBlockerCode; label: string }>
   actions: {
     canConfirmAccount: boolean
