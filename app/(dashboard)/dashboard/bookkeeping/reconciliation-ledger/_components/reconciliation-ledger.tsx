@@ -1,12 +1,15 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { z } from 'zod'
 import type { BookkeepingReviewQueueRow, BookkeepingReviewSummary } from '@/lib/bookkeeping-review/summary'
 import { cn } from '@/lib/utils'
 
 const panelClass = 'overflow-hidden rounded-xl border border-company-border bg-company-surface shadow-company-card'
 
 type SourceKind = BookkeepingReviewQueueRow['sourceType']
-export type ReconciliationFilter = 'all' | SourceKind | 'missing_evidence' | 'exclusion_review'
+const reconciliationFilterValues = ['all', 'bank', 'card', 'receipt', 'tax_invoice', 'other', 'missing_evidence', 'exclusion_review'] as const
+const reconciliationFilterSchema = z.enum(reconciliationFilterValues)
+export type ReconciliationFilter = (typeof reconciliationFilterValues)[number]
 type Tone = 'ok' | 'warn' | 'danger' | 'muted'
 
 const sourceLabels: Record<SourceKind, { label: string; short: string; className: string }> = {
@@ -34,11 +37,13 @@ export function ReconciliationLedgerView({ activeFilter, summary }: Reconciliati
   const filteredRows = filterReconciliationRows(rows, activeFilter)
   const sourceCounts = buildSourceCounts(rows)
   const confirmedCount = summary.counts.confirmed
-  const pendingCount = summary.counts.pending
-  const evidenceMissingCount = rows.filter((row) => row.status !== 'confirmed' && row.sourceType === 'other').length
-  const exclusionReviewCount = rows.filter((row) => row.requiresManualAccount || row.confidence === 'low').length
+  const blockerRows = rows.filter((row) => row.reconciliation.blockers.length > 0)
+  const readyLedgerCount = rows.filter((row) => row.status === 'confirmed' && row.reconciliation.blockers.length === 0).length
+  const pendingCount = blockerRows.length
+  const evidenceMissingCount = rows.filter(hasMissingEvidenceBlocker).length
+  const exclusionReviewCount = rows.filter(hasExclusionReviewBlocker).length
   const readinessPercent = summary.counts.total > 0
-    ? Math.round((confirmedCount / summary.counts.total) * 100)
+    ? Math.round((readyLedgerCount / summary.counts.total) * 100)
     : 0
 
   return (
@@ -136,7 +141,7 @@ export function ReconciliationLedgerView({ activeFilter, summary }: Reconciliati
 
         <section className="grid gap-4 lg:grid-cols-2">
           <ReadinessChecklist rows={rows} />
-          <TaxFileGate summary={summary} evidenceMissingCount={evidenceMissingCount} />
+          <TaxFileGate summary={summary} />
         </section>
       </div>
     </div>
@@ -190,7 +195,16 @@ function ReconciliationRow({ row, periodKey }: { readonly row: BookkeepingReview
         <div className="mt-0.5 text-[11.5px] text-company-fg-subtle">AI 신뢰도 {confidenceLabel(row.confidence)}</div>
       </td>
       <td className="px-3 py-3 text-right font-mono font-semibold text-foreground">{formatKrw(row.amountKrw)}</td>
-      <td className="px-3 py-3"><StatusChip tone={evidence.tone}>{evidence.label}</StatusChip></td>
+      <td className="px-3 py-3">
+        <div className="flex flex-col gap-1">
+          <StatusChip tone={evidence.tone}>{evidence.label}</StatusChip>
+          {row.reconciliation.candidates[0] ? (
+            <span className="max-w-[180px] truncate text-[11px] text-company-fg-subtle">
+              {candidateSummary(row.reconciliation.candidates[0])}
+            </span>
+          ) : null}
+        </div>
+      </td>
       <td className="px-3 py-3">
         <span className="inline-flex min-w-[112px] items-center justify-between gap-2 rounded-md border border-company-border bg-[#fcfcfd] px-2 py-1 text-[12px]">
           {row.finalAccount ?? row.recommendedAccount ?? '계정 미정'} <span className="text-company-fg-subtle">▾</span>
@@ -208,15 +222,15 @@ function ReconciliationRow({ row, periodKey }: { readonly row: BookkeepingReview
 
 function ReadinessChecklist({ rows }: { readonly rows: BookkeepingReviewQueueRow[] }) {
   const pending = rows.filter((row) => row.status !== 'confirmed').length
-  const low = rows.filter((row) => row.confidence === 'low' && row.status !== 'confirmed').length
-  const other = rows.filter((row) => row.sourceType === 'other').length
+  const low = rows.filter(hasExclusionReviewBlocker).length
+  const missingEvidence = rows.filter(hasMissingEvidenceBlocker).length
 
   return (
     <section className={cn(panelClass, 'p-4')}>
       <h3 className="text-[13.5px] font-semibold text-foreground">확정 조건</h3>
       <div className="mt-3 grid gap-2">
         <ChecklistLine label="자료 수집" chip={<StatusChip tone={rows.length > 0 ? 'ok' : 'muted'}>{rows.length > 0 ? '거래 있음' : '대기'}</StatusChip>} />
-        <ChecklistLine label="증빙 연결" chip={<StatusChip tone={other > 0 ? 'warn' : 'ok'}>{other > 0 ? `${other}건 확인` : '확인 완료'}</StatusChip>} />
+        <ChecklistLine label="증빙 연결" chip={<StatusChip tone={missingEvidence > 0 ? 'warn' : 'ok'}>{missingEvidence > 0 ? `${missingEvidence}건 확인` : '확인 완료'}</StatusChip>} />
         <ChecklistLine label="계정항목" chip={<StatusChip tone={pending > 0 ? 'warn' : 'ok'}>{pending > 0 ? `${pending}건 미확정` : '확정'}</StatusChip>} />
         <ChecklistLine label="업무무관/사적 사용 제외" chip={<StatusChip tone={low > 0 ? 'warn' : 'ok'}>{low > 0 ? `${low}건 검토` : '특이사항 없음'}</StatusChip>} />
       </div>
@@ -224,8 +238,8 @@ function ReadinessChecklist({ rows }: { readonly rows: BookkeepingReviewQueueRow
   )
 }
 
-function TaxFileGate({ summary, evidenceMissingCount }: { readonly summary: BookkeepingReviewSummary; readonly evidenceMissingCount: number }) {
-  const blocked = summary.counts.pending + evidenceMissingCount
+function TaxFileGate({ summary }: { readonly summary: BookkeepingReviewSummary }) {
+  const blocked = summary.rows.filter((row) => row.reconciliation.blockers.length > 0).length
   return (
     <section className={cn(panelClass, 'p-4')}>
       <h3 className="text-[13.5px] font-semibold text-foreground">세목별 양식 생성 가능 여부</h3>
@@ -294,16 +308,20 @@ function buildSourceCounts(rows: BookkeepingReviewQueueRow[]): Record<SourceKind
 }
 
 function reconciliationStatus(row: BookkeepingReviewQueueRow): { label: string; tone: Tone; actionLabel: string } {
-  if (row.status === 'confirmed') return { label: '확정', tone: 'ok', actionLabel: '보기' }
   if (row.requiresManualAccount) return { label: '계정 확인', tone: 'danger', actionLabel: '계정 지정' }
   if (row.status === 'unclassified') return { label: '분류 필요', tone: 'danger', actionLabel: '분류' }
+  if (hasMissingEvidenceBlocker(row)) return { label: '증빙 확인', tone: 'danger', actionLabel: '확인' }
+  if (row.reconciliation.matchState === 'ambiguous') return { label: '후보 확인', tone: 'warn', actionLabel: '확인' }
+  if (row.reconciliation.matchState === 'candidate') return { label: '후보 있음', tone: 'warn', actionLabel: '확인' }
+  if (row.status === 'confirmed') return { label: '확정', tone: 'ok', actionLabel: '보기' }
   return { label: '확인 필요', tone: 'warn', actionLabel: '확인' }
 }
 
 function evidenceStatus(row: BookkeepingReviewQueueRow): { label: string; tone: Tone } {
+  if (row.reconciliation.candidates.length > 1) return { label: `후보 ${row.reconciliation.candidates.length}건`, tone: 'warn' }
+  if (row.reconciliation.candidates.length === 1) return { label: '후보 1건', tone: 'warn' }
+  if (hasMissingEvidenceBlocker(row)) return { label: '증빙 없음', tone: 'danger' }
   if (row.status === 'confirmed') return { label: '확정 자료', tone: 'ok' }
-  if (row.sourceType === 'other') return { label: '증빙 확인', tone: 'danger' }
-  if (row.sourceType === 'bank') return { label: '증빙 연결 확인', tone: 'warn' }
   return { label: '원천 자료 확인', tone: 'warn' }
 }
 
@@ -326,26 +344,31 @@ function formatKrw(value: number | null) {
 }
 
 export function normalizeReconciliationFilter(value: string | undefined): ReconciliationFilter {
-  if (
-    value === 'bank'
-    || value === 'card'
-    || value === 'receipt'
-    || value === 'tax_invoice'
-    || value === 'other'
-    || value === 'missing_evidence'
-    || value === 'exclusion_review'
-  ) {
-    return value
-  }
-
-  return 'all'
+  const parsed = reconciliationFilterSchema.safeParse(value)
+  return parsed.success ? parsed.data : 'all'
 }
 
 export function filterReconciliationRows(rows: BookkeepingReviewQueueRow[], filter: ReconciliationFilter) {
   if (filter === 'all') return rows
-  if (filter === 'missing_evidence') return rows.filter((row) => row.status !== 'confirmed' && row.sourceType === 'other')
-  if (filter === 'exclusion_review') return rows.filter((row) => row.requiresManualAccount || row.confidence === 'low')
+  if (filter === 'missing_evidence') return rows.filter(hasMissingEvidenceBlocker)
+  if (filter === 'exclusion_review') return rows.filter(hasExclusionReviewBlocker)
   return rows.filter((row) => row.sourceType === filter)
+}
+
+function hasMissingEvidenceBlocker(row: BookkeepingReviewQueueRow) {
+  return row.reconciliation.blockers.some((blocker) => blocker.code === 'missing_evidence')
+}
+
+function hasExclusionReviewBlocker(row: BookkeepingReviewQueueRow) {
+  return row.reconciliation.blockers.some((blocker) =>
+    blocker.code === 'explanation_required'
+    || blocker.code === 'exclude_reason_required'
+    || blocker.code === 'tax_specific_review_required'
+  )
+}
+
+function candidateSummary(candidate: BookkeepingReviewQueueRow['reconciliation']['candidates'][number]) {
+  return `${sourceLabels[candidate.sourceType].label} · ${formatDate(candidate.date)} · ${formatKrw(candidate.amountKrw)}`
 }
 
 export function reconciliationFilterHref(periodKey: string, filter: ReconciliationFilter) {

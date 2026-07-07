@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { BookkeepingReviewQueueRow } from '@/lib/bookkeeping-review/summary'
+import { emptyReconciliationInfo, type BookkeepingReviewQueueRow } from '@/lib/bookkeeping-review/summary'
 import {
   filterReconciliationRows,
   normalizeReconciliationFilter,
@@ -22,6 +22,7 @@ function row(partial: Partial<BookkeepingReviewQueueRow> & Pick<BookkeepingRevie
     sourceType: partial.sourceType,
     direction: partial.direction ?? 'income',
     requiresManualAccount: partial.requiresManualAccount ?? false,
+    reconciliation: partial.reconciliation ?? emptyReconciliationInfo(),
   }
 }
 
@@ -30,8 +31,9 @@ describe('reconciliation ledger filters', () => {
     row({ id: 'bank_confirmed', sourceType: 'bank' }),
     row({ id: 'card_confirmed', sourceType: 'card' }),
     row({ id: 'tax_invoice_confirmed', sourceType: 'tax_invoice' }),
-    row({ id: 'missing_evidence', sourceType: 'other', status: 'needs_decision' }),
-    row({ id: 'low_confidence', sourceType: 'receipt', confidence: 'low', status: 'suggested', requiresManualAccount: true }),
+    row({ id: 'missing_evidence', sourceType: 'other', status: 'needs_decision', reconciliation: { matchState: 'missing_evidence', candidates: [], blockers: [{ code: 'missing_evidence', label: '연결 증빙 후보 없음' }] } }),
+    row({ id: 'account_unconfirmed_only', sourceType: 'bank', status: 'suggested', reconciliation: { matchState: 'candidate', candidates: [], blockers: [{ code: 'account_unconfirmed', label: '계정항목 미확정' }] } }),
+    row({ id: 'low_confidence', sourceType: 'receipt', confidence: 'low', status: 'suggested', requiresManualAccount: true, reconciliation: { matchState: 'candidate', candidates: [], blockers: [{ code: 'account_unconfirmed', label: '계정항목 미확정' }, { code: 'explanation_required', label: '사용내역 소명 필요' }] } }),
   ]
 
   it('normalizes allowed query values and falls back invalid values to all', () => {
@@ -42,7 +44,7 @@ describe('reconciliation ledger filters', () => {
   })
 
   it('filters source tabs by sourceType', () => {
-    expect(filterReconciliationRows(rows, 'bank').map((item) => item.id)).toEqual(['bank_confirmed'])
+    expect(filterReconciliationRows(rows, 'bank').map((item) => item.id)).toEqual(['bank_confirmed', 'account_unconfirmed_only'])
     expect(filterReconciliationRows(rows, 'card').map((item) => item.id)).toEqual(['card_confirmed'])
     expect(filterReconciliationRows(rows, 'tax_invoice').map((item) => item.id)).toEqual(['tax_invoice_confirmed'])
   })

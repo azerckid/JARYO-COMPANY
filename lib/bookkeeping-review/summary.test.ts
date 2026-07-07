@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
+  attachReconciliationInfo,
   buildBookkeepingReviewCounts,
   buildJournalEntry,
   confidenceTone,
+  emptyReconciliationInfo,
   filterRowsByTab,
   mapClassificationRow,
   normalizeConfidence,
@@ -29,6 +31,7 @@ function row(partial: Partial<BookkeepingReviewQueueRow>): BookkeepingReviewQueu
     confidenceTone: 'ok',
     status: 'suggested',
     requiresManualAccount: false,
+    reconciliation: emptyReconciliationInfo(),
     ...partial,
     sourceType: partial.sourceType ?? 'other',
     direction: partial.direction ?? 'unknown',
@@ -109,6 +112,41 @@ describe('filterRowsByTab', () => {
   })
   it('all tab excludes only excluded', () => {
     expect(filterRowsByTab(rows, 'all').map((r) => r.id)).toEqual(['a', 'b', 'c'])
+  })
+})
+
+describe('attachReconciliationInfo', () => {
+  it('shows same-day same-amount bank/evidence candidates without auto-confirming them', () => {
+    const [bank, invoice] = attachReconciliationInfo([
+      row({ id: 'bank', sourceType: 'bank', amountKrw: 110000, transactionDate: '2026-06-10', status: 'confirmed' }),
+      row({ id: 'invoice', sourceType: 'tax_invoice', amountKrw: 110000, transactionDate: '2026-06-10', status: 'confirmed' }),
+    ])
+
+    expect(bank.reconciliation.matchState).toBe('candidate')
+    expect(bank.reconciliation.candidates[0]).toMatchObject({ rowId: 'invoice', sourceType: 'tax_invoice', confidence: 'high', reason: 'same_amount_same_day' })
+    expect(invoice.reconciliation.candidates[0]).toMatchObject({ rowId: 'bank', sourceType: 'bank' })
+  })
+
+  it('flags multiple possible evidence rows as ambiguous', () => {
+    const [bank] = attachReconciliationInfo([
+      row({ id: 'bank', sourceType: 'bank', amountKrw: 50000, transactionDate: '2026-06-10' }),
+      row({ id: 'card', sourceType: 'card', amountKrw: 50000, transactionDate: '2026-06-10' }),
+      row({ id: 'receipt', sourceType: 'receipt', amountKrw: 50000, transactionDate: '2026-06-11' }),
+    ])
+
+    expect(bank.reconciliation.matchState).toBe('ambiguous')
+    expect(bank.reconciliation.candidates).toHaveLength(2)
+    expect(bank.reconciliation.blockers.some((blocker) => blocker.code === 'ambiguous_match')).toBe(true)
+  })
+
+  it('flags bank rows without evidence candidates as missing evidence', () => {
+    const [bank] = attachReconciliationInfo([
+      row({ id: 'bank', sourceType: 'bank', amountKrw: 77000, transactionDate: '2026-06-10' }),
+      row({ id: 'card', sourceType: 'card', amountKrw: 88000, transactionDate: '2026-06-10' }),
+    ])
+
+    expect(bank.reconciliation.matchState).toBe('missing_evidence')
+    expect(bank.reconciliation.blockers.some((blocker) => blocker.code === 'missing_evidence')).toBe(true)
   })
 })
 
