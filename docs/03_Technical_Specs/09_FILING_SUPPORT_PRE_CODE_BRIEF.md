@@ -92,7 +92,6 @@ type FilingSupportSummary = {
       values: Array<{ label: string; value: string }>
       done: boolean
     }>
-    copyPayload: string
     downloadActionLabel: string | null
   }
   receipts: Array<{
@@ -185,7 +184,6 @@ type FilingSupportSummary = {
 | 접수증 업로드 | O | `POST /api/filing/receipts` |
 | 접수증 삭제 | O | `DELETE /api/filing/receipts/[receiptId]` |
 | 체크리스트 완료 토글 | O | `PATCH /api/filing/checklist-items/[itemId]` |
-| 준비값 복사 | O | 클라이언트 clipboard, DB mutation 없음 |
 | 홈택스 신고서 제출 | X | v1 범위 밖 |
 | 세금 납부/이체 | X | v1 범위 밖 |
 | 홈택스/EDI 로그인·스크래핑 | X | v1 범위 밖 |

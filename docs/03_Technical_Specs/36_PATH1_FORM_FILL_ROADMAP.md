@@ -8,8 +8,9 @@ SemuAgent의 **1순위 구현**은 Filing **Path 1** 이다.
 
 1. 홈택스·국세청이 제공하는 **공식 전자신고 양식·전산매체 규격**을 입수한다.
 2. SemuAgent가 이미 준비한 **신고 준비 데이터**를 양식 필드에 매핑·기입한다.
-3. **plain 전자신고 파일** + **사전검증** + **홈택스 변환제출 안내**를 제공한다.
-4. 최종 업로드·제출은 **사용자가 홈택스에서 직접** 한다 (JC-023 자동제출 전).
+3. 다운로드 전 사용자가 **양식에 채워질 값**을 화면에서 확인한다.
+4. **plain 전자신고 파일** + **사전검증** + **홈택스 변환제출 안내**를 제공한다.
+5. 최종 업로드·제출은 **사용자가 홈택스에서 직접** 한다 (JC-023 자동제출 전).
 
 Path 2 (JC-034 GIWA ZIP)와 Path 3 (인증·암호화)는 Path 1 Validation·세목 확대 **이후**에 이어간다.
 
@@ -35,7 +36,7 @@ Path 2 (JC-034 GIWA ZIP)와 Path 3 (인증·암호화)는 Path 1 Validation·세
 | **A. Layout Acquisition** | `3x_*_LAYOUT_ACQUISITION.md` — HWP/요령 URL, 정오표, 입수일 | 공식 출처 URL 확정 |
 | **B. Field Mapping** | `3x_*_FIELD_MAPPING.md` — record·필드·JC 데이터 소스 | A 승인 |
 | **C. Pre-Code Brief** | `3x_*_PRE_CODE_BRIEF.md` — Zod·API·UI·검증 | B 승인 |
-| **D. Implementation** | `lib/efiling-{tax-type}/` + 화면 패널 + API | C 승인 |
+| **D. Implementation** | `lib/efiling-{tax-type}/` + 양식 채움 확인 패널 + API | C 승인 |
 | **E. Path 2 reuse** | JC-034 ZIP 해당 트랙 CSV (선택) | D Validation 안정 |
 
 코드 모듈 패턴 (간이지급 참조):
@@ -73,6 +74,7 @@ Path 2 (JC-034 GIWA ZIP)와 Path 3 (인증·암호화)는 Path 1 Validation·세
 ### 3.2 완료 정의 (Path 1)
 
 - 사용자가 선택한 귀속월 원천세 데이터로 plain 전자신고 파일 생성
+- 다운로드 전 양식에 채워질 값(서식 필드·합계·대상자)을 확인
 - JC-030 Validation blocking 시 다운로드 차단
 - 홈택스 변환제출 단계 안내 (JC-013 가이드와 정합)
 - `국세청 검증 완료` 표시 금지 (Path 3 전)

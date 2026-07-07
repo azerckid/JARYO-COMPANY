@@ -202,10 +202,12 @@ describe('filing preparation values', () => {
     })
 
     expect(guide.description).toContain('자동 제출 아님')
-    expect(guide.copyPayload).toContain('간이세액 대상: 12명')
-    expect(guide.copyPayload).toContain('총지급액: 42,600,000원')
-    expect(guide.copyPayload).toContain('징수세액: 1,910,000원')
-    expect(guide.copyPayload).toContain('지방소득세: 190,000원')
+    expect(guide.steps.flatMap((step) => step.values)).toEqual(expect.arrayContaining([
+      { label: '간이세액 대상', value: '12명' },
+      { label: '총지급액', value: '42,600,000원' },
+      { label: '징수세액', value: '1,910,000원' },
+      { label: '지방소득세', value: '190,000원' },
+    ]))
     expect(guide.downloadActionLabel).toBe('지급명세서 다운로드')
   })
 })

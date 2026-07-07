@@ -1,29 +1,10 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import type { FilingItemType, FilingReceiptRow } from '@/lib/filing-support/summary'
 import { cn } from '@/lib/utils'
-
-export function FilingPreparationValueCopyButton({ payload }: { readonly payload: string }) {
-  const [copied, setCopied] = useState(false)
-
-  return (
-    <button
-      type="button"
-      className="rounded-lg border border-[#18181b] bg-[#18181b] px-3 py-2 text-center text-[12px] font-semibold text-white"
-      onClick={async () => {
-        await navigator.clipboard.writeText(payload)
-        setCopied(true)
-        toast.success('준비값을 복사했습니다.')
-        window.setTimeout(() => setCopied(false), 1500)
-      }}
-    >
-      {copied ? '복사됨' : '준비값 복사'}
-    </button>
-  )
-}
 
 export function FilingReceiptUploadButton({
   filingPeriodKey,

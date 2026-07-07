@@ -87,7 +87,7 @@ JC-034 must reuse `lib/efiling-simplified-wage` validation where 간이지급 is
 
 ## 7. Blocking Decisions Before Implementation
 
-- [x] UI-First Gate: handoff export panel on 신고 준비 허브 — [08_filing_preparation.html](../02_UI_Screens/previews/08_filing_preparation.html) (#jc-034-handoff-export), 승인 2026-07-07
+- [ ] UI-First Gate: Path 1 베타 이후 신규 handoff export Preview로 재승인. 기존 `08_filing_preparation.html` 패널은 Path 1-only preview로 supersede.
 - [x] Pre-Code Brief: [35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md](./35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md) — manifest Zod, per-track CSV, API·audit (2026-07-07)
 - [x] First tax-type scope for v1 ZIP: **간이지급명세서 반기** + 원천세·부가세 summary (minimum)
 - [ ] Copy review: no `대행`, `알선`, `국세청 검증 완료` claims

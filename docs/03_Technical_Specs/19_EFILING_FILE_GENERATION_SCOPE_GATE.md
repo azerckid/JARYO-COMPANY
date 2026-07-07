@@ -14,7 +14,7 @@
 
 ## 1. Purpose
 
-JC-030은 [Product Baseline §3 Filing Paths](../01_Concept_Design/01_PRODUCT_BASELINE.md)의
+JC-030은 [Product Baseline §Filing Path Priority](../01_Concept_Design/01_PRODUCT_BASELINE.md)의
 **공통 검증**과 **Path 1·3 파일 생성**을 담당한다.
 
 | 구성 | Filing Path | 설명 |
@@ -155,7 +155,7 @@ Pre-Code Brief는 아래가 확정된 뒤 작성한다.
 
 ## 8. Related Documents
 
-- **Concept_Design**: [Product Baseline §3 Filing Paths](../01_Concept_Design/01_PRODUCT_BASELINE.md)
+- **Concept_Design**: [Product Baseline §Filing Path Priority](../01_Concept_Design/01_PRODUCT_BASELINE.md)
 - **Concept_Design**: [Filing Preparation Pipeline](../01_Concept_Design/02_FILING_PREPARATION_PIPELINE.md)
 - **Technical_Specs**: [Path 1 Form Fill Roadmap](./36_PATH1_FORM_FILL_ROADMAP.md)
 - **Technical_Specs**: [Withholding Field Mapping](./38_JC030_WITHHOLDING_EFILING_FIELD_MAPPING.md)

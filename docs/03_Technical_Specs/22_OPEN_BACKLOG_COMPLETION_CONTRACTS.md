@@ -148,14 +148,15 @@ Non-goals before done:
 
 Type: 공통 검증 + Path 1 plain files + Path 3 encrypted files (future).
 
-Current gate: **JC-030 v1** (Slices 1a–2a, 3) **complete** on main — plain·검증·홈택스 업로드 안내 실사용 가능. **Slice 2b** (fcrypt·윈도우 microservice) is a **separate deferred track** per [NTS Crypto Spec §10](./31_JC030_NTS_CRYPTO_SPEC_ACQUISITION.md); Windows DLL execution + Hometax round-trip before code. **Open risk (2026-07-07):** the file-conversion path itself may require [software conformance certification](./32_JC030_SW_CONFORMANCE_CERTIFICATION_RESEARCH.md) that SemuAgent has not obtained — NTS inquiry pending. Hometax screen transcription guidance is explicitly excluded from Path 1 and from JC-030 follow-up scope.
+Current gate: **JC-030 v1** (Slices 1a–2a, 3) **complete** on main — plain·검증·홈택스 업로드 안내 실사용 가능. **Beta focus is Path 1 only.** Path 2 is after Path 1 beta; Path 3 is unknown until certification/conformance path is confirmed. **Slice 2b** (fcrypt·윈도우 microservice) is a **separate deferred track** per [NTS Crypto Spec §10](./31_JC030_NTS_CRYPTO_SPEC_ACQUISITION.md); Windows DLL execution + Hometax round-trip before code. **Open risk (2026-07-07):** the file-conversion path itself may require [software conformance certification](./32_JC030_SW_CONFORMANCE_CERTIFICATION_RESEARCH.md) that SemuAgent has not obtained — NTS inquiry pending. Hometax screen transcription guidance is explicitly excluded from Path 1 and from JC-030 follow-up scope.
 
-**3 Filing Paths (2026-07-07):** JC-030 is **not closed**. It has three layers:
+**Filing path priority (2026-07-07):** JC-030 is focused on Path 1. Other paths are deferred:
 
 | Layer | Filing Path | Status |
 |---|---|---|
 | **Validation** | Path 1 & 2 공통 | Implemented (Slices 1a–2a·3) |
-| **Path 1** | 홈택스 업로드용 양식·파일 작성 | Implemented (plain SC·upload guide UI) |
+| **Path 1** | 홈택스 업로드용 양식·파일 작성 | Implemented (plain SC·양식 채움 확인·upload guide UI) |
+| **Path 2** | 세무사무소 handoff ZIP | Deferred until Path 1 beta |
 | **Path 3** | 인증·암호화 업로드 파일 | Deferred (Slice 2b·적합성 검정) |
 
 #### Validation — 공통 검증 (Path 1 & 2)
@@ -164,14 +165,14 @@ Current state: `lib/efiling-simplified-wage` on main — layout validation, plai
 
 Done means:
 
-- For at least one approved tax type (간이지급명세서 v1), SemuAgent validates confirmed data against the official layout before Path 1 download or Path 2 ZIP export.
+- For at least one approved tax type (간이지급명세서 v1), SemuAgent validates confirmed data against the official layout before Path 1 download; later Path 2 ZIP export reuses this validation.
 - Validation covers required fields, totals, period, and format; errors/warnings are shown.
 - PII follows one-time non-storage policy; tests cover validation, PII non-persistence, tenant isolation.
 
 Remaining:
 
-- [ ] JC-034 v1 consumes validation output in ZIP
-- [ ] UI shows Path 1·2·3 boundaries clearly (separate UI PR)
+- [ ] JC-034 v1 consumes validation output in ZIP (after Path 1 beta)
+- [ ] UI shows Path 1 as active and Path 2·3 as deferred where mentioned
 
 #### Path 1 — 홈택스 업로드용 양식·파일 작성 지원
 
@@ -180,6 +181,7 @@ Current state: plain SC download + Hometax conversion upload guide on main.
 Done means (Path 1, per tax type v1):
 
 - User can download plain e-filing file candidates from validated preparation data.
+- User can inspect the values that will be filled into the form/file before download: 신고 양식, 귀속기간, 사업자, 대상자, 합계, 일회성 식별정보 입력 상태.
 - Hometax upload guide is shown for the prepared artifact.
 - UI states plain-file limits until Path 3 certification exists.
 - User uploads the prepared form/file and submits directly; SemuAgent does not log in, copy-type values into Hometax, or submit.
@@ -207,12 +209,12 @@ Non-goals (all JC-030 layers):
 
 ### JC-034 — GIWA handoff package (Path 2 · ZIP Export v1)
 
-Current gate: scope fixed in [JC-034 Scope Gate](./34_JC034_GIWA_HANDOFF_PACKAGE_SCOPE_GATE.md);
-**implementation deferred** until Path 1 tax-type expansion is stable ([Path 1 Roadmap](./36_PATH1_FORM_FILL_ROADMAP.md)).
+Current gate: scope fixed in [JC-034 Scope Gate](./34_JC034_GIWA_HANDOFF_PACKAGE_SCOPE_GATE.md), but
+**implementation deferred** until Path 1 beta is stable ([Path 1 Roadmap](./36_PATH1_FORM_FILL_ROADMAP.md)). The earlier 08 preview handoff panel is superseded by the Path 1-only filing-preparation preview.
 
 May start implementation only after:
 
-- [x] UI-First Gate for handoff export panel (신고 준비) — [08_filing_preparation.html](../02_UI_Screens/previews/08_filing_preparation.html), approved 2026-07-07
+- [ ] UI-First Gate for handoff export panel — Path 1 beta 이후 신규 Preview로 재승인
 - [x] Pre-Code Brief with manifest Zod schema and per-track CSV/Excel columns — [35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md](./35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md), approved 2026-07-07
 - [ ] Copy approved: existing firm only, no marketplace/referral language
 - [ ] JC-030 Validation integrated for 간이지급 v1 scope
