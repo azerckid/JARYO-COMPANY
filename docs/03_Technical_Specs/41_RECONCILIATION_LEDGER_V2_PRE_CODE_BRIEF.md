@@ -290,6 +290,8 @@ A pattern recommendation can raise confidence, preselect a likely account, sugge
 | Multi-provider consensus | The row is high amount, filing-impacting, repeatedly ambiguous, suspected private/business-unrelated, or AI and prior pattern disagree | Run primary providers in parallel where available, use a tie-breaker only on disagreement, and expose the final reason |
 | Manual review fallback | Provider timeout, quota, parse failure, low consensus, or unavailable provider | Mark the row as needs review and keep manual account/evidence/exclusion actions available |
 
+Terminology note: `needs_review` in this section is a UI-facing/manual-review concept. Implementations must map it to an existing status such as `needs_decision` where applicable and must not introduce a new DB status enum without a separate schema brief.
+
 Runtime safety rules:
 
 - The ledger page must not wait indefinitely for LLM results. Initial render must be possible with deterministic rules, existing recommendations, cached/stored AI results, or a `needs_review` fallback.
