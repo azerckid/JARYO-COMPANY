@@ -22,10 +22,14 @@ import { filterReconciliationFixtureAccountGroups } from '@/lib/bookkeeping-revi
 import type { ReconciliationLedgerRow } from '@/lib/bookkeeping-review/reconciliation-display-model'
 import {
   computeRemainingDifferenceKrw,
+  evidenceActionChipLabel,
   evidenceFinderSourceOptions,
   formatKrwAmount,
   formatRemainingDifferenceLabel,
+  hasAiEvidenceSuggestion,
   listEvidenceFinderBrowseRows,
+  matchCandidateReasonLabel,
+  shouldShowEvidenceFinder,
   type EvidenceFinderSource,
 } from '@/lib/bookkeeping-review/reconciliation-work-panel'
 import { cn } from '@/lib/utils'
@@ -39,19 +43,6 @@ const chipClass: Record<Tone, string> = {
   warn: 'border-[#fde68a] bg-[#fffbeb] text-[#d97706]',
   danger: 'border-[#fecaca] bg-[#fef2f2] text-[#dc2626]',
   muted: 'border-company-border bg-company-nav-hover text-company-fg-muted',
-}
-
-const evidenceActionLabels: Record<
-  ReconciliationLedgerRow['evidenceActionState'],
-  { label: string; tone: Tone }
-> = {
-  linked: { label: '증빙 연결됨', tone: 'ok' },
-  candidate: { label: '증빙 후보 있음', tone: 'warn' },
-  evidence_required: { label: '증빙 필요', tone: 'danger' },
-  explanation_required: { label: '소명 필요', tone: 'warn' },
-  explained_no_evidence: { label: '소명 완료', tone: 'ok' },
-  evidence_exception: { label: '증빙 예외', tone: 'warn' },
-  excluded: { label: '제외됨', tone: 'muted' },
 }
 
 const sourceShortLabels: Record<ReconciliationLedgerRow['source'], string> = {
@@ -74,30 +65,61 @@ export function ReconciliationEvidenceCell({
   onOpenExplanation,
   row,
 }: ReconciliationEvidenceCellProps) {
-  const evidence = evidenceActionLabels[row.evidenceActionState]
-  const showEvidenceFinder =
-    row.evidenceActionState === 'evidence_required'
-    || row.evidenceActionState === 'candidate'
-    || row.evidenceActionState === 'linked'
-    || row.workPanelConclusion.primaryAction === 'connect_evidence'
+  const aiSuggestion = hasAiEvidenceSuggestion(row) ? row.candidates[0] : null
+  const statusChip = evidenceActionChipLabel(row.evidenceActionState)
+  const remainingDifferenceKrw = computeRemainingDifferenceKrw(row.amountKrw, row.candidates)
+  const showEvidenceFinder = shouldShowEvidenceFinder(row)
 
   return (
-    <div className="flex min-w-[148px] flex-col gap-1.5" onClick={(event) => event.stopPropagation()}>
-      <StatusChip tone={evidence.tone}>{evidence.label}</StatusChip>
-      {row.candidates[0] ? (
-        <p className="max-w-[180px] truncate text-[11px] text-company-fg-subtle">
-          {candidateSummary(row.candidates[0])}
-        </p>
+    <div className="flex min-w-[168px] flex-col gap-1.5" onClick={(event) => event.stopPropagation()}>
+      {aiSuggestion ? (
+        <div className="rounded-[10px] border border-[#bfdbfe] bg-[#eff6ff] p-2">
+          <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1d4ed8]">
+            <Sparkles className="size-3" />
+            AI 연결 제안
+          </p>
+          <p className="mt-1 text-[12px] font-semibold text-foreground">{candidateSummary(aiSuggestion)}</p>
+          <p className="mt-0.5 text-[11px] text-company-fg-muted">
+            {aiSuggestion.counterparty ?? '거래처 미정'} · {matchCandidateReasonLabel(aiSuggestion.reason)}
+          </p>
+          {remainingDifferenceKrw !== null && remainingDifferenceKrw !== 0 ? (
+            <p className="mt-1 text-[11px] font-medium text-[#b45309]">
+              {formatRemainingDifferenceLabel(remainingDifferenceKrw)}
+            </p>
+          ) : null}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <button
+              className="cursor-not-allowed rounded-md border border-company-border-strong bg-company-surface px-2 py-1 text-[11px] font-semibold text-company-fg-subtle"
+              disabled
+              title={disabledActionNote}
+              type="button"
+            >
+              연결 확인
+            </button>
+            <button
+              className="cursor-not-allowed rounded-md border border-company-border bg-company-nav-hover px-2 py-1 text-[11px] font-semibold text-company-fg-subtle"
+              disabled
+              title={disabledActionNote}
+              type="button"
+            >
+              아님
+            </button>
+          </div>
+        </div>
       ) : null}
+
       {row.evidenceActionState === 'explanation_required' ? (
         <button
-          className="w-fit rounded-md border border-[#fde68a] bg-[#fffbeb] px-2 py-1 text-[11.5px] font-semibold text-[#b45309] hover:bg-[#fef3c7]"
+          className="w-fit rounded-md border border-[#fde68a] bg-[#fffbeb] px-2.5 py-1 text-[11.5px] font-semibold text-[#b45309] hover:bg-[#fef3c7]"
           onClick={onOpenExplanation}
           type="button"
         >
           소명 입력
         </button>
+      ) : statusChip ? (
+        <StatusChip tone={statusChip.tone}>{statusChip.label}</StatusChip>
       ) : null}
+
       {row.workPanelConclusion.primaryAction === 'open_source_collection' ? (
         <Link
           className="text-[11.5px] font-semibold text-[#2563eb] hover:underline"
@@ -106,28 +128,39 @@ export function ReconciliationEvidenceCell({
           자료수집 이동
         </Link>
       ) : null}
-      {showEvidenceFinder && row.workPanelConclusion.primaryAction !== 'open_source_collection' ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            className="inline-flex h-auto w-fit items-center gap-1 rounded-md border border-company-border bg-company-surface px-2 py-1 text-[11.5px] font-semibold text-foreground hover:bg-company-nav-hover"
-            onClick={(event) => event.stopPropagation()}
-          >
-            증빙 찾기
-            <ChevronDown className="size-3 text-company-fg-muted" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-[140px]">
-            {evidenceFinderSourceOptions.map((option) => (
-              <DropdownMenuItem
-                key={option.source}
-                onClick={() => onOpenEvidencePicker(option.source)}
-              >
-                {option.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+
+      {showEvidenceFinder ? (
+        <EvidenceFinderDropdown onOpenEvidencePicker={onOpenEvidencePicker} />
       ) : null}
     </div>
+  )
+}
+
+function EvidenceFinderDropdown({
+  onOpenEvidencePicker,
+}: {
+  readonly onOpenEvidencePicker: (source: EvidenceFinderSource) => void
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="inline-flex h-auto w-fit items-center gap-1 rounded-md border border-company-border bg-company-surface px-2 py-1 text-[11.5px] font-semibold text-foreground hover:bg-company-nav-hover"
+        onClick={(event) => event.stopPropagation()}
+      >
+        증빙 찾기
+        <ChevronDown className="size-3 text-company-fg-muted" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[140px]">
+        {evidenceFinderSourceOptions.map((option) => (
+          <DropdownMenuItem
+            key={option.source}
+            onClick={() => onOpenEvidencePicker(option.source)}
+          >
+            {option.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

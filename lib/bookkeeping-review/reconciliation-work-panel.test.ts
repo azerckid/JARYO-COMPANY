@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { RECONCILIATION_LEDGER_DISPLAY_FIXTURE } from './reconciliation-display-fixture'
 import {
   computeRemainingDifferenceKrw,
+  evidenceActionChipLabel,
+  hasAiEvidenceSuggestion,
   listEvidenceFinderBrowseRows,
   matchesEvidenceFinderSource,
 } from './reconciliation-work-panel'
@@ -19,6 +21,13 @@ describe('reconciliation-work-panel', () => {
     expect(row).toBeDefined()
 
     expect(computeRemainingDifferenceKrw(row!.amountKrw, row!.candidates)).toBe(112_000)
+  })
+
+  it('treats candidate rows with matches as AI suggestions, not chip labels', () => {
+    const row = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-bank-litnex')
+    expect(row).toBeDefined()
+    expect(hasAiEvidenceSuggestion(row!)).toBe(true)
+    expect(evidenceActionChipLabel(row!.evidenceActionState)).toBeNull()
   })
 
   it('lists browse rows for evidence finder by source', () => {

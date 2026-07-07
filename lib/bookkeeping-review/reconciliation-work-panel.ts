@@ -96,6 +96,51 @@ export function formatKrwAmount(value: number | null): string {
   return value === null ? '-' : `${value.toLocaleString('ko-KR')}원`
 }
 
+export function hasAiEvidenceSuggestion(row: ReconciliationLedgerRow): boolean {
+  return row.candidates.length > 0 && row.evidenceActionState === 'candidate'
+}
+
+export function shouldShowEvidenceFinder(row: ReconciliationLedgerRow): boolean {
+  if (row.workPanelConclusion.primaryAction === 'open_source_collection') {
+    return false
+  }
+
+  return (
+    row.evidenceActionState === 'evidence_required'
+    || hasAiEvidenceSuggestion(row)
+    || row.workPanelConclusion.primaryAction === 'connect_evidence'
+  )
+}
+
+export function evidenceActionChipLabel(
+  state: ReconciliationLedgerRow['evidenceActionState'],
+): { label: string; tone: 'ok' | 'warn' | 'danger' | 'muted' } | null {
+  if (state === 'candidate') {
+    return null
+  }
+
+  if (state === 'linked') {
+    return { label: '증빙 연결됨', tone: 'ok' }
+  }
+  if (state === 'evidence_required') {
+    return { label: '증빙 필요', tone: 'danger' }
+  }
+  if (state === 'explanation_required') {
+    return { label: '소명 필요', tone: 'warn' }
+  }
+  if (state === 'explained_no_evidence') {
+    return { label: '소명 완료', tone: 'ok' }
+  }
+  if (state === 'evidence_exception') {
+    return { label: '증빙 예외', tone: 'warn' }
+  }
+  if (state === 'excluded') {
+    return { label: '제외됨', tone: 'muted' }
+  }
+
+  return null
+}
+
 export function formatRemainingDifferenceLabel(differenceKrw: number | null): string {
   if (differenceKrw === null) {
     return '차액 미계산'
