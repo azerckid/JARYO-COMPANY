@@ -22,6 +22,48 @@ export type BookkeepingReviewRowStatus =
   | 'excluded'
 export type BookkeepingReviewTab = 'pending' | 'low_confidence' | 'confirmed' | 'all'
 export type BookkeepingReviewTone = 'ok' | 'warn' | 'danger' | 'muted'
+export type BookkeepingSourceType = 'bank' | 'card' | 'receipt' | 'tax_invoice' | 'other'
+export type ReconciliationMatchState =
+  | 'matched'
+  | 'candidate'
+  | 'ambiguous'
+  | 'missing_evidence'
+  | 'duplicate_candidate'
+  | 'excluded'
+  | 'confirmed'
+export type ReconciliationBlockerCode =
+  | 'missing_evidence'
+  | 'ambiguous_match'
+  | 'account_unconfirmed'
+  | 'explanation_required'
+  | 'exclude_reason_required'
+  | 'tax_specific_review_required'
+export type ReconciliationMatchReason =
+  | 'same_amount_same_day'
+  | 'same_amount_near_day'
+  | 'same_counterparty_amount'
+  | 'partial_amount'
+  | 'many_to_one'
+  | 'manual_reference'
+
+export type ReconciliationMatchCandidate = {
+  id: string
+  sourceType: BookkeepingSourceType
+  rowId: string
+  date: string | null
+  counterparty: string | null
+  amountKrw: number | null
+  confidence: BookkeepingReviewConfidence
+  reason: ReconciliationMatchReason
+}
+
+export type ReconciliationBlocker = { code: ReconciliationBlockerCode; label: string }
+
+export type ReconciliationInfo = {
+  matchState: ReconciliationMatchState
+  candidates: ReconciliationMatchCandidate[]
+  blockers: ReconciliationBlocker[]
+}
 
 export type BookkeepingReviewQueueRow = {
   id: string
@@ -35,9 +77,10 @@ export type BookkeepingReviewQueueRow = {
   confidence: BookkeepingReviewConfidence
   confidenceTone: BookkeepingReviewTone
   status: BookkeepingReviewRowStatus
-  sourceType: 'bank' | 'card' | 'receipt' | 'tax_invoice' | 'other'
+  sourceType: BookkeepingSourceType
   direction: 'income' | 'expense' | 'unknown'
   requiresManualAccount: boolean
+  reconciliation: ReconciliationInfo
 }
 
 export type BookkeepingReviewCounts = {
@@ -79,7 +122,7 @@ type ClassificationRowInput = {
   finalAccount: string | null
   recommendationConfidence: string
   status: string
-  sourceType: 'bank' | 'card' | 'receipt' | 'tax_invoice' | 'other'
+  sourceType: BookkeepingSourceType
   direction: 'income' | 'expense' | 'unknown'
 }
 
@@ -107,6 +150,10 @@ const CONFIDENCE_TONE: Record<string, BookkeepingReviewTone> = {
   low: 'danger',
 }
 
+const EVIDENCE_SOURCE_TYPES = new Set<BookkeepingSourceType>(['card', 'receipt', 'tax_invoice'])
+const MAX_CANDIDATES_PER_ROW = 3
+const NEAR_DATE_WINDOW_DAYS = 3
+
 export function normalizeConfidence(value: string | null | undefined): BookkeepingReviewConfidence {
   return value === 'high' || value === 'medium' ? value : 'low'
 }
@@ -126,6 +173,10 @@ export function resolveBookkeepingReviewTab(value: string | null | undefined): B
     : 'pending'
 }
 
+export function emptyReconciliationInfo(matchState: ReconciliationMatchState = 'confirmed'): ReconciliationInfo {
+  return { matchState, candidates: [], blockers: [] }
+}
+
 export function mapClassificationRow(row: ClassificationRowInput): BookkeepingReviewQueueRow {
   const confidence = normalizeConfidence(row.recommendationConfidence)
   return {
@@ -143,7 +194,103 @@ export function mapClassificationRow(row: ClassificationRowInput): BookkeepingRe
     sourceType: row.sourceType,
     direction: row.direction,
     requiresManualAccount: requiresManualAccount(confidence, row.status),
+    reconciliation: emptyReconciliationInfo(),
   }
+}
+
+function isEvidenceSource(sourceType: BookkeepingSourceType) {
+  return EVIDENCE_SOURCE_TYPES.has(sourceType)
+}
+
+function dateDistanceDays(a: string | null, b: string | null) {
+  if (!a || !b) return Number.POSITIVE_INFINITY
+  const aTime = Date.parse(`${a.slice(0, 10)}T00:00:00.000Z`)
+  const bTime = Date.parse(`${b.slice(0, 10)}T00:00:00.000Z`)
+  if (Number.isNaN(aTime) || Number.isNaN(bTime)) return Number.POSITIVE_INFINITY
+  return Math.abs(aTime - bTime) / 86_400_000
+}
+
+function hasSameAbsoluteAmount(a: number | null, b: number | null) {
+  return a !== null && b !== null && Math.abs(a) === Math.abs(b)
+}
+
+function canSuggestReconciliationPair(row: BookkeepingReviewQueueRow, candidate: BookkeepingReviewQueueRow) {
+  if (row.id === candidate.id) return false
+  if (row.status === 'excluded' || candidate.status === 'excluded') return false
+  if (!hasSameAbsoluteAmount(row.amountKrw, candidate.amountKrw)) return false
+  return (row.sourceType === 'bank' && isEvidenceSource(candidate.sourceType)) ||
+    (candidate.sourceType === 'bank' && isEvidenceSource(row.sourceType))
+}
+
+function candidateConfidenceByDate(row: BookkeepingReviewQueueRow, candidate: BookkeepingReviewQueueRow): BookkeepingReviewConfidence | null {
+  const distance = dateDistanceDays(row.transactionDate, candidate.transactionDate)
+  if (distance === 0) return 'high'
+  if (distance <= NEAR_DATE_WINDOW_DAYS) return 'medium'
+  return null
+}
+
+function buildReconciliationCandidate(row: BookkeepingReviewQueueRow, candidate: BookkeepingReviewQueueRow): ReconciliationMatchCandidate | null {
+  if (!canSuggestReconciliationPair(row, candidate)) return null
+  const confidence = candidateConfidenceByDate(row, candidate)
+  if (!confidence) return null
+  return {
+    id: `${row.id}__${candidate.id}`,
+    sourceType: candidate.sourceType,
+    rowId: candidate.id,
+    date: candidate.transactionDate,
+    counterparty: candidate.counterparty,
+    amountKrw: candidate.amountKrw,
+    confidence,
+    reason: confidence === 'high' ? 'same_amount_same_day' : 'same_amount_near_day',
+  }
+}
+
+export function buildReconciliationInfo(row: BookkeepingReviewQueueRow, allRows: BookkeepingReviewQueueRow[]): ReconciliationInfo {
+  if (row.status === 'excluded') {
+    return emptyReconciliationInfo('excluded')
+  }
+
+  const candidates = allRows
+    .map((candidate) => buildReconciliationCandidate(row, candidate))
+    .filter((candidate): candidate is ReconciliationMatchCandidate => Boolean(candidate))
+    .sort((a, b) => confidenceRank(a.confidence) - confidenceRank(b.confidence) || (a.date ?? '').localeCompare(b.date ?? '') || a.rowId.localeCompare(b.rowId))
+    .slice(0, MAX_CANDIDATES_PER_ROW)
+
+  const blockers: ReconciliationBlocker[] = []
+  if (row.status !== 'confirmed') {
+    blockers.push({ code: 'account_unconfirmed', label: '계정항목 미확정' })
+  }
+  if (row.requiresManualAccount) {
+    blockers.push({ code: 'explanation_required', label: '사용내역 소명 필요' })
+  }
+  if ((row.sourceType === 'bank' || row.sourceType === 'tax_invoice' || row.sourceType === 'other') && candidates.length === 0) {
+    blockers.push({ code: 'missing_evidence', label: '연결 증빙 후보 없음' })
+  }
+  if (candidates.length > 1) {
+    blockers.push({ code: 'ambiguous_match', label: `매칭 후보 ${candidates.length}건` })
+  }
+
+  let matchState: ReconciliationMatchState = 'confirmed'
+  if (candidates.length > 1) matchState = 'ambiguous'
+  else if (candidates.length === 1) matchState = 'candidate'
+  else if (blockers.some((blocker) => blocker.code === 'missing_evidence')) matchState = 'missing_evidence'
+  else if (row.status === 'confirmed') matchState = 'confirmed'
+  else matchState = 'candidate'
+
+  return { matchState, candidates, blockers }
+}
+
+function confidenceRank(confidence: BookkeepingReviewConfidence) {
+  if (confidence === 'high') return 0
+  if (confidence === 'medium') return 1
+  return 2
+}
+
+export function attachReconciliationInfo(rows: BookkeepingReviewQueueRow[]) {
+  return rows.map((row) => ({
+    ...row,
+    reconciliation: buildReconciliationInfo(row, rows),
+  }))
 }
 
 export function buildBookkeepingReviewCounts(rows: BookkeepingReviewQueueRow[]): BookkeepingReviewCounts {
@@ -316,7 +463,7 @@ export async function loadBookkeepingReviewSummary({
       desc(bookkeepingTransactionClassification.id),
     )
 
-  const rows = classificationRows.map(mapClassificationRow)
+  const rows = attachReconciliationInfo(classificationRows.map(mapClassificationRow))
   const counts = buildBookkeepingReviewCounts(rows)
   const tabRows = filterRowsByTab(rows, resolvedTab)
 
