@@ -572,7 +572,7 @@ inactive search or settings controls must look disabled until implemented.
 - [x] UI-first lite sequence documented: display contract + fixture before full read model wiring (§2.1 step 2a-0).
 - [x] Slice 2a-0 display contract + fixture implementation started (§2.1 step 2a-0) — landed on main (`01971b1`).
 - [x] Slice 2a-2 UI shell and honest labels implemented (§2.1 step 2a-2) — landed on main (`169ade8`).
-- [x] Slice 2a-3 table-cell evidence/account actions implemented (§2.1 step 2a-3) — PR #150, merged to main (`7b0ba25`). Product wording update: `candidate` remains an internal match state only; the user-facing flow must show **AI 증빙 확인** when concrete evidence rows were found or **증빙 찾기** when the user must search manually. Do not add a separate candidate-style evidence state.
+- [x] Slice 2a-3 table-cell evidence/account actions implemented (§2.1 step 2a-3) — PR #150, merged to main (`7b0ba25`). Product wording update (PR #152): `candidate` remains an internal match state only; the live view (`reconciliation-ledger.tsx`) and the fixture view (`evidenceActionChipLabel` in `reconciliation-row-actions.ts`) both show **AI 증빙 확인** when concrete evidence rows were found, or **증빙 찾기** when the user must search manually. Do not add a separate candidate-style evidence state.
 - [ ] Slice 2b mutation mapping reviewed before code.
 - [ ] Slice 2c durable match-link schema approved if needed.
 
