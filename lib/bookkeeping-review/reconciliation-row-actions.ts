@@ -3,14 +3,14 @@ import type {
   ReconciliationMatchCandidate,
   ReconciliationPatternSuggestion,
   ReconciliationSource,
-  ReconciliationWorkPanelConclusion,
+  ReconciliationRowConclusion,
 } from './reconciliation-display-model'
 import { isCashReceiptDisplaySource } from './reconciliation-display-filters'
 
 type ReconciliationConfidence = ReconciliationMatchCandidate['confidence']
 type ReconciliationMatchCandidateReason = ReconciliationMatchCandidate['reason']
 type ReconciliationPatternSuggestionReason = NonNullable<ReconciliationPatternSuggestion>['reason']
-type ReconciliationWorkPanelPrimaryAction = ReconciliationWorkPanelConclusion['primaryAction']
+type ReconciliationRowPrimaryAction = ReconciliationRowConclusion['primaryAction']
 
 export type EvidenceFinderSource = 'tax_invoice' | 'cash_receipt' | 'card'
 
@@ -104,7 +104,7 @@ export function resolveLinkedEvidenceDisplay(row: ReconciliationLedgerRow): Link
       counterparty: row.counterparty,
       amountKrw: row.amountKrw,
       description: row.description,
-      basisLabel: row.workPanelConclusion.basisLabel,
+      basisLabel: row.rowConclusion.basisLabel,
     },
   ]
 }
@@ -132,7 +132,7 @@ export function confidenceLabel(confidence: ReconciliationConfidence): string {
   return '낮음'
 }
 
-export function workPanelPrimaryActionLabel(action: ReconciliationWorkPanelPrimaryAction): string {
+export function rowPrimaryActionLabel(action: ReconciliationRowPrimaryAction): string {
   if (action === 'connect_evidence') return '증빙 연결'
   if (action === 'confirm_account') return '계정 확정'
   if (action === 'write_explanation') return '소명 입력'
@@ -151,7 +151,7 @@ export function hasAiEvidenceSuggestion(row: ReconciliationLedgerRow): boolean {
 }
 
 export function shouldShowEvidenceFinder(row: ReconciliationLedgerRow): boolean {
-  if (row.workPanelConclusion.primaryAction === 'open_source_collection') {
+  if (row.rowConclusion.primaryAction === 'open_source_collection') {
     return false
   }
 
@@ -162,7 +162,7 @@ export function shouldShowEvidenceFinder(row: ReconciliationLedgerRow): boolean 
   return (
     row.evidenceActionState === 'evidence_required'
     || hasAiEvidenceSuggestion(row)
-    || row.workPanelConclusion.primaryAction === 'connect_evidence'
+    || row.rowConclusion.primaryAction === 'connect_evidence'
   )
 }
 

@@ -23,26 +23,26 @@ can trust the ledger beneath them.
 
 
 
-## 0.1 Adopted UI Direction: Ledger Table + Right Work Panel
+## 0.1 Adopted UI Direction: Ledger Table + Cell Actions + Modals
 
 The adopted UI direction is **not** a passive candidate-count dashboard. It is a workbench where the user finishes each transaction row.
 
 The main layout is:
 
-- Left/center: a dense ledger table with bank, card, tax-invoice, cash-receipt, receipt, and other rows.
-- Right side: a persistent work panel for the selected row.
+- Main surface: a dense ledger table with bank, card, tax-invoice, cash-receipt, receipt, and other rows.
+- Work entry points: the table cells themselves. The evidence-status cell, account cell, and one-line conclusion column expose the next action without forcing the user to leave the row.
+- Detail surfaces: read-only or action modals opened from the row cell. Desktop and mobile both use the same row-first interaction; narrow screens may use full-screen dialogs where needed.
 
-The right work panel is the preferred SemuAgent adaptation of the reference screens. A bottom drawer is allowed only on narrow screens, but desktop should keep the selected row visible while the user works in the side panel.
+The earlier side-panel idea from planning is no longer the default Phase 2 UX. It is replaced by row-level cell actions plus focused modals so the ledger stays dense and the user can work directly where the issue appears.
 
-The right work panel must include:
+The row-level interaction must include:
 
-1. Selected transaction summary: source, date, counterparty, description, amount, current account, and remaining difference.
-2. Auto-suggested evidence: concrete evidence rows with amount/date/counterparty match reasons, not just a count.
-3. Previous-period pattern recommendation: prior confirmed rows that explain likely account, evidence source, counterparty, or exclusion reason. The recommendation must show its historical basis and remain user-confirmed.
-4. Evidence finder: source selector for 세금계산서, 현금영수증, 체크카드/카드, plus search, date filter, amount filter, and row-level connect actions.
-5. Account confirmation: recommended account, searchable account selector, and optional repeat/apply-to-similar control.
-6. Explanation and exclusion: business-use memo, personal/private, business-unrelated, duplicate, wrong-period, internal-transfer, or other exclusion reasons.
-7. Save state: confirmed only when evidence, account, counterparty, explanation/exclusion, and period relevance are resolved as needed.
+1. Evidence-status cell: `증빙있음` opens a linked-evidence read modal; `증빙 찾기` opens a source picker and evidence browse modal; `소명 입력` opens an explanation modal.
+2. Account cell: searchable account selector with recommended/pattern basis shown inline.
+3. One-line conclusion column: recommended account/evidence/exclusion decision and its basis, visible before any modal is opened.
+4. Evidence finder modal: source selector for 세금계산서, 현금영수증, 체크카드/카드, plus search/date/amount controls, concrete evidence rows, selected total, remaining difference, and disabled save until Slice 2b.
+5. Explanation/exclusion modal: business-use memo, personal/private, business-unrelated, duplicate, wrong-period, internal-transfer, or other exclusion reasons.
+6. Save state: confirmed only when evidence, account, counterparty, explanation/exclusion, and period relevance are resolved as needed.
 
 Terminology note: the UI may label the evidence source as **체크카드/카드** for user clarity, but implementation reuses the existing `card` source type. No separate `check_card` DB enum or source type is introduced in this slice.
 
@@ -56,21 +56,21 @@ The current implementation is only the first read-only step. The following funct
 | Card payment ↔ evidence connection | Connect card approvals to tax invoices, cash receipts, or other proof | Missing/partial | Evidence finder source tabs and row-level connect actions |
 | Period scope selector | Let the user review the ledger by filing-relevant period unit: month, quarter, half-year, year, or custom range | Missing/partial | Default from the current filing context, but allow user switch without changing filing data |
 | Evidence action status taxonomy | Replace final-looking "증빙없음" labels with action states such as 증빙 필요, 소명 필요, 소명 완료, 증빙 예외, 제외됨 | Missing/partial | Treat missing evidence as a blocker cause, not a completed row state |
-| Evidence finder | From a bank/card row, choose 세금계산서/현금영수증/체크카드 and select evidence rows | Missing | Right work panel with source selector, search, date/amount filters, add/select, remaining difference |
+| Evidence finder | From a bank/card row, choose 세금계산서/현금영수증/체크카드 and select evidence rows | Missing | Evidence-status cell opens source selector and evidence browse modal with search, date/amount filters, add/select, remaining difference |
 | Explanation memo | Let user explain unclear business use for a transaction | Missing | Row-level modal/panel field saved as memo in v1 |
-| Bank usage-description memo | Let user write what a bank movement was for when evidence is weak or context is unclear | Missing | Same work panel memo area; make it visible in audit/readiness |
+| Bank usage-description memo | Let user write what a bank movement was for when evidence is weak or context is unclear | Missing | Same row-level explanation modal; make it visible in audit/readiness |
 | Previous-period pattern recommendation | Learn from prior confirmed rows such as same counterparty, memo, amount range, evidence type, account, or exclusion decision | Missing | Show the prior-period basis and let the user accept, change, or reject; never auto-confirm |
 | AI account recommendation | AI/rules first assign likely account category | Partial/existing source | Show recommended account and confidence; do not hide uncertainty |
 | User account selection | If AI cannot decide or confidence is low, user chooses account | Partial/existing source | Highlight uncertain rows and expose searchable account selector in this screen |
 | Private/business-unrelated detection | Flag likely personal or low-business-use payments, e.g. cinema, beauty salon, PC room, leisure-like spending | Missing | Heuristic/AI review flag; user must confirm business use or exclude |
 | Exclusion reason selection | Exclude personal/private, business-unrelated, duplicate, wrong-period, internal transfer, etc. | Missing/partial memo only | Required reason taxonomy plus memo before row can be considered resolved |
-| Inline account edit | Change account category directly from 자료대조원장 | Partial/existing route elsewhere | Reuse account classification mutation in the work panel |
+| Inline account edit | Change account category directly from 자료대조원장 | Partial/existing route elsewhere | Reuse account classification mutation from the account cell |
 
 Until these are implemented, the screen must be described as an initial read-only/readiness slice, not as the finished 자료대조원장.
 
 ## 0.3 Candidate Count Rule
 
-"후보 N건" by itself is not an acceptable final UI state. It may appear as a compact hint, but the row or work panel must expose the actual candidate rows and actions.
+"후보 N건" by itself is not an acceptable final UI state. It may appear as a compact hint, but the row cell or modal must expose the actual candidate rows and actions.
 
 - Clear match: show the linked evidence row and actions to confirm, unlink, or replace. In Slice 2a-3 fixture UI, linked rows show a **증빙있음** chip in the evidence-status column; clicking it opens a read-only modal with the linked evidence summary (source, counterparty, amount, date, match basis). Unlink/replace actions remain disabled until Slice 2b-2.
 - Ambiguous match: show concrete candidates and actions such as "이 증빙 연결", "아님", and "직접 찾기".
@@ -88,7 +88,7 @@ Phase 2 convenience features are limited to these contracts:
 |:---|:---|:---|
 | Next-action queue | Show the most important unresolved items first, ordered by filing blocker, amount, and due-date impact | This is a queue over existing blockers, not a new workflow engine |
 | Batch suggestion acceptance | Let the user confirm a safe group of repeated suggestions once | Not automatic confirmation; group must show eligibility and require explicit user acceptance |
-| One-line panel conclusion | Put the recommended account/evidence/exclusion decision and its basis at the top of the work panel | Details stay available below; do not hide uncertainty |
+| One-line row conclusion | Put the recommended account/evidence/exclusion decision and its basis directly in the ledger row | Details stay available in modals; do not hide uncertainty |
 | Source-collection back link | If the issue requires missing source data, link directly to 자료수집 with period and source type context | Do not pretend the reconciliation screen can solve missing uploads |
 | Tax-type blocker reasons | Show which Path 1 file is blocked and why, such as VAT evidence, account, or exclusion blockers | Same readiness data, clearer reason display |
 | Closing checklist | Show whether evidence, explanation, account, exclusion reason, and tax blockers are at zero | Checklist is a completion view over the same gate, not a separate approval layer |
@@ -140,7 +140,7 @@ Explicitly deferred from Phase 2 convenience scope:
 |:---|:---|:---:|:---|
 | 2a-lite | Display contract + fixture-first UI validation | No | The workbench layout can be reviewed from a stable display model before full read wiring |
 | 2a | Reconciliation read model and candidate display | No | Rows show source, linked evidence candidates, previous-period pattern suggestions, match state, blockers, next-action queue, tax blocker reasons, and closing checklist |
-| 2b | Account/exclusion/explanation actions | No preferred | Existing classification and attribution APIs are reused where possible; work panel supports one-line conclusion, source-collection back links, batch suggestion acceptance, and shallow undo |
+| 2b | Account/exclusion/explanation actions | No preferred | Existing classification and attribution APIs are reused where possible; row cells/modals support one-line conclusion, source-collection back links, batch suggestion acceptance, and shallow undo |
 | 2c | Persisted reconciliation links, only if required | Additive only | User-confirmed bank-to-evidence links survive reloads and audits; split/merge editor remains a separate brief if needed |
 
 Slice 2a-lite must not pretend to save or confirm anything. It exists only to
@@ -165,13 +165,13 @@ Traceability legend:
 
 | Step | Slice | Goal | Covers | Done when |
 |:---|:---|:---|:---|:---|
-| 2a-0 | 2a-lite | Display contract + fixture | §0.4, §4 display types, Preview 12, P: workbench review | `ReconciliationLedgerDisplayModel` is Zod-validated with fixture data based on Preview 12, including row-level `workPanelConclusion`; UI consumes this model only; no DB/API mutation and no hidden save behavior |
+| 2a-0 | 2a-lite | Display contract + fixture | §0.4, §4 display types, Preview 12, P: workbench review | `ReconciliationLedgerDisplayModel` is Zod-validated with fixture data based on Preview 12, including row-level `rowConclusion`; UI consumes this model only; no DB/API mutation and no hidden save behavior |
 | 2a-2 | 2a-lite | UI shell and honest labels | U:1-4; P: hero, source summary, ledger table columns; §0.4 next-action queue, tax blocker reasons, closing checklist | Readiness hero, source summary, next-action queue, period scope control, action tabs, table chips, tax blocker reasons, and closing checklist render from the display model; inactive controls stay disabled until their step lands |
 | 2a-3 | 2a-lite | Table-cell evidence/account actions (display only) | U:6-7; §0.1; §0.3; P: evidence status cell, account popover, one-line conclusion column; §0.4 one-line panel conclusion | Fixture table uses full-width columns (거래일, 출처, 거래처, 적요, 금액, 증빙 상태, 계정항목, 한 줄 결론). **증빙 상태** cell shows **증빙있음** (click → linked-evidence read modal), **증빙 찾기** dropdown (세금계산서/현금영수증/체크카드 → browse modal), or **소명 입력** button. Account cell opens grouped search popover with AI recommendation hint. Save/connect/confirm controls stay disabled until 2b. |
-| 2a-4 | 2a-lite | Evidence finder browse + AI display shell | G: evidence finder, AI account recommendation, private/business-unrelated detection; §5.3; A: AI non-blocking, 증빙 찾기 flow; §0.4 source-collection back link | Finder opens from the panel in read/browse mode with source selector and filters from fixture/display data; AI/heuristic recommendation areas show reasons or manual-review fallback; missing-source problems show a 자료수집 backlink; save/connect buttons remain disabled until 2b-2 |
+| 2a-4 | 2a-lite | Evidence finder browse + AI display shell | G: evidence finder, AI account recommendation, private/business-unrelated detection; §5.3; A: AI non-blocking, 증빙 찾기 flow; §0.4 source-collection back link | Finder opens from the evidence-status cell in read/browse mode with source selector and filters from fixture/display data; AI/heuristic recommendation areas show reasons or manual-review fallback; missing-source problems show a 자료수집 backlink; save/connect buttons remain disabled until 2b-2 |
 | 2a-5 | 2a | Full read model wiring | G: bank↔tax-invoice matching, card↔evidence, period scope, evidence action status; §5.1; A: period switch, action-state labels, matching candidates | Existing bookkeeping/source summaries populate the same `ReconciliationLedgerDisplayModel`; fixture can be swapped for real data without changing UI props; rows derive action states instead of showing final-looking "증빙없음"; query contract uses `evidence_required` and `explanation_required` instead of legacy `missing_evidence` tab only |
-| 2b-1 | 2b | Account, explanation, exclusion mutations | G: explanation memo, bank usage-description memo, exclusion reason, inline account edit, user account selection; P: memo, exclusion, inline account; §0.4 shallow undo | User confirms/changes account, saves explanation memo, and excludes with required reason from the work panel via existing classification APIs; no redirect to the classification queue for the primary flow; the latest apply/confirm action can be cancelled from the current session |
-| 2b-2 | 2b | Evidence connect, exception, amount mismatch | G: bank↔tax-invoice and card↔evidence confirmation; P: connect evidence, confirm evidence exception, resolve amount mismatch | User can connect/unlink evidence, mark evidence exception, and resolve amount mismatch from the panel; remaining difference updates before save |
+| 2b-1 | 2b | Account, explanation, exclusion mutations | G: explanation memo, bank usage-description memo, exclusion reason, inline account edit, user account selection; P: memo, exclusion, inline account; §0.4 shallow undo | User confirms/changes account from the account cell, saves explanation memo, and excludes with required reason from row-level modals via existing classification APIs; no redirect to the classification queue for the primary flow; the latest apply/confirm action can be cancelled from the current session |
+| 2b-2 | 2b | Evidence connect, exception, amount mismatch | G: bank↔tax-invoice and card↔evidence confirmation; P: connect evidence, confirm evidence exception, resolve amount mismatch | User can connect/unlink evidence, mark evidence exception, and resolve amount mismatch from the evidence modal; remaining difference updates before save |
 | 2b-3 | 2b | Pattern apply/reject | §5.2; A: pattern recommendation AC; §0.4 batch suggestion acceptance | User can accept, change, or reject `patternSuggestion`; safe repeated suggestion groups can be batch-accepted only when eligibility is visible and the user explicitly confirms; rejected/changed decisions become the newer learning signal |
 | 2c | 2c | Durable confirmed links | Slice 2c trigger only | Start only if 2b proves user-confirmed bank↔evidence pairs must survive reload/audit beyond existing classification metadata |
 | 2d | downstream | Path 1 gate consumption | A: filing-preparation blocker counts; Backlog AC: confirmed ledger only | Filing-preparation and tax-type read models consume resolved ledger/blocker state from 자료대조원장 instead of treating raw classification rows as ready |
@@ -179,10 +179,10 @@ Traceability legend:
 Cross-cutting requirements:
 
 - Before **2a-0**, define the display fixture scenario from Preview 12. The fixture must include at least one bank-to-tax-invoice candidate, one card/explanation-needed row, one private-use/exclusion candidate, one safe batch suggestion group, one tax blocker summary, and one source-collection back link.
-- Before **2a-2**, update [Component Plan §7.3a](./02_COMPONENT_LIBRARY_PLAN.md) for `Period Scope Control`, `Evidence Action Status`, `ReconciliationNextActionQueue`, `ReconciliationWorkPanelConclusion`, `ReconciliationBatchSuggestionBar`, `ReconciliationTaxBlockerReasons`, `ReconciliationClosingChecklist`, and source back-link/recent-undo controls.
-- Before **2b-1**, extend [Bookkeeping Review Test Scenarios](../05_QA_Validation/04_BOOKKEEPING_REVIEW_TEST_SCENARIOS.md) with 자료대조원장 Phase 2 cases for action states, pattern display, AI fallback, and in-panel mutations.
+- Before **2a-2**, update [Component Plan §7.3a](./02_COMPONENT_LIBRARY_PLAN.md) for `Period Scope Control`, `Evidence Action Status`, `ReconciliationNextActionQueue`, `ReconciliationRowConclusion`, `ReconciliationBatchSuggestionBar`, `ReconciliationTaxBlockerReasons`, `ReconciliationClosingChecklist`, and source back-link/recent-undo controls.
+- Before **2b-1**, extend [Bookkeeping Review Test Scenarios](../05_QA_Validation/04_BOOKKEEPING_REVIEW_TEST_SCENARIOS.md) with 자료대조원장 Phase 2 cases for action states, pattern display, AI fallback, and row-level mutations.
 - **Evidence finder boundary:** browse/search/preview belongs to 2a-4; connect/unlink/save belongs to 2b-2.
-- **Mobile/narrow layout (P):** the work panel may collapse to a drawer, but the same step order and actions apply.
+- **Mobile/narrow layout (P):** row-level modals may expand to full-screen dialogs, but the same step order and actions apply.
 
 
 ## 3. Existing Data to Reuse
@@ -290,7 +290,7 @@ type ReconciliationClosingChecklist = {
   isReadyForPath1: boolean
 }
 
-type ReconciliationWorkPanelConclusion = {
+type ReconciliationRowConclusion = {
   headline: string
   basisLabel: string
   primaryAction:
@@ -366,7 +366,7 @@ type ReconciliationLedgerRow = {
   evidenceActionState: ReconciliationEvidenceActionState
   candidates: ReconciliationMatchCandidate[]
   patternSuggestion: ReconciliationPatternSuggestion | null
-  workPanelConclusion: ReconciliationWorkPanelConclusion
+  rowConclusion: ReconciliationRowConclusion
   blockers: Array<{ code: ReconciliationBlockerCode; label: string }>
   actions: {
     canConfirmAccount: boolean
@@ -474,15 +474,15 @@ Runtime safety rules:
 | Apply pattern suggestion | User accepts, changes, or rejects a prior-period recommendation | Reuse account/evidence/exclusion actions; no auto-confirm |
 | Explain use | User writes usage/business purpose memo | `staffMemo` for v1 |
 | Exclude row | User marks personal/private, business-unrelated, duplicate, wrong period, etc. | `status='excluded'` + required reason/memo; map to existing memo first |
-| Open evidence finder | User chooses 세금계산서 / 현금영수증 / 체크카드 and searches evidence rows | Row-level work panel or bottom drawer |
+| Open evidence finder | User chooses 세금계산서 / 현금영수증 / 체크카드 and searches evidence rows | Evidence-status cell opens row-level modal or narrow-screen dialog |
 | Add evidence link | User selects one or more evidence rows and balances the transaction amount | Slice 2a read-only; Slice 2c persisted link if required |
 | Confirm match | User confirms bank-to-evidence candidate | Slice 2a read-only; Slice 2c persisted link if required |
 | Mark no evidence required | User says the row is allowed without matching evidence | v1 can store memo; durable enum requires Slice 2c |
 | Hold for later | User keeps row out of current filing period | Existing material attribution decision where applicable |
 
-The explanation interaction should be modal-like: the user opens one row, sees
-source details and candidate evidence, writes a short memo, chooses account or
-exclusion reason, and saves.
+The explanation interaction should be modal-like: the user opens one row from
+the evidence-status cell, sees source details and candidate evidence, writes a
+short memo, chooses account or exclusion reason where required, and saves.
 
 ## 7. Path 1 Readiness Gate
 
@@ -521,9 +521,9 @@ Phase 2 implementation should keep that layout:
 4. Next-action queue: unresolved items ordered by filing blocker, amount, and due-date impact. The queue should let the user start work without hunting through tabs.
 5. Source/action tabs: all, bank, card, tax invoice, cash receipt, evidence needed, explanation needed, exclusion review. Tabs are secondary to the queue.
 6. Unified ledger table. The evidence-status column must show either **증빙있음** (linked, clickable to view), **증빙 찾기** (evidence required or AI candidate), **소명 입력** (explanation required), or a resolution chip such as "증빙 필요", "소명 완료", "증빙 예외", or "제외됨". It must not stop at "후보 N건" or render "증빙없음" as a completed state.
-7. Previous-period pattern chip or panel row: show the historical basis such as last month/recent months, matched count, prior account/evidence/exclusion decision, and confidence.
-8. Right work panel for the selected row. Its first line must be a one-line conclusion such as recommended account + evidence/exclusion decision + basis + primary action. Details remain below. On narrow screens this may collapse into a drawer.
-9. Evidence finder inside the work panel opened from "증빙 찾기": source selector (세금계산서/현금영수증/체크카드), search/date filters, evidence table, add/select action, selected total, remaining difference, save/cancel.
+7. Previous-period pattern chip or row subtext: show the historical basis such as last month/recent months, matched count, prior account/evidence/exclusion decision, and confidence.
+8. One-line conclusion column: each row must show the recommended account/evidence/exclusion decision, basis, and primary action before a modal is opened.
+9. Evidence finder opened from the evidence-status cell's "증빙 찾기": source selector (세금계산서/현금영수증/체크카드), search/date filters, evidence table, add/select action, selected total, remaining difference, save/cancel.
 10. Tax-type blocker reason panel: show which Path 1 files are blocked and the top reasons.
 11. Closing checklist: show zero/remaining state for evidence, explanation, account, exclusion reason, and tax blockers.
 12. Source-collection back link and shallow undo affordance where applicable.
@@ -541,7 +541,7 @@ inactive search or settings controls must look disabled until implemented.
 - The user can see previous-period pattern recommendations with their basis, and those recommendations do not auto-confirm rows.
 - From a linked bank row, the user can click **증빙있음** and see the linked evidence summary in a read-only modal.
 - From a bank row, the user can open "증빙 찾기", choose 세금계산서/현금영수증/체크카드, search rows, select evidence, and see the remaining difference before saving.
-- The work panel starts with a one-line conclusion and primary action before showing detailed evidence/AI/pattern rationale.
+- The ledger row shows a one-line conclusion and primary action before the user opens detailed evidence/AI/pattern rationale in a modal.
 - Safe repeated suggestions can be accepted as a batch only when the group eligibility is visible and the user explicitly confirms the group.
 - The final UI does not use candidate counts as the main answer; it shows concrete candidate rows and actions.
 - Ambiguous matches are not auto-confirmed.

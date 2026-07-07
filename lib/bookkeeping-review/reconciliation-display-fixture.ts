@@ -1,7 +1,7 @@
 import type {
   ReconciliationLedgerDisplayModel,
   ReconciliationLedgerRow,
-  ReconciliationWorkPanelConclusion,
+  ReconciliationRowConclusion,
 } from './reconciliation-display-model'
 
 const PERIOD_LABEL = '2026년 1기 (부가세)'
@@ -14,14 +14,14 @@ const disabledActions = {
   canConfirmMatch: false,
 } satisfies ReconciliationLedgerRow['actions']
 
-type ReconciliationWorkPanelConclusionInput = Omit<
-  ReconciliationWorkPanelConclusion,
+type ReconciliationRowConclusionInput = Omit<
+  ReconciliationRowConclusion,
   'actionEnabled' | 'disabledReason'
 >
 
-function panelConclusion(
-  partial: ReconciliationWorkPanelConclusionInput,
-): ReconciliationWorkPanelConclusion {
+function rowConclusion(
+  partial: ReconciliationRowConclusionInput,
+): ReconciliationRowConclusion {
   return {
     ...partial,
     actionEnabled: false,
@@ -152,7 +152,7 @@ export const RECONCILIATION_LEDGER_DISPLAY_FIXTURE: ReconciliationLedgerDisplayM
         lastSeenPeriod: '2026-05',
         reason: 'same_counterparty_prior_evidence',
       },
-      workPanelConclusion: panelConclusion({
+      rowConclusion: rowConclusion({
         headline: '매출 + 세금계산서 연결 권장',
         basisLabel: '같은 금액·같은 일자 세금계산서 후보 1건',
         primaryAction: 'connect_evidence',
@@ -188,7 +188,7 @@ export const RECONCILIATION_LEDGER_DISPLAY_FIXTURE: ReconciliationLedgerDisplayM
         lastSeenPeriod: '2026-05',
         reason: 'same_counterparty_prior_account',
       },
-      workPanelConclusion: panelConclusion({
+      rowConclusion: rowConclusion({
         headline: '소프트웨어비 + 사용내역 소명 필요',
         basisLabel: '해외 SaaS · 증빙이 약함',
         primaryAction: 'write_explanation',
@@ -218,7 +218,7 @@ export const RECONCILIATION_LEDGER_DISPLAY_FIXTURE: ReconciliationLedgerDisplayM
       evidenceActionState: 'evidence_required',
       candidates: [],
       patternSuggestion: null,
-      workPanelConclusion: panelConclusion({
+      rowConclusion: rowConclusion({
         headline: '입금 또는 카드 결제 연결 필요',
         basisLabel: '세금계산서만 존재 · 통장/카드 미연결',
         primaryAction: 'connect_evidence',
@@ -254,7 +254,7 @@ export const RECONCILIATION_LEDGER_DISPLAY_FIXTURE: ReconciliationLedgerDisplayM
         lastSeenPeriod: '2026-04',
         reason: 'prior_exclusion_pattern',
       },
-      workPanelConclusion: panelConclusion({
+      rowConclusion: rowConclusion({
         headline: '사적 사용 제외 검토',
         basisLabel: '주말 식대 · 업무무관 후보',
         primaryAction: 'exclude',
@@ -293,7 +293,7 @@ export const RECONCILIATION_LEDGER_DISPLAY_FIXTURE: ReconciliationLedgerDisplayM
         },
       ],
       patternSuggestion: null,
-      workPanelConclusion: panelConclusion({
+      rowConclusion: rowConclusion({
         headline: '카드 정산 합계와 62,140원 차이',
         basisLabel: '금액 불일치 · 후보 1건',
         primaryAction: 'review_only',
@@ -341,7 +341,7 @@ export const RECONCILIATION_LEDGER_DISPLAY_FIXTURE: ReconciliationLedgerDisplayM
         lastSeenPeriod: '2026-05',
         reason: 'same_counterparty_prior_evidence',
       },
-      workPanelConclusion: panelConclusion({
+      rowConclusion: rowConclusion({
         headline: '지급임차료 · 증빙 연결 완료',
         basisLabel: '세금계산서 매칭 확정',
         primaryAction: 'review_only',
@@ -377,7 +377,7 @@ export const RECONCILIATION_LEDGER_DISPLAY_FIXTURE: ReconciliationLedgerDisplayM
         lastSeenPeriod: '2026-03',
         reason: 'same_counterparty_prior_account',
       },
-      workPanelConclusion: panelConclusion({
+      rowConclusion: rowConclusion({
         headline: '지급수수료 · 사용내역 소명 필요',
         basisLabel: '세금계산서 없이 이체된 자문료',
         primaryAction: 'write_explanation',
@@ -407,7 +407,7 @@ export const RECONCILIATION_LEDGER_DISPLAY_FIXTURE: ReconciliationLedgerDisplayM
       evidenceActionState: 'evidence_required',
       candidates: [],
       patternSuggestion: null,
-      workPanelConclusion: panelConclusion({
+      rowConclusion: rowConclusion({
         headline: '소모품비 · 증빙 연결 필요',
         basisLabel: '통장 출금만 존재 · 세금계산서/현금영수증 미연결',
         primaryAction: 'connect_evidence',
@@ -434,7 +434,7 @@ export const RECONCILIATION_LEDGER_DISPLAY_FIXTURE: ReconciliationLedgerDisplayM
       evidenceActionState: 'linked',
       candidates: [],
       patternSuggestion: null,
-      workPanelConclusion: panelConclusion({
+      rowConclusion: rowConclusion({
         headline: '이자수익 · 통장 내역으로 확정',
         basisLabel: '은행 이자 통지 내역',
         primaryAction: 'review_only',
@@ -470,7 +470,7 @@ export const RECONCILIATION_LEDGER_DISPLAY_FIXTURE: ReconciliationLedgerDisplayM
         lastSeenPeriod: '2026-05',
         reason: 'same_counterparty_prior_account',
       },
-      workPanelConclusion: panelConclusion({
+      rowConclusion: rowConclusion({
         headline: '소프트웨어비 · 일괄 제안 그룹 포함',
         basisLabel: '반복 패턴 12건 중 1건',
         primaryAction: 'confirm_account',
@@ -506,7 +506,7 @@ export const RECONCILIATION_LEDGER_DISPLAY_FIXTURE: ReconciliationLedgerDisplayM
         lastSeenPeriod: '2026-05',
         reason: 'same_counterparty_prior_account',
       },
-      workPanelConclusion: panelConclusion({
+      rowConclusion: rowConclusion({
         headline: '소프트웨어비 · 일괄 제안 그룹 포함',
         basisLabel: '반복 패턴 12건 중 1건',
         primaryAction: 'confirm_account',

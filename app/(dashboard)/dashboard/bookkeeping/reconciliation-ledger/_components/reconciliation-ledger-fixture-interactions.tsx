@@ -30,7 +30,7 @@ import {
   resolveLinkedEvidenceDisplay,
   shouldShowEvidenceFinder,
   type EvidenceFinderSource,
-} from '@/lib/bookkeeping-review/reconciliation-work-panel'
+} from '@/lib/bookkeeping-review/reconciliation-row-actions'
 import { cn } from '@/lib/utils'
 
 const disabledActionNote = 'Slice 2b 전까지 저장·확정이 비활성화됩니다.'
@@ -85,7 +85,7 @@ export function ReconciliationEvidenceCell({
         <StatusChip tone={statusChip.tone}>{statusChip.label}</StatusChip>
       ) : null}
 
-      {row.workPanelConclusion.primaryAction === 'open_source_collection' ? (
+      {row.rowConclusion.primaryAction === 'open_source_collection' ? (
         <Link
           className="text-[11.5px] font-semibold text-[#2563eb] hover:underline"
           href="/dashboard/direct-upload?period=2026-q1&source=tax_invoice"
@@ -440,7 +440,7 @@ export function ReconciliationExplanationModal({
             <div className="space-y-3 px-5 py-4">
               <div className="rounded-[10px] border border-company-border bg-[#fcfcfd] px-3 py-2 text-[12px] text-company-fg-muted">
                 <p className="font-medium text-foreground">{row.description}</p>
-                <p className="mt-1">{row.workPanelConclusion.basisLabel}</p>
+                <p className="mt-1">{row.rowConclusion.basisLabel}</p>
               </div>
               <label className="block">
                 <span className="text-[12px] font-semibold text-foreground">업무 사용 목적 · 소명 내용</span>

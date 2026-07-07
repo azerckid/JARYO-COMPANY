@@ -8,9 +8,9 @@ import {
   matchesEvidenceFinderSource,
   resolveLinkedEvidenceDisplay,
   shouldShowEvidenceFinder,
-} from './reconciliation-work-panel'
+} from './reconciliation-row-actions'
 
-describe('reconciliation-work-panel', () => {
+describe('reconciliation-row-actions', () => {
   it('computes remaining difference from row amount and candidate totals', () => {
     const row = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-bank-musinsa')
     expect(row).toBeDefined()
@@ -38,8 +38,8 @@ describe('reconciliation-work-panel', () => {
     const linkedRow = {
       ...RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows[0]!,
       evidenceActionState: 'linked' as const,
-      workPanelConclusion: {
-        ...RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows[0]!.workPanelConclusion,
+      rowConclusion: {
+        ...RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows[0]!.rowConclusion,
         primaryAction: 'review_only' as const,
       },
     }

@@ -19,7 +19,7 @@ import type {
   ReconciliationSource,
   ReconciliationTaxBlockerSummary,
 } from '@/lib/bookkeeping-review/reconciliation-display-model'
-import type { EvidenceFinderSource } from '@/lib/bookkeeping-review/reconciliation-work-panel'
+import type { EvidenceFinderSource } from '@/lib/bookkeeping-review/reconciliation-row-actions'
 import { cn } from '@/lib/utils'
 import {
   ReconciliationAccountSelector,
@@ -484,7 +484,7 @@ function FixtureRow({
       <td className="px-3 py-3">
         <ReconciliationAccountSelector row={row} />
       </td>
-      <td className="max-w-[200px] px-3 py-3 text-[12px] text-company-fg-muted">{row.workPanelConclusion.headline}</td>
+      <td className="max-w-[200px] px-3 py-3 text-[12px] text-company-fg-muted">{row.rowConclusion.headline}</td>
     </tr>
   )
 }

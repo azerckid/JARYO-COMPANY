@@ -24,12 +24,12 @@ describe('reconciliation display model', () => {
     expect(model.closingChecklist.isReadyForPath1).toBe(false)
   })
 
-  it('requires workPanelConclusion on every row', () => {
+  it('requires rowConclusion on every row', () => {
     const model = loadReconciliationLedgerDisplayFixture()
 
     for (const row of model.rows) {
-      expect(row.workPanelConclusion.headline.length).toBeGreaterThan(0)
-      expect(row.workPanelConclusion.primaryAction).toBeTruthy()
+      expect(row.rowConclusion.headline.length).toBeGreaterThan(0)
+      expect(row.rowConclusion.primaryAction).toBeTruthy()
       expect(row.actions.canConfirmAccount).toBe(false)
       expect(row.actions.canConfirmMatch).toBe(false)
     }
