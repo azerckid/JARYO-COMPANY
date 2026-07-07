@@ -16,7 +16,7 @@ export type EvidenceFinderSource = 'tax_invoice' | 'cash_receipt' | 'card'
 export const evidenceFinderSourceOptions: Array<{ source: EvidenceFinderSource; label: string }> = [
   { source: 'tax_invoice', label: '세금계산서' },
   { source: 'cash_receipt', label: '현금영수증' },
-  { source: 'card', label: '체크카드/카드' },
+  { source: 'card', label: '체크카드' },
 ]
 
 export function computeCandidateTotalKrw(candidates: ReconciliationMatchCandidate[]): number {

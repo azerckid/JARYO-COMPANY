@@ -12,7 +12,6 @@ import {
 } from '@/lib/bookkeeping-review/reconciliation-display-filters'
 import type {
   ReconciliationBatchSuggestionGroup,
-  ReconciliationEvidenceActionState,
   ReconciliationLedgerDisplayModel,
   ReconciliationLedgerRow,
   ReconciliationNextAction,
@@ -20,8 +19,14 @@ import type {
   ReconciliationSource,
   ReconciliationTaxBlockerSummary,
 } from '@/lib/bookkeeping-review/reconciliation-display-model'
+import type { EvidenceFinderSource } from '@/lib/bookkeeping-review/reconciliation-work-panel'
 import { cn } from '@/lib/utils'
-import { ReconciliationLedgerWorkPanelModal } from './reconciliation-ledger-work-panel'
+import {
+  ReconciliationAccountSelector,
+  ReconciliationEvidenceCell,
+  ReconciliationEvidencePickerModal,
+  ReconciliationExplanationModal,
+} from './reconciliation-ledger-fixture-interactions'
 
 const panelClass = 'overflow-hidden rounded-xl border border-company-border bg-company-surface shadow-company-card'
 const disabledActionNote = 'Slice 2b 전까지 저장·확정이 비활성화됩니다.'
@@ -45,14 +50,9 @@ const chipClass: Record<Tone, string> = {
   muted: 'border-company-border bg-company-nav-hover text-company-fg-muted',
 }
 
-const evidenceActionLabels: Record<ReconciliationEvidenceActionState, { label: string; tone: Tone }> = {
-  linked: { label: '증빙 연결됨', tone: 'ok' },
-  candidate: { label: '증빙 후보 있음', tone: 'warn' },
-  evidence_required: { label: '증빙 필요', tone: 'danger' },
-  explanation_required: { label: '소명 필요', tone: 'warn' },
-  explained_no_evidence: { label: '소명 완료', tone: 'ok' },
-  evidence_exception: { label: '증빙 예외', tone: 'warn' },
-  excluded: { label: '제외됨', tone: 'muted' },
+type EvidencePickerState = {
+  rowId: string
+  source: EvidenceFinderSource
 }
 
 export interface ReconciliationLedgerDisplayFixtureViewProps {
@@ -70,12 +70,27 @@ export function ReconciliationLedgerDisplayFixtureView({
 }: ReconciliationLedgerDisplayFixtureViewProps) {
   const rows = displayModel.rows
   const filteredRows = filterReconciliationDisplayRows(rows, activeFilter)
-  const [selectedRowId, setSelectedRowId] = useState<string | null>(initialRowId)
-
-  const selectedRow = useMemo(
-    () => filteredRows.find((row) => row.id === selectedRowId) ?? null,
-    [filteredRows, selectedRowId],
+  const initialRow = useMemo(
+    () => (initialRowId ? rows.find((row) => row.id === initialRowId) ?? null : null),
+    [initialRowId, rows],
   )
+  const [evidencePicker, setEvidencePicker] = useState<EvidencePickerState | null>(null)
+  const [explanationRowId, setExplanationRowId] = useState<string | null>(() => {
+    if (initialRow?.evidenceActionState === 'explanation_required') {
+      return initialRow.id
+    }
+    return null
+  })
+
+  const evidencePickerRow = useMemo(
+    () => (evidencePicker ? rows.find((row) => row.id === evidencePicker.rowId) ?? null : null),
+    [evidencePicker, rows],
+  )
+  const explanationRow = useMemo(
+    () => (explanationRowId ? rows.find((row) => row.id === explanationRowId) ?? null : null),
+    [explanationRowId, rows],
+  )
+
   const sourceCounts = buildReconciliationDisplaySourceCounts(rows)
   const cashReceiptCount = countCashReceiptDisplayRows(rows)
   const periodLabel = rows[0]?.periodLabel ?? '기간 미정'
@@ -104,7 +119,7 @@ export function ReconciliationLedgerDisplayFixtureView({
               통장·카드·세금계산서·현금영수증을 한 원장으로 대조하고 확정합니다
             </h2>
             <p className="mt-2 max-w-[720px] text-[13px] text-company-fg-muted">
-              Preview 12 display model로 렌더하는 Slice 2a-2 workbench입니다. 다음 할 일 큐에서 막힌 항목부터 처리하세요.
+              Preview 12 display model로 렌더하는 Slice 2a-3 workbench입니다. 증빙·계정은 테이블 셀에서 바로 처리합니다.
             </p>
             <div className="mt-4 h-2 max-w-[520px] overflow-hidden rounded-full bg-[#e4e4e7]">
               <div className="h-full rounded-full bg-[#2563eb]" style={{ width: `${readinessPercent}%` }} />
@@ -119,7 +134,7 @@ export function ReconciliationLedgerDisplayFixtureView({
         </section>
 
         <div className="rounded-[10px] border border-[#bfdbfe] bg-[#eff6ff] px-3.5 py-3 text-[12.5px] text-[#1e40af]">
-          Fixture workbench (Slice 2a-3): 행을 클릭하면 작업 모달에서 한 줄 결론, 증빙 후보, 패턴 근거를 확인합니다. 저장·연결은 Slice 2b까지 비활성입니다.
+          Fixture workbench: 증빙 상태 셀에서 증빙 찾기(3종) 또는 소명 입력, 계정 셀에서 계정을 선택합니다. 저장·연결은 Slice 2b까지 비활성입니다.
         </div>
 
         <NextActionQueue actions={displayModel.nextActions} />
@@ -208,7 +223,6 @@ export function ReconciliationLedgerDisplayFixtureView({
                   <th className="px-3 py-3">증빙 상태</th>
                   <th className="px-3 py-3">계정항목</th>
                   <th className="px-3 py-3">한 줄 결론</th>
-                  <th className="px-3 py-3">처리</th>
                 </tr>
               </thead>
               <tbody>
@@ -216,14 +230,14 @@ export function ReconciliationLedgerDisplayFixtureView({
                   filteredRows.map((row) => (
                     <FixtureRow
                       key={row.id}
-                      isSelected={row.id === selectedRowId}
-                      onSelect={() => setSelectedRowId(row.id)}
+                      onOpenEvidencePicker={(source) => setEvidencePicker({ rowId: row.id, source })}
+                      onOpenExplanation={() => setExplanationRowId(row.id)}
                       row={row}
                     />
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={9} className="px-4 py-10 text-center text-company-fg-muted">
+                    <td colSpan={8} className="px-4 py-10 text-center text-company-fg-muted">
                       선택한 조건에 해당하는 거래가 없습니다. 다음 할 일 큐 또는 전체 탭을 확인하세요.
                     </td>
                   </tr>
@@ -233,15 +247,27 @@ export function ReconciliationLedgerDisplayFixtureView({
           </div>
         </section>
 
-        <ReconciliationLedgerWorkPanelModal
+        <ReconciliationEvidencePickerModal
           allRows={rows}
           onOpenChange={(open) => {
             if (!open) {
-              setSelectedRowId(null)
+              setEvidencePicker(null)
             }
           }}
-          open={selectedRow !== null}
-          row={selectedRow}
+          open={evidencePicker !== null && evidencePickerRow !== null}
+          row={evidencePickerRow}
+          source={evidencePicker?.source ?? null}
+        />
+
+        <ReconciliationExplanationModal
+          key={explanationRowId ?? 'closed'}
+          onOpenChange={(open) => {
+            if (!open) {
+              setExplanationRowId(null)
+            }
+          }}
+          open={explanationRow !== null}
+          row={explanationRow}
         />
 
         <section className="grid gap-4 lg:grid-cols-2">
@@ -388,16 +414,15 @@ function BatchSuggestionBar({ groups }: { readonly groups: ReconciliationBatchSu
 }
 
 function FixtureRow({
-  isSelected = false,
-  onSelect,
+  onOpenEvidencePicker,
+  onOpenExplanation,
   row,
 }: {
-  readonly isSelected?: boolean
-  readonly onSelect: () => void
+  readonly onOpenEvidencePicker: (source: EvidenceFinderSource) => void
+  readonly onOpenExplanation: () => void
   readonly row: ReconciliationLedgerRow
 }) {
   const source = sourceLabels[row.source]
-  const evidence = evidenceActionLabels[row.evidenceActionState]
   const tone = row.blockers.some((blocker) => blocker.code === 'missing_evidence' || blocker.code === 'ambiguous_match')
     ? 'danger'
     : row.blockers.length > 0
@@ -407,18 +432,9 @@ function FixtureRow({
   return (
     <tr
       className={cn(
-        'cursor-pointer border-b border-company-border last:border-b-0 hover:bg-[#fafafa]',
-        isSelected ? 'bg-[#eff6ff] ring-1 ring-inset ring-[#93c5fd]' : '',
-        !isSelected && tone === 'danger' ? 'bg-[#fff7f7]' : !isSelected && tone === 'warn' ? 'bg-[#fffaf0]' : '',
+        'border-b border-company-border last:border-b-0 hover:bg-[#fafafa]',
+        tone === 'danger' ? 'bg-[#fff7f7]' : tone === 'warn' ? 'bg-[#fffaf0]' : '',
       )}
-      onClick={onSelect}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onSelect()
-        }
-      }}
-      tabIndex={0}
     >
       <td className="px-3 py-3 font-mono text-company-fg-muted">{formatDate(row.transactionDate)}</td>
       <td className="px-3 py-3">
@@ -433,36 +449,22 @@ function FixtureRow({
       </td>
       <td className="max-w-[220px] px-3 py-3">
         <div className="truncate font-semibold text-foreground">{row.description}</div>
-        {row.candidates[0] ? (
-          <div className="mt-0.5 truncate text-[11.5px] text-company-fg-subtle">{candidateSummary(row.candidates[0])}</div>
+        {row.patternSuggestion ? (
+          <div className="mt-0.5 truncate text-[11.5px] text-company-fg-subtle">{row.patternSuggestion.basisLabel}</div>
         ) : null}
       </td>
       <td className="px-3 py-3 text-right font-mono font-semibold text-foreground">{formatKrw(row.amountKrw)}</td>
       <td className="px-3 py-3">
-        <div className="flex flex-col gap-1">
-          <StatusChip tone={evidence.tone}>{evidence.label}</StatusChip>
-          {row.patternSuggestion ? (
-            <span className="max-w-[180px] truncate text-[11px] text-company-fg-subtle">{row.patternSuggestion.basisLabel}</span>
-          ) : null}
-        </div>
+        <ReconciliationEvidenceCell
+          onOpenEvidencePicker={onOpenEvidencePicker}
+          onOpenExplanation={onOpenExplanation}
+          row={row}
+        />
       </td>
       <td className="px-3 py-3">
-        <span className="inline-flex min-w-[112px] items-center justify-between gap-2 rounded-md border border-company-border bg-[#fcfcfd] px-2 py-1 text-[12px]">
-          {row.finalAccount ?? row.recommendedAccount ?? '계정 미정'} <span className="text-company-fg-subtle">▾</span>
-        </span>
+        <ReconciliationAccountSelector row={row} />
       </td>
       <td className="max-w-[200px] px-3 py-3 text-[12px] text-company-fg-muted">{row.workPanelConclusion.headline}</td>
-      <td className="px-3 py-3">
-        <button
-          className="cursor-not-allowed rounded-md border border-company-border-strong bg-company-surface px-2.5 py-1 text-[11.5px] font-semibold text-company-fg-subtle"
-          disabled
-          onClick={(event) => event.stopPropagation()}
-          title={row.workPanelConclusion.disabledReason ?? disabledActionNote}
-          type="button"
-        >
-          {primaryActionLabel(row.workPanelConclusion.primaryAction)}
-        </button>
-      </td>
     </tr>
   )
 }
@@ -580,16 +582,6 @@ function priorityLabel(priority: ReconciliationNextAction['priority']) {
   return '수동 검토'
 }
 
-function primaryActionLabel(action: ReconciliationLedgerRow['workPanelConclusion']['primaryAction']) {
-  if (action === 'connect_evidence') return '증빙 연결'
-  if (action === 'confirm_account') return '계정 확정'
-  if (action === 'write_explanation') return '소명 입력'
-  if (action === 'exclude') return '제외 검토'
-  if (action === 'mark_exception') return '예외 처리'
-  if (action === 'open_source_collection') return '자료수집'
-  return '검토'
-}
-
 function directionLabel(direction: ReconciliationLedgerRow['direction']) {
   if (direction === 'income') return '수입 거래'
   if (direction === 'expense') return '지출 거래'
@@ -602,9 +594,4 @@ function formatDate(value: string | null) {
 
 function formatKrw(value: number | null) {
   return value === null ? '-' : `${value.toLocaleString('ko-KR')}원`
-}
-
-function candidateSummary(candidate: ReconciliationLedgerRow['candidates'][number]) {
-  const source = sourceLabels[candidate.source]
-  return `${source.label} · ${formatDate(candidate.date)} · ${formatKrw(candidate.amountKrw)}`
 }
