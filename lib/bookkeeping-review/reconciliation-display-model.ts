@@ -126,7 +126,7 @@ export const reconciliationClosingChecklistSchema = z.object({
   isReadyForPath1: z.boolean(),
 })
 
-export const reconciliationWorkPanelPrimaryActionSchema = z.enum([
+export const reconciliationRowPrimaryActionSchema = z.enum([
   'connect_evidence',
   'confirm_account',
   'write_explanation',
@@ -136,10 +136,10 @@ export const reconciliationWorkPanelPrimaryActionSchema = z.enum([
   'review_only',
 ])
 
-export const reconciliationWorkPanelConclusionSchema = z.object({
+export const reconciliationRowConclusionSchema = z.object({
   headline: z.string().min(1),
   basisLabel: z.string().min(1),
-  primaryAction: reconciliationWorkPanelPrimaryActionSchema,
+  primaryAction: reconciliationRowPrimaryActionSchema,
   actionEnabled: z.boolean(),
   disabledReason: z.string().nullable(),
 })
@@ -212,7 +212,7 @@ export const reconciliationLedgerRowSchema = z.object({
   evidenceActionState: reconciliationEvidenceActionStateSchema,
   candidates: z.array(reconciliationMatchCandidateSchema),
   patternSuggestion: reconciliationPatternSuggestionSchema.nullable(),
-  workPanelConclusion: reconciliationWorkPanelConclusionSchema,
+  rowConclusion: reconciliationRowConclusionSchema,
   blockers: z.array(
     z.object({
       code: reconciliationBlockerCodeSchema,
@@ -240,7 +240,7 @@ export type ReconciliationNextAction = z.infer<typeof reconciliationNextActionSc
 export type ReconciliationTaxBlockerSummary = z.infer<typeof reconciliationTaxBlockerSummarySchema>
 export type ReconciliationBatchSuggestionGroup = z.infer<typeof reconciliationBatchSuggestionGroupSchema>
 export type ReconciliationClosingChecklist = z.infer<typeof reconciliationClosingChecklistSchema>
-export type ReconciliationWorkPanelConclusion = z.infer<typeof reconciliationWorkPanelConclusionSchema>
+export type ReconciliationRowConclusion = z.infer<typeof reconciliationRowConclusionSchema>
 export type ReconciliationMatchCandidate = z.infer<typeof reconciliationMatchCandidateSchema>
 export type ReconciliationPatternSuggestion = z.infer<typeof reconciliationPatternSuggestionSchema>
 export type ReconciliationLedgerRow = z.infer<typeof reconciliationLedgerRowSchema>
