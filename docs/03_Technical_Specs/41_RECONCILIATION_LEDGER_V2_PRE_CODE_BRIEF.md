@@ -1,6 +1,6 @@
 # Reconciliation Ledger Phase 2 Pre-Code Technical Brief
 > Created: 2026-07-08 02:01 KST
-> Last Updated: 2026-07-08 02:40 KST
+> Last Updated: 2026-07-08 03:12 KST
 
 ## 0. Purpose
 
@@ -42,6 +42,8 @@ The right work panel must include:
 4. Account confirmation: recommended account, searchable account selector, and optional repeat/apply-to-similar control.
 5. Explanation and exclusion: business-use memo, personal/private, business-unrelated, duplicate, wrong-period, internal-transfer, or other exclusion reasons.
 6. Save state: confirmed only when evidence, account, counterparty, explanation/exclusion, and period relevance are resolved as needed.
+
+Terminology note: the UI may label the evidence source as **체크카드/카드** for user clarity, but implementation reuses the existing `card` source type. No separate `check_card` DB enum or source type is introduced in this slice.
 
 ## 0.2 Required Functions Not Yet Present in the Current Screen
 
