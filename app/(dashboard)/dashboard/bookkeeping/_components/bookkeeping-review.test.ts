@@ -50,6 +50,7 @@ describe('bookkeeping review UI boundaries (JC-010)', () => {
 
   it('routes company navigation to the preview-aligned bookkeeping screen (S-02)', () => {
     expect(sidebarSource).toContain("href: '/dashboard/bookkeeping'")
+    expect(sidebarSource).toContain('자료대조원장')
     expect(companyHomeSummarySource).toContain("bookkeeping: '/dashboard/bookkeeping'")
   })
 

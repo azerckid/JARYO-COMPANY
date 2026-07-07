@@ -143,7 +143,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
 
 - Related Concept: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md)
 - Related UI Docs: [Screen Flow 4c](../02_UI_Screens/00_SCREEN_FLOW.md) · [UI Design 4.3](../02_UI_Screens/01_UI_DESIGN.md)
-- Related HTML Preview: [02_bookkeeping_review.html](../02_UI_Screens/previews/02_bookkeeping_review.html)
+- Related HTML Preview: [02_bookkeeping_review.html](../02_UI_Screens/previews/02_bookkeeping_review.html) — 사이드바 하위 "자료대조원장" 진입점 포함(2026-07-08)
 - Related Technical Docs: [Component & Library Plan 7.3](../03_Technical_Specs/02_COMPONENT_LIBRARY_PLAN.md) · [Bookkeeping Review Pre-Code Brief](../03_Technical_Specs/06_BOOKKEEPING_REVIEW_PRE_CODE_BRIEF.md) · [DB Schema](../03_Technical_Specs/03_DB_SCHEMA.md) · [Development Setup](../03_Technical_Specs/01_DEVELOPMENT_SETUP.md)
 - Related QA Docs: [Bookkeeping Review Test Scenarios](../05_QA_Validation/04_BOOKKEEPING_REVIEW_TEST_SCENARIOS.md) - 분류 큐 집계·신뢰도·승인 mutation·Preview 계약·범위 격리 검증
 - Prototype Review / 승인: [Bookkeeping Review](../02_UI_Screens/04_BOOKKEEPING_REVIEW_PROTOTYPE_REVIEW.md) — 확인자 프로젝트 오너, 2026-07-01 승인
@@ -161,7 +161,8 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [x] AI 추천은 초안이며 최종 확정 책임은 사용자에게 있다.
   - [x] **회사 기장검토 화면은 GIWA `/dashboard/reviews` 워크스페이스 컴포넌트를 import/render하지 않는다**(Preview 계약, 정적 테스트로 강제).
   - [x] 로딩·빈·오류 상태가 화면에 구현된다.
-- Document Sync Check: Screen Flow 4c / UI Design 4.3 / Prototype Review / Preview / Component Plan 7.3 / Pre-Code Brief / QA Scenarios 상호 링크됨. 구현 파일: `lib/bookkeeping-review/summary.ts`, `app/(dashboard)/dashboard/bookkeeping/page.tsx`, `app/(dashboard)/dashboard/bookkeeping/_components/bookkeeping-review.tsx`, `app/(dashboard)/dashboard/bookkeeping/loading.tsx`, `app/(dashboard)/dashboard/bookkeeping/error.tsx`, `app/(dashboard)/dashboard/bookkeeping/_components/bookkeeping-review.test.ts`.
+  - [x] 기장검토 하위 메뉴 "자료대조원장"이 Path 1의 자료 대조·계정확정 관문으로 표시된다.
+- Document Sync Check: Screen Flow 4c / UI Design 4.3 / Prototype Review / Preview / Component Plan 7.3 / Pre-Code Brief / QA Scenarios 상호 링크됨. 2026-07-08: "자료대조원장"은 신고 준비 하위가 아니라 기장검토 하위 진입점으로 정리. 구현 파일: `lib/bookkeeping-review/summary.ts`, `app/(dashboard)/dashboard/bookkeeping/page.tsx`, `app/(dashboard)/dashboard/bookkeeping/_components/bookkeeping-review.tsx`, `app/(dashboard)/dashboard/bookkeeping/loading.tsx`, `app/(dashboard)/dashboard/bookkeeping/error.tsx`, `app/(dashboard)/dashboard/bookkeeping/_components/bookkeeping-review.test.ts`.
 
 ### JC-011 · Build VAT workspace (부가세) — 신규
 
