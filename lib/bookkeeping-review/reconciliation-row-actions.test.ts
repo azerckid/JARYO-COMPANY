@@ -6,9 +6,11 @@ import {
   evidenceActionChipLabel,
   evidenceFinderActionLabel,
   evidenceRowHighlightTone,
+  filterEvidenceFinderBrowseRows,
   hasAiEvidenceSuggestion,
   listEvidenceFinderBrowseRows,
   matchesEvidenceFinderSource,
+  resolveEvidenceFinderRowMatch,
   resolveLinkedEvidenceDisplay,
   shouldShowEvidenceFinder,
 } from './reconciliation-row-actions'
@@ -101,5 +103,55 @@ describe('reconciliation-row-actions', () => {
 
     const cashReceiptRows = listEvidenceFinderBrowseRows(rows, 'cash_receipt', selectedRowId)
     expect(cashReceiptRows.every((row) => matchesEvidenceFinderSource(row.source, 'cash_receipt'))).toBe(true)
+  })
+
+  it('filters evidence finder browse rows by query across counterparty, description, and amount', () => {
+    const rows = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows
+    const selectedRowId = RECONCILIATION_BANK_FIXTURE_ROW_IDS.bankToTaxInvoice
+    const taxInvoiceRows = listEvidenceFinderBrowseRows(rows, 'tax_invoice', selectedRowId)
+    const target = taxInvoiceRows[0]
+    expect(target).toBeDefined()
+
+    const byCounterparty = target!.counterparty
+      ? filterEvidenceFinderBrowseRows(taxInvoiceRows, { query: target!.counterparty, date: '' })
+      : []
+    if (target!.counterparty) {
+      expect(byCounterparty.some((row) => row.id === target!.id)).toBe(true)
+    }
+
+    const noMatches = filterEvidenceFinderBrowseRows(taxInvoiceRows, { query: '존재하지-않는-거래처-xyz', date: '' })
+    expect(noMatches).toHaveLength(0)
+
+    const amountTarget = taxInvoiceRows.find((row) => row.amountKrw !== null)
+    expect(amountTarget).toBeDefined()
+    const formattedAmount = amountTarget!.amountKrw!.toLocaleString('ko-KR')
+    const byFormattedAmount = filterEvidenceFinderBrowseRows(taxInvoiceRows, { query: formattedAmount, date: '' })
+    expect(byFormattedAmount.some((row) => row.id === amountTarget!.id)).toBe(true)
+
+    const unfiltered = filterEvidenceFinderBrowseRows(taxInvoiceRows, { query: '', date: '' })
+    expect(unfiltered).toHaveLength(taxInvoiceRows.length)
+  })
+
+  it('filters evidence finder browse rows by partial date match', () => {
+    const rows = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows
+    const selectedRowId = RECONCILIATION_BANK_FIXTURE_ROW_IDS.bankToTaxInvoice
+    const taxInvoiceRows = listEvidenceFinderBrowseRows(rows, 'tax_invoice', selectedRowId)
+    const target = taxInvoiceRows.find((row) => row.transactionDate)
+    expect(target).toBeDefined()
+
+    const filtered = filterEvidenceFinderBrowseRows(taxInvoiceRows, { query: '', date: target!.transactionDate! })
+    expect(filtered.every((row) => row.transactionDate === target!.transactionDate)).toBe(true)
+    expect(filtered.some((row) => row.id === target!.id)).toBe(true)
+  })
+
+  it('resolves the AI-matched candidate for a browse row by rowId', () => {
+    const row = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === RECONCILIATION_BANK_FIXTURE_ROW_IDS.bankToTaxInvoice)
+    expect(row).toBeDefined()
+    expect(row!.candidates.length).toBeGreaterThan(0)
+
+    const matchedCandidateRowId = row!.candidates[0]!.rowId
+    expect(resolveEvidenceFinderRowMatch(row!.candidates, matchedCandidateRowId)).toEqual(row!.candidates[0])
+    expect(resolveEvidenceFinderRowMatch(row!.candidates, 'no-such-row-id')).toBeNull()
+    expect(resolveEvidenceFinderRowMatch([], matchedCandidateRowId)).toBeNull()
   })
 })
