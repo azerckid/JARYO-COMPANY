@@ -22,16 +22,22 @@ export function LedgerCellText({
 
 export type ReconciliationLedgerTableVariant =
   | 'fixture_default'
+  | 'fixture_card'
   | 'fixture_tax'
   | 'live_default'
+  | 'live_card'
   | 'live_tax'
 
 export function resolveReconciliationLedgerTableVariant(input: {
+  cardLayout?: boolean
   taxInvoiceLayout: boolean
   surface: 'fixture' | 'live'
 }): ReconciliationLedgerTableVariant {
   if (input.taxInvoiceLayout) {
     return input.surface === 'live' ? 'live_tax' : 'fixture_tax'
+  }
+  if (input.cardLayout) {
+    return input.surface === 'live' ? 'live_card' : 'fixture_card'
   }
   return input.surface === 'live' ? 'live_default' : 'fixture_default'
 }
@@ -39,6 +45,7 @@ export function resolveReconciliationLedgerTableVariant(input: {
 export function reconciliationLedgerColumnCount(variant: ReconciliationLedgerTableVariant) {
   if (variant === 'fixture_tax') return 10
   if (variant === 'live_tax') return 12
+  if (variant === 'fixture_card' || variant === 'live_card') return 8
   if (variant === 'live_default') return 9
   return 8
 }
@@ -46,7 +53,11 @@ export function reconciliationLedgerColumnCount(variant: ReconciliationLedgerTab
 export function reconciliationLedgerTableClassName(variant: ReconciliationLedgerTableVariant) {
   return cn(
     'w-full border-collapse text-left text-[12.5px] table-fixed',
-    variant === 'live_tax' || variant === 'fixture_tax' ? 'min-w-[1220px]' : 'min-w-[980px]',
+    variant === 'live_tax' || variant === 'fixture_tax'
+      ? 'min-w-[1220px]'
+      : variant === 'live_card' || variant === 'fixture_card'
+        ? 'min-w-[1120px]'
+        : 'min-w-[980px]',
   )
 }
 
@@ -64,6 +75,21 @@ export function ReconciliationLedgerColGroup({ variant }: { readonly variant: Re
         <col className="w-[80px]" />
         <col className="w-[176px]" />
         <col className="w-[136px]" />
+      </colgroup>
+    )
+  }
+
+  if (variant === 'fixture_card' || variant === 'live_card') {
+    return (
+      <colgroup>
+        <col className="w-[76px]" />
+        <col className="w-[128px]" />
+        <col className="w-[200px]" />
+        <col className="w-[112px]" />
+        <col className="w-[92px]" />
+        <col className="w-[92px]" />
+        <col className="w-[132px]" />
+        <col className="w-[116px]" />
       </colgroup>
     )
   }
