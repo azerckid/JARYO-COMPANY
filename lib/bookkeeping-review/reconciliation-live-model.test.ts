@@ -81,6 +81,23 @@ describe('mapLiveEvidenceActionState', () => {
     const row = buildRow({ sourceType: 'bank', counterparty: '헤어살롱', description: '미용실 결제' })
     expect(mapLiveEvidenceActionState(row)).toBe('evidence_required')
   })
+
+  it('routes a personal-use-suspicious row to explanation_required even when a bank-match candidate exists (PR #167 review P2)', () => {
+    const row = buildRow({
+      sourceType: 'card',
+      counterparty: '헤어살롱',
+      description: '미용실',
+      reconciliation: {
+        matchState: 'candidate',
+        candidates: [{
+          id: 'c1', sourceType: 'bank', rowId: 'bank-row', date: '2026-07-08',
+          counterparty: '헤어살롱', amountKrw: 228_252, confidence: 'high', reason: 'same_amount_same_day',
+        }],
+        blockers: [],
+      },
+    })
+    expect(mapLiveEvidenceActionState(row)).toBe('explanation_required')
+  })
 })
 
 describe('mapLiveMatchCandidate', () => {

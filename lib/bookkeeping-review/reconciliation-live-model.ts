@@ -21,6 +21,19 @@ export function mapLiveEvidenceActionState(row: BookkeepingReviewQueueRow): Reco
     return 'excluded'
   }
 
+  // Personal-use suspicion must be checked before the candidate/evidence
+  // match logic: confirming that a bank record matches this payment answers
+  // "did this payment happen", not "was this a legitimate business expense".
+  // explanation_required and candidate/evidence_required are meant to be
+  // mutually exclusive (Brief 41 §5.1), so a personal-use-suspicious row
+  // routes to explanation even when a matching bank candidate exists.
+  if (
+    isEvidenceSource(row.sourceType)
+    && looksPersonallyUseSuspicious({ counterparty: row.counterparty, description: row.description })
+  ) {
+    return row.staffMemo?.trim() ? 'explained_no_evidence' : 'explanation_required'
+  }
+
   if (row.reconciliation.candidates.length > 0) {
     return 'candidate'
   }
@@ -28,22 +41,11 @@ export function mapLiveEvidenceActionState(row: BookkeepingReviewQueueRow): Reco
   // card/receipt/tax_invoice rows are themselves evidence documents (see
   // isEvidenceSource in summary.ts) — a missing bank-side match means the
   // payment/settlement isn't confirmed yet, not that evidence is missing.
-  //
-  // evidence_required and explanation_required/explained_no_evidence are
-  // meant to be mutually exclusive states (Brief 41 §5.1): the former means
-  // "find evidence", the latter means "evidence may not exist, explain
-  // business use instead". Live bank/other rows cannot yet be routed into
-  // the explanation path in general — there is no broad private/business-
-  // unrelated detection — so they stay evidence_required. Evidence-source
-  // rows (card/receipt/tax_invoice) get a narrow keyword-based check instead
-  // (Brief 41 §0.2), since that is the one case with a concrete detection
-  // rule today.
+  // Live bank/other rows cannot yet be routed into the explanation path in
+  // general — there is no broad private/business-unrelated detection for
+  // them — so they stay evidence_required.
   if (!isEvidenceSource(row.sourceType)) {
     return 'evidence_required'
-  }
-
-  if (looksPersonallyUseSuspicious({ counterparty: row.counterparty, description: row.description })) {
-    return row.staffMemo?.trim() ? 'explained_no_evidence' : 'explanation_required'
   }
 
   return 'linked'
