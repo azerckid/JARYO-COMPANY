@@ -13,7 +13,7 @@ describe('bookkeeping review UI boundaries (JC-010)', () => {
   const layoutSource = readFileSync(join(workspaceRoot, 'app/(dashboard)/layout.tsx'), 'utf8')
   const companyHomeSummarySource = readFileSync(join(workspaceRoot, 'lib/company-home/summary.ts'), 'utf8')
   const reconciliationPageSource = readFileSync(join(workspaceRoot, 'app/(dashboard)/dashboard/bookkeeping/reconciliation-ledger/page.tsx'), 'utf8')
-  const reconciliationViewSource = readFileSync(join(workspaceRoot, 'app/(dashboard)/dashboard/bookkeeping/reconciliation-ledger/_components/reconciliation-ledger.tsx'), 'utf8')
+  const reconciliationViewSource = readFileSync(join(workspaceRoot, 'app/(dashboard)/dashboard/bookkeeping/reconciliation-ledger/_components/reconciliation-ledger-display-fixture-view.tsx'), 'utf8')
 
   it('renders the approved preview section order and core labels (S-01)', () => {
     expect(source).toContain('기장검토')
@@ -61,13 +61,17 @@ describe('bookkeeping review UI boundaries (JC-010)', () => {
   })
 
   it('renders the reconciliation ledger route as a dedicated Path 1 gate', () => {
-    expect(reconciliationPageSource).toContain('ReconciliationLedgerView')
+    expect(reconciliationPageSource).toContain('ReconciliationLedgerDisplayFixtureView')
     expect(reconciliationViewSource).toContain('Path 1 데이터 준비 관문')
     expect(reconciliationViewSource).toContain('통장·카드·세금계산서·현금영수증')
-    expect(reconciliationViewSource).toContain('자료대조원장은 신고 준비 화면이 아니라 기장검토 하위 관문입니다')
     expect(reconciliationViewSource).toContain('filter="bank"')
-    expect(reconciliationViewSource).toContain('reconciliationFilterHref(periodKey, filter)')
-    expect(reconciliationPageSource).toContain('normalizeReconciliationFilter(source)')
+    expect(reconciliationPageSource).toContain('normalizeReconciliationDisplayFilter(source)')
+  })
+
+  it('serves the live ReconciliationLedgerDisplayModel by default and fixture only when requested', () => {
+    expect(reconciliationPageSource).toContain('isReconciliationDisplayFixtureMode(display)')
+    expect(reconciliationPageSource).toContain('buildLiveReconciliationLedgerDisplayModel(summary)')
+    expect(reconciliationPageSource).toContain('loadReconciliationLedgerDisplayFixture()')
   })
 
   it('renders the pending-count sidebar badge from the server layout for Preview parity', () => {

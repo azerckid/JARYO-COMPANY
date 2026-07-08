@@ -4,11 +4,11 @@ import {
   isReconciliationDisplayFixtureMode,
   loadReconciliationLedgerDisplayFixture,
 } from '@/lib/bookkeeping-review/reconciliation-display-loader'
+import { buildLiveReconciliationLedgerDisplayModel } from '@/lib/bookkeeping-review/reconciliation-live-display-model'
 import { normalizeReconciliationDisplayFilter } from '@/lib/bookkeeping-review/reconciliation-display-filters'
 import { loadBookkeepingReviewSummary } from '@/lib/bookkeeping-review/summary'
 import { BookkeepingReviewBusinessEntityEmptyState } from '../_components/bookkeeping-review'
 import { ReconciliationLedgerDisplayFixtureView } from './_components/reconciliation-ledger-display-fixture-view'
-import { ReconciliationLedgerView, normalizeReconciliationFilter } from './_components/reconciliation-ledger'
 
 type PageProps = {
   searchParams: Promise<{
@@ -30,23 +30,7 @@ export default async function ReconciliationLedgerPage({ searchParams }: PagePro
     redirect('/sign-in')
   }
 
-  if (isReconciliationDisplayFixtureMode(display)) {
-    const displayModel = loadReconciliationLedgerDisplayFixture()
-    const summary = await loadBookkeepingReviewSummary({
-      tenantId,
-      periodKey: period,
-      tab: 'all',
-    })
-
-    return (
-      <ReconciliationLedgerDisplayFixtureView
-        activeFilter={normalizeReconciliationDisplayFilter(source)}
-        companyName={summary.businessEntity?.name ?? summary.tenant.name}
-        displayModel={displayModel}
-        initialRowId={row ?? null}
-      />
-    )
-  }
+  const isFixtureMode = isReconciliationDisplayFixtureMode(display)
 
   const summary = await loadBookkeepingReviewSummary({
     tenantId,
@@ -54,9 +38,21 @@ export default async function ReconciliationLedgerPage({ searchParams }: PagePro
     tab: 'all',
   })
 
-  if (!summary.businessEntity) {
+  if (!isFixtureMode && !summary.businessEntity) {
     return <BookkeepingReviewBusinessEntityEmptyState tenantName={summary.tenant.name} />
   }
 
-  return <ReconciliationLedgerView activeFilter={normalizeReconciliationFilter(source)} summary={summary} />
+  const displayModel = isFixtureMode
+    ? loadReconciliationLedgerDisplayFixture()
+    : buildLiveReconciliationLedgerDisplayModel(summary)
+
+  return (
+    <ReconciliationLedgerDisplayFixtureView
+      activeFilter={normalizeReconciliationDisplayFilter(source)}
+      companyName={summary.businessEntity?.name ?? summary.tenant.name}
+      displayModel={displayModel}
+      initialRowId={row ?? null}
+      isFixtureMode={isFixtureMode}
+    />
+  )
 }

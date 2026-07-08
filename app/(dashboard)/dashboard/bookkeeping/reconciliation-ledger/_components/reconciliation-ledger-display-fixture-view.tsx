@@ -74,6 +74,7 @@ export interface ReconciliationLedgerDisplayFixtureViewProps {
   readonly companyName: string
   readonly displayModel: ReconciliationLedgerDisplayModel
   readonly initialRowId?: string | null
+  readonly isFixtureMode?: boolean
 }
 
 export function ReconciliationLedgerDisplayFixtureView({
@@ -81,6 +82,7 @@ export function ReconciliationLedgerDisplayFixtureView({
   companyName,
   displayModel,
   initialRowId = null,
+  isFixtureMode = false,
 }: ReconciliationLedgerDisplayFixtureViewProps) {
   const rows = displayModel.rows
   const filteredRows = filterReconciliationDisplayRows(rows, activeFilter)
@@ -130,18 +132,22 @@ export function ReconciliationLedgerDisplayFixtureView({
 
   return (
     <div className="flex min-h-full flex-col bg-company-bg">
-      <FixtureTopbar companyName={companyName} />
+      <FixtureTopbar companyName={companyName} isFixtureMode={isFixtureMode} />
       <div className="flex w-full max-w-[1320px] flex-col gap-5 px-7 pt-6 pb-12">
         <PeriodScopeControl activeMode={periodMode} periodLabel={periodLabel} />
 
         <section className={cn(panelClass, 'grid gap-6 px-6 py-5 lg:grid-cols-[minmax(0,1fr)_360px]')}>
           <div>
-            <p className="text-xs font-semibold text-company-fg-muted">Path 1 데이터 준비 관문 · Fixture</p>
+            <p className="text-xs font-semibold text-company-fg-muted">
+              Path 1 데이터 준비 관문{isFixtureMode ? ' · Fixture' : ''}
+            </p>
             <h2 className="mt-2 text-[23px] font-bold text-foreground">
               통장·카드·세금계산서·현금영수증을 한 원장으로 대조하고 확정합니다
             </h2>
             <p className="mt-2 max-w-[720px] text-[13px] text-company-fg-muted">
-              Preview 12 display model로 렌더하는 Slice 2a-3 workbench입니다. 증빙·계정은 테이블 셀에서 바로 처리합니다.
+              {isFixtureMode
+                ? 'Preview 12 display model로 렌더하는 Slice 2a-3 workbench입니다. 증빙·계정은 테이블 셀에서 바로 처리합니다.'
+                : '증빙·계정은 테이블 셀에서 바로 처리합니다.'}
             </p>
             <div className="mt-4 h-2 max-w-[520px] overflow-hidden rounded-full bg-[#e4e4e7]">
               <div className="h-full rounded-full bg-[#2563eb]" style={{ width: `${readinessPercent}%` }} />
@@ -156,7 +162,7 @@ export function ReconciliationLedgerDisplayFixtureView({
         </section>
 
         <div className="rounded-[10px] border border-[#bfdbfe] bg-[#eff6ff] px-3.5 py-3 text-[12.5px] text-[#1e40af]">
-          Fixture workbench: 증빙 상태 셀에서 증빙 찾기(3종) 또는 소명 입력, 계정 셀에서 계정을 선택합니다. 저장·연결은 Slice 2b까지 비활성입니다.
+          {isFixtureMode ? 'Fixture workbench: ' : ''}증빙 상태 셀에서 증빙 찾기(3종) 또는 소명 입력, 계정 셀에서 계정을 선택합니다. 저장·연결은 아직 준비 중입니다.
         </div>
 
         <NextActionQueue actions={displayModel.nextActions} />
@@ -325,7 +331,13 @@ export function ReconciliationLedgerDisplayFixtureView({
   )
 }
 
-function FixtureTopbar({ companyName }: { readonly companyName: string }) {
+function FixtureTopbar({
+  companyName,
+  isFixtureMode,
+}: {
+  readonly companyName: string
+  readonly isFixtureMode: boolean
+}) {
   return (
     <div className="sticky top-0 z-10 flex flex-wrap items-center gap-4 border-b border-company-border bg-company-surface px-7 py-3.5">
       <div>
@@ -336,7 +348,9 @@ function FixtureTopbar({ companyName }: { readonly companyName: string }) {
           <span aria-hidden="true"> › </span>
           <span>자료대조원장</span>
         </p>
-        <h1 className="text-base font-semibold text-foreground">자료대조원장 · Fixture</h1>
+        <h1 className="text-base font-semibold text-foreground">
+          자료대조원장{isFixtureMode ? ' · Fixture' : ''}
+        </h1>
       </div>
       <span className="ml-auto text-[13px] font-medium text-company-fg-muted">{companyName}</span>
     </div>

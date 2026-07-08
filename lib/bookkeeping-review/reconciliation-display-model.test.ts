@@ -100,14 +100,18 @@ describe('reconciliation display model', () => {
 })
 
 describe('reconciliation display loader', () => {
-  it('loads fixture mode by default and blocks live mode until Slice 2a-5', () => {
-    expect(isReconciliationDisplayFixtureMode(undefined)).toBe(true)
-    expect(isReconciliationDisplayFixtureMode('fixture')).toBe(true)
+  it('defaults display mode detection to live unless display=fixture', () => {
+    expect(isReconciliationDisplayFixtureMode(undefined)).toBe(false)
     expect(isReconciliationDisplayFixtureMode('live')).toBe(false)
+    expect(isReconciliationDisplayFixtureMode('fixture')).toBe(true)
+  })
 
-    const fixture = loadReconciliationLedgerDisplayModel({ mode: 'fixture' })
+  it('loads fixture mode without touching the database', async () => {
+    const fixture = await loadReconciliationLedgerDisplayModel({ mode: 'fixture' })
     expect(fixture.rows.length).toBe(RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.length)
+  })
 
-    expect(() => loadReconciliationLedgerDisplayModel({ mode: 'live' })).toThrow(/2a-5/)
+  it('requires a tenantId for live mode', async () => {
+    await expect(loadReconciliationLedgerDisplayModel({ mode: 'live' })).rejects.toThrow(/tenantId/)
   })
 })
