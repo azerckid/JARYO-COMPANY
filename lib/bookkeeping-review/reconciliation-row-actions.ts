@@ -194,6 +194,7 @@ export function shouldShowEvidenceFinder(row: ReconciliationLedgerRow): boolean 
 
   return row.evidenceActionState !== 'explanation_required'
     && row.evidenceActionState !== 'explained_no_evidence'
+    && row.evidenceActionState !== 'excluded'
 }
 
 export function evidenceFinderActionLabel(row: ReconciliationLedgerRow): '증빙 확인' | '증빙 찾기' {
