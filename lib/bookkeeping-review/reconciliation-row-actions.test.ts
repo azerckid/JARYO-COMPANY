@@ -4,6 +4,7 @@ import {
   computeRemainingDifferenceKrw,
   evidenceActionChipLabel,
   evidenceFinderActionLabel,
+  evidenceRowHighlightTone,
   hasAiEvidenceSuggestion,
   listEvidenceFinderBrowseRows,
   matchesEvidenceFinderSource,
@@ -64,6 +65,19 @@ describe('reconciliation-row-actions', () => {
     expect(evidenceActionChipLabel(evidenceRequiredRow!.evidenceActionState)?.label).toBe('증빙 필요')
     expect(shouldShowEvidenceFinder(evidenceRequiredRow!)).toBe(true)
     expect(evidenceFinderActionLabel(evidenceRequiredRow!)).toBe('증빙 찾기')
+  })
+
+  it('uses danger row highlight only for evidence or explanation blockers', () => {
+    const foundEvidenceRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-bank-030')
+    const evidenceRequiredRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-tax-hardson')
+    const explanationRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-card-saas')
+
+    expect(foundEvidenceRow).toBeDefined()
+    expect(evidenceRequiredRow).toBeDefined()
+    expect(explanationRow).toBeDefined()
+    expect(evidenceRowHighlightTone(foundEvidenceRow!)).toBe('default')
+    expect(evidenceRowHighlightTone(evidenceRequiredRow!)).toBe('danger')
+    expect(evidenceRowHighlightTone(explanationRow!)).toBe('danger')
   })
 
   it('resolves linked evidence from candidates or row fallback', () => {

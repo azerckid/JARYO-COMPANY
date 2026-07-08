@@ -167,6 +167,14 @@ export function evidenceFinderActionLabel(row: ReconciliationLedgerRow): '증빙
   return '증빙 찾기'
 }
 
+export function evidenceRowHighlightTone(row: ReconciliationLedgerRow): 'danger' | 'default' {
+  if (row.evidenceActionState === 'evidence_required' || row.evidenceActionState === 'explanation_required') {
+    return 'danger'
+  }
+
+  return 'default'
+}
+
 export function evidenceActionChipLabel(
   state: ReconciliationLedgerRow['evidenceActionState'],
 ): { label: string; tone: 'ok' | 'warn' | 'danger' | 'muted' } | null {
@@ -181,7 +189,7 @@ export function evidenceActionChipLabel(
     return { label: '증빙 필요', tone: 'danger' }
   }
   if (state === 'explanation_required') {
-    return { label: '소명 필요', tone: 'warn' }
+    return { label: '소명 필요', tone: 'danger' }
   }
   if (state === 'explained_no_evidence') {
     return { label: '소명 완료', tone: 'ok' }

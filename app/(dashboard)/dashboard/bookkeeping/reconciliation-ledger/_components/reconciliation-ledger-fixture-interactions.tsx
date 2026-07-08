@@ -65,7 +65,7 @@ export function ReconciliationEvidenceCell({
     <div className="flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
       {row.evidenceActionState === 'explanation_required' ? (
         <button
-          className="rounded-md border border-[#fde68a] bg-[#fffbeb] px-2 py-1 text-[11.5px] font-semibold text-[#b45309] hover:bg-[#fef3c7]"
+          className="rounded-md border border-[#fecaca] bg-[#fef2f2] px-2 py-1 text-[11.5px] font-semibold text-[#dc2626] hover:bg-[#fee2e2]"
           onClick={onOpenExplanation}
           type="button"
         >
