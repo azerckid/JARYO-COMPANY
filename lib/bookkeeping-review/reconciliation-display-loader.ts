@@ -3,6 +3,8 @@ import {
   type ReconciliationLedgerDisplayModel,
 } from './reconciliation-display-model'
 import { RECONCILIATION_LEDGER_DISPLAY_FIXTURE } from './reconciliation-display-fixture'
+import { buildLiveReconciliationLedgerDisplayModel } from './reconciliation-live-display-model'
+import { loadBookkeepingReviewSummary } from './summary'
 
 export type ReconciliationDisplayLoadMode = 'fixture' | 'live'
 
@@ -11,17 +13,27 @@ export function loadReconciliationLedgerDisplayFixture(): ReconciliationLedgerDi
 }
 
 export function isReconciliationDisplayFixtureMode(display: string | undefined): boolean {
-  return display !== 'live'
+  return display === 'fixture'
 }
 
-export function loadReconciliationLedgerDisplayModel(input: {
+export async function loadReconciliationLedgerDisplayModel(input: {
   mode: ReconciliationDisplayLoadMode
-}): ReconciliationLedgerDisplayModel {
+  tenantId?: string
+  periodKey?: string
+}): Promise<ReconciliationLedgerDisplayModel> {
   if (input.mode === 'fixture') {
     return loadReconciliationLedgerDisplayFixture()
   }
 
-  throw new Error(
-    'ReconciliationLedgerDisplayModel live wiring is not implemented yet (Slice 2a-5).',
-  )
+  if (!input.tenantId) {
+    throw new Error('tenantId is required to load a live ReconciliationLedgerDisplayModel')
+  }
+
+  const summary = await loadBookkeepingReviewSummary({
+    tenantId: input.tenantId,
+    periodKey: input.periodKey,
+    tab: 'all',
+  })
+
+  return buildLiveReconciliationLedgerDisplayModel(summary)
 }
