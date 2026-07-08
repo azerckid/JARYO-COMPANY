@@ -26,16 +26,6 @@ export type OrphanTaxInvoiceDefinition = {
   recommendedAccount: string
 }
 
-const AI_MATCHED_EVIDENCE_JSON = JSON.stringify({
-  fieldsUsed: ['amount', 'date', 'counterparty', 'merchant_pattern'],
-  needsStaffDecision: false,
-})
-
-const AI_UNMATCHED_EVIDENCE_JSON = JSON.stringify({
-  fieldsUsed: ['amount', 'date', 'counterparty'],
-  needsStaffDecision: true,
-})
-
 /**
  * Clobe-style bank ledger samples for reconciliation demo.
  * 48/50 bank rows have a paired tax_invoice with the same date and amount (96% match rate).
