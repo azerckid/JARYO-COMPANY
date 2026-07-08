@@ -105,6 +105,20 @@ describe('buildLiveNextActions', () => {
     ]
     expect(buildLiveNextActions(rows)).toEqual([])
   })
+
+  it('surfaces excluded rows that still need a reason, matching closingChecklist.exclusionReasonRequiredCount', () => {
+    const rows = [
+      buildLiveReconciliationLedgerRow(buildRow({ id: 'excluded-small', sourceType: 'card', status: 'excluded', amountKrw: 5_000 }), { mode: 'month', label: 'label' }),
+      buildLiveReconciliationLedgerRow(buildRow({ id: 'excluded-large', sourceType: 'card', status: 'excluded', amountKrw: 500_000 }), { mode: 'month', label: 'label' }),
+    ]
+    const actions = buildLiveNextActions(rows)
+
+    expect(actions).toHaveLength(1)
+    expect(actions[0]!.priority).toBe('filing_blocker')
+    expect(actions[0]!.targetRowId).toBe('excluded-large')
+    expect(actions[0]!.label).toBe('제외 사유 필요 2건')
+    expect(actions[0]!.targetRoute).toBe('/dashboard/bookkeeping/reconciliation-ledger?source=exclusion_review')
+  })
 })
 
 describe('buildLiveBatchSuggestionGroups', () => {

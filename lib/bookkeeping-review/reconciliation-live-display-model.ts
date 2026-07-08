@@ -106,6 +106,20 @@ export function buildLiveNextActions(rows: ReconciliationLedgerRow[]): Reconcili
     })
   }
 
+  const exclusionReasonRequiredRows = sortByAmountDesc(
+    rows.filter((row) => row.evidenceActionState === 'excluded' && row.exclusionReason === null),
+  )
+  if (exclusionReasonRequiredRows.length > 0) {
+    actions.push({
+      id: 'live-exclusion-reason-required',
+      label: `제외 사유 필요 ${exclusionReasonRequiredRows.length}건`,
+      reason: '제외 사유가 없으면 Path 1 파일 생성이 차단됩니다',
+      priority: 'filing_blocker',
+      targetRowId: exclusionReasonRequiredRows[0]!.id,
+      targetRoute: `${NEXT_ACTION_ROUTE}?source=exclusion_review`,
+    })
+  }
+
   return actions
 }
 
