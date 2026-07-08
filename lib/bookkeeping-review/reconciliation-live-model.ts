@@ -124,7 +124,7 @@ export function buildLiveReconciliationLedgerRow(
     rowConclusion: buildLiveRowConclusion(row, evidenceActionState),
     blockers: row.reconciliation.blockers,
     actions: {
-      canConfirmAccount: true,
+      canConfirmAccount: evidenceActionState !== 'excluded',
       canExplain: false,
       canExclude: false,
       canConfirmMatch: false,
