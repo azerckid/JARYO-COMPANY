@@ -12,7 +12,7 @@ import {
 
 describe('reconciliation-row-actions', () => {
   it('computes remaining difference from row amount and candidate totals', () => {
-    const row = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-bank-musinsa')
+    const row = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-bank-028')
     expect(row).toBeDefined()
 
     expect(computeRemainingDifferenceKrw(row!.amountKrw, row!.candidates)).toBe(62_140)
@@ -25,11 +25,11 @@ describe('reconciliation-row-actions', () => {
     expect(computeRemainingDifferenceKrw(row!.amountKrw, row!.candidates)).toBe(112_000)
   })
 
-  it('shows AI 증빙 확인 for candidate rows with matches and still offers the evidence finder', () => {
-    const row = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-bank-litnex')
+  it('shows 증빙있음 for rows with found evidence and still offers the evidence finder', () => {
+    const row = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-bank-030')
     expect(row).toBeDefined()
     expect(hasAiEvidenceSuggestion(row!)).toBe(true)
-    expect(evidenceActionChipLabel(row!.evidenceActionState)?.label).toBe('AI 증빙 확인')
+    expect(evidenceActionChipLabel(row!.evidenceActionState)?.label).toBe('증빙있음')
     expect(shouldShowEvidenceFinder(row!)).toBe(true)
   })
 
@@ -49,8 +49,8 @@ describe('reconciliation-row-actions', () => {
   })
 
   it('resolves linked evidence from candidates or row fallback', () => {
-    const rentRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-bank-rent-linked')
-    const interestRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-bank-interest-income')
+    const rentRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-bank-025')
+    const interestRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-bank-034')
     expect(rentRow).toBeDefined()
     expect(interestRow).toBeDefined()
 
@@ -60,7 +60,7 @@ describe('reconciliation-row-actions', () => {
 
   it('lists browse rows for evidence finder by source', () => {
     const rows = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows
-    const selectedRowId = 'preview-bank-litnex'
+    const selectedRowId = 'preview-bank-030'
 
     const taxInvoiceRows = listEvidenceFinderBrowseRows(rows, 'tax_invoice', selectedRowId)
     expect(taxInvoiceRows.every((row) => row.source === 'tax_invoice')).toBe(true)
