@@ -31,6 +31,7 @@ import {
   ReconciliationAccountSelector,
   ReconciliationEvidenceCell,
   ReconciliationEvidencePickerModal,
+  ReconciliationExclusionModal,
   ReconciliationExplanationModal,
   ReconciliationLinkedEvidenceModal,
 } from './reconciliation-ledger-fixture-interactions'
@@ -106,6 +107,7 @@ export function ReconciliationLedgerDisplayFixtureView({
     return null
   })
   const [linkedEvidenceRowId, setLinkedEvidenceRowId] = useState<string | null>(null)
+  const [exclusionRowId, setExclusionRowId] = useState<string | null>(null)
 
   const evidencePickerRow = useMemo(
     () => (evidencePicker ? rows.find((row) => row.id === evidencePicker.rowId) ?? null : null),
@@ -118,6 +120,10 @@ export function ReconciliationLedgerDisplayFixtureView({
   const linkedEvidenceRow = useMemo(
     () => (linkedEvidenceRowId ? rows.find((row) => row.id === linkedEvidenceRowId) ?? null : null),
     [linkedEvidenceRowId, rows],
+  )
+  const exclusionRow = useMemo(
+    () => (exclusionRowId ? rows.find((row) => row.id === exclusionRowId) ?? null : null),
+    [exclusionRowId, rows],
   )
 
   const sourceCounts = buildReconciliationDisplaySourceCounts(rows)
@@ -170,7 +176,7 @@ export function ReconciliationLedgerDisplayFixtureView({
         </section>
 
         <div className="rounded-[10px] border border-[#bfdbfe] bg-[#eff6ff] px-3.5 py-3 text-[12.5px] text-[#1e40af]">
-          {isFixtureMode ? 'Fixture workbench: ' : ''}증빙 상태 셀에서 증빙 찾기(3종) 또는 소명 입력, 계정 셀에서 계정을 선택합니다. 저장·연결은 아직 준비 중입니다.
+          {isFixtureMode ? 'Fixture workbench: ' : ''}증빙 상태 셀에서 소명 입력·제외 처리, 계정 셀에서 계정을 확정합니다. 증빙 연결은 아직 준비 중입니다.
         </div>
 
         <NextActionQueue actions={displayModel.nextActions} isFixtureMode={isFixtureMode} />
@@ -220,7 +226,7 @@ export function ReconciliationLedgerDisplayFixtureView({
             />
             <DisplayTabChip
               active={activeFilter === 'exclusion_review'}
-              count={checklist.exclusionReasonRequiredCount}
+              count={countReconciliationDisplayRows(rows, (row) => row.evidenceActionState === 'excluded' || row.blockers.some((b) => b.code === 'exclude_reason_required'))}
               filter="exclusion_review"
               isFixtureMode={isFixtureMode}
               label="제외 검토"
@@ -288,6 +294,7 @@ export function ReconciliationLedgerDisplayFixtureView({
                 key={row.id}
                 isFixtureMode={isFixtureMode}
                 onOpenEvidencePicker={(source) => setEvidencePicker({ rowId: row.id, source })}
+                onOpenExclusion={() => setExclusionRowId(row.id)}
                 onOpenExplanation={() => setExplanationRowId(row.id)}
                 onViewLinkedEvidence={() => setLinkedEvidenceRowId(row.id)}
                 row={row}
@@ -334,6 +341,18 @@ export function ReconciliationLedgerDisplayFixtureView({
           }}
           open={linkedEvidenceRow !== null}
           row={linkedEvidenceRow}
+        />
+
+        <ReconciliationExclusionModal
+          key={exclusionRowId ?? 'closed'}
+          isFixtureMode={isFixtureMode}
+          onOpenChange={(open) => {
+            if (!open) {
+              setExclusionRowId(null)
+            }
+          }}
+          open={exclusionRow !== null}
+          row={exclusionRow}
         />
 
         <section className="grid gap-4 lg:grid-cols-2">
@@ -499,6 +518,7 @@ function BatchSuggestionBar({ groups }: { readonly groups: ReconciliationBatchSu
 function FixtureRow({
   isFixtureMode,
   onOpenEvidencePicker,
+  onOpenExclusion,
   onOpenExplanation,
   onViewLinkedEvidence,
   row,
@@ -506,6 +526,7 @@ function FixtureRow({
 }: {
   readonly isFixtureMode: boolean
   readonly onOpenEvidencePicker: (source: EvidenceFinderSource) => void
+  readonly onOpenExclusion: () => void
   readonly onOpenExplanation: () => void
   readonly onViewLinkedEvidence: () => void
   readonly row: ReconciliationLedgerRow
@@ -554,7 +575,7 @@ function FixtureRow({
           />
         </td>
         <td className="px-3 py-3">
-          <ReconciliationAccountSelector isFixtureMode={isFixtureMode} row={row} />
+          <ReconciliationAccountSelector isFixtureMode={isFixtureMode} onOpenExclusion={onOpenExclusion} row={row} />
         </td>
       </tr>
     )
@@ -594,7 +615,7 @@ function FixtureRow({
         />
       </td>
       <td className="px-3 py-3">
-        <ReconciliationAccountSelector isFixtureMode={isFixtureMode} row={row} />
+        <ReconciliationAccountSelector isFixtureMode={isFixtureMode} onOpenExclusion={onOpenExclusion} row={row} />
       </td>
       <td className="max-w-[200px] px-3 py-3 text-[12px] text-company-fg-muted">{row.rowConclusion.headline}</td>
     </tr>
