@@ -150,8 +150,13 @@ export function hasAiEvidenceSuggestion(row: ReconciliationLedgerRow): boolean {
   return row.candidates.length > 0 && row.evidenceActionState === 'candidate'
 }
 
-export function shouldShowEvidenceFinder(_row: ReconciliationLedgerRow): boolean {
-  return true
+export function shouldShowEvidenceFinder(row: ReconciliationLedgerRow): boolean {
+  if (row.rowConclusion.primaryAction === 'write_explanation') {
+    return false
+  }
+
+  return row.evidenceActionState !== 'explanation_required'
+    && row.evidenceActionState !== 'explained_no_evidence'
 }
 
 export function evidenceActionChipLabel(

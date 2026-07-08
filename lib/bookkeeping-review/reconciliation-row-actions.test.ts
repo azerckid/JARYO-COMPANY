@@ -48,6 +48,13 @@ describe('reconciliation-row-actions', () => {
     expect(shouldShowEvidenceFinder(linkedRow)).toBe(true)
   })
 
+  it('hides evidence finder for explanation rows', () => {
+    const explanationRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-card-saas')
+    expect(explanationRow).toBeDefined()
+    expect(evidenceActionChipLabel(explanationRow!.evidenceActionState)?.label).toBe('소명 필요')
+    expect(shouldShowEvidenceFinder(explanationRow!)).toBe(false)
+  })
+
   it('resolves linked evidence from candidates or row fallback', () => {
     const rentRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-bank-025')
     const interestRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-bank-034')
