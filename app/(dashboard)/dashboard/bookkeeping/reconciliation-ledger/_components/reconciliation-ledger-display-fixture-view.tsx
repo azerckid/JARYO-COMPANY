@@ -46,6 +46,14 @@ const panelClass = 'overflow-hidden rounded-xl border border-company-border bg-c
 const disabledActionNote = 'Slice 2b 전까지 저장·확정이 비활성화됩니다.'
 const disabledPeriodNote = 'Slice 2a-5에서 기간 전환 및 실데이터 조회가 연결됩니다.'
 
+function withFixtureModeParam(href: string, isFixtureMode: boolean): string {
+  if (!isFixtureMode) return href
+  const [path, query] = href.split('?')
+  const params = new URLSearchParams(query)
+  params.set('display', 'fixture')
+  return `${path}?${params.toString()}`
+}
+
 type Tone = 'ok' | 'warn' | 'danger' | 'muted'
 
 const sourceLabels: Record<ReconciliationSource, { label: string; short: string; className: string }> = {
@@ -165,7 +173,7 @@ export function ReconciliationLedgerDisplayFixtureView({
           {isFixtureMode ? 'Fixture workbench: ' : ''}증빙 상태 셀에서 증빙 찾기(3종) 또는 소명 입력, 계정 셀에서 계정을 선택합니다. 저장·연결은 아직 준비 중입니다.
         </div>
 
-        <NextActionQueue actions={displayModel.nextActions} />
+        <NextActionQueue actions={displayModel.nextActions} isFixtureMode={isFixtureMode} />
 
         {displayModel.batchSuggestionGroups.length > 0 ? (
           <BatchSuggestionBar groups={displayModel.batchSuggestionGroups} />
@@ -185,32 +193,36 @@ export function ReconciliationLedgerDisplayFixtureView({
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex flex-wrap gap-0.5 rounded-[9px] bg-[#f1f1f2] p-[3px]">
-            <DisplayTabChip active={activeFilter === 'all'} count={rows.length} filter="all" label="전체" />
-            <DisplayTabChip active={activeFilter === 'bank'} count={sourceCounts.bank} filter="bank" label="통장" />
-            <DisplayTabChip active={activeFilter === 'card'} count={sourceCounts.card} filter="card" label="카드" />
-            <DisplayTabChip active={activeFilter === 'tax_invoice'} count={sourceCounts.tax_invoice} filter="tax_invoice" label="세금계산서" />
+            <DisplayTabChip active={activeFilter === 'all'} count={rows.length} filter="all" isFixtureMode={isFixtureMode} label="전체" />
+            <DisplayTabChip active={activeFilter === 'bank'} count={sourceCounts.bank} filter="bank" isFixtureMode={isFixtureMode} label="통장" />
+            <DisplayTabChip active={activeFilter === 'card'} count={sourceCounts.card} filter="card" isFixtureMode={isFixtureMode} label="카드" />
+            <DisplayTabChip active={activeFilter === 'tax_invoice'} count={sourceCounts.tax_invoice} filter="tax_invoice" isFixtureMode={isFixtureMode} label="세금계산서" />
             <DisplayTabChip
               active={activeFilter === 'cash_receipt'}
               count={cashReceiptCount}
               filter="cash_receipt"
+              isFixtureMode={isFixtureMode}
               label="현금영수증"
             />
             <DisplayTabChip
               active={activeFilter === 'evidence_required'}
               count={checklist.evidenceRequiredCount}
               filter="evidence_required"
+              isFixtureMode={isFixtureMode}
               label="증빙 필요"
             />
             <DisplayTabChip
               active={activeFilter === 'explanation_required'}
               count={checklist.explanationRequiredCount}
               filter="explanation_required"
+              isFixtureMode={isFixtureMode}
               label="소명 필요"
             />
             <DisplayTabChip
               active={activeFilter === 'exclusion_review'}
               count={checklist.exclusionReasonRequiredCount}
               filter="exclusion_review"
+              isFixtureMode={isFixtureMode}
               label="제외 검토"
             />
           </div>
@@ -426,7 +438,13 @@ function PeriodScopeControl({
   )
 }
 
-function NextActionQueue({ actions }: { readonly actions: ReconciliationNextAction[] }) {
+function NextActionQueue({
+  actions,
+  isFixtureMode,
+}: {
+  readonly actions: ReconciliationNextAction[]
+  readonly isFixtureMode: boolean
+}) {
   return (
     <section className={cn(panelClass, 'p-4')}>
       <div className="flex items-center justify-between gap-3">
@@ -438,7 +456,10 @@ function NextActionQueue({ actions }: { readonly actions: ReconciliationNextActi
           <Link
             key={action.id}
             className="rounded-[10px] border border-company-border bg-[#fcfcfd] px-3 py-3 transition-colors hover:border-[#93c5fd] hover:bg-[#eff6ff]"
-            href={action.targetRoute.startsWith('/') ? action.targetRoute : reconciliationDisplayFilterHref('all')}
+            href={withFixtureModeParam(
+              action.targetRoute.startsWith('/') ? action.targetRoute : reconciliationDisplayFilterHref('all'),
+              isFixtureMode,
+            )}
           >
             <p className="text-[11px] font-semibold text-company-fg-subtle">
               {index + 1}순위 · {priorityLabel(action.priority)}
@@ -648,11 +669,13 @@ function DisplayTabChip({
   active = false,
   count,
   filter,
+  isFixtureMode,
   label,
 }: {
   readonly active?: boolean
   readonly count: number
   readonly filter: ReconciliationDisplayFilter
+  readonly isFixtureMode: boolean
   readonly label: string
 }) {
   return (
@@ -662,7 +685,7 @@ function DisplayTabChip({
         'rounded-[7px] px-3 py-1.5 text-[12.5px] font-semibold transition-colors hover:bg-company-surface hover:text-foreground',
         active ? 'bg-company-surface text-foreground shadow-company-card' : 'text-company-fg-muted',
       )}
-      href={reconciliationDisplayFilterHref(filter)}
+      href={withFixtureModeParam(reconciliationDisplayFilterHref(filter), isFixtureMode)}
     >
       {label} <span className="ml-1 text-[11px] text-company-fg-subtle">{count}</span>
     </Link>
