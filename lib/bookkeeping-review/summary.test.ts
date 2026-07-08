@@ -319,4 +319,20 @@ describe('bookkeeping review loader boundaries', () => {
     expect(source).toContain('desc(bookkeepingTransactionClassification.transactionDate)')
     expect(source).toContain('desc(bookkeepingTransactionClassification.createdAt)')
   })
+
+  it('does not filter excluded rows out of the main query, so 자료대조원장 can still show them (reconciliation ledger 2b-1)', () => {
+    // Excluding at the SQL level made excluded rows disappear entirely once
+    // a user saved status='excluded' — no way to see, audit, or undo it.
+    // The classification queue's own status !== 'excluded' filtering
+    // (buildBookkeepingReviewCounts, filterRowsByTab) already keeps the
+    // queue screen unaffected, so this ne(...) guard should only remain on
+    // the pending-count query, not the main row query.
+    const excludedFilterOccurrences = source.match(/ne\(bookkeepingTransactionClassification\.status, 'excluded'\)/g) ?? []
+    expect(excludedFilterOccurrences).toHaveLength(1)
+  })
+
+  it('still excludes excluded rows from queue counts and tab filters at the UI layer', () => {
+    expect(source).toContain("if (row.status === 'excluded') continue")
+    expect(source).toContain("rows.filter((row) => row.status !== 'excluded')")
+  })
 })

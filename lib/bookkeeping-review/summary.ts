@@ -459,7 +459,6 @@ export async function loadBookkeepingReviewSummary({
     .where(and(
       eq(bookkeepingTransactionClassification.tenantId, tenantId),
       inArray(bookkeepingTransactionClassification.classificationRunId, latestRunIds),
-      ne(bookkeepingTransactionClassification.status, 'excluded'),
     ))
     .orderBy(
       desc(bookkeepingTransactionClassification.transactionDate),

@@ -71,6 +71,13 @@ describe('reconciliation-row-actions', () => {
     expect(evidenceFinderActionLabel(evidenceRequiredRow!)).toBe('증빙 찾기')
   })
 
+  it('hides evidence finder for excluded rows (JC-010 2b-1 exclusion visibility)', () => {
+    const excludedRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-cash-personal')
+    expect(excludedRow).toBeDefined()
+    expect(evidenceActionChipLabel(excludedRow!.evidenceActionState)?.label).toBe('제외됨')
+    expect(shouldShowEvidenceFinder(excludedRow!)).toBe(false)
+  })
+
   it('uses danger row highlight only for evidence or explanation blockers', () => {
     const foundEvidenceRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === RECONCILIATION_BANK_FIXTURE_ROW_IDS.bankToTaxInvoice)
     const evidenceRequiredRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-tax-hardson')
