@@ -25,9 +25,13 @@ import {
   evidenceActionChipLabel,
   evidenceFinderActionLabel,
   evidenceFinderSourceOptions,
+  filterEvidenceFinderBrowseRows,
   formatKrwAmount,
   formatRemainingDifferenceLabel,
+  hasEvidenceFinderAiMatch,
   listEvidenceFinderBrowseRows,
+  matchCandidateReasonLabel,
+  resolveEvidenceFinderRowMatch,
   resolveLinkedEvidenceDisplay,
   shouldShowEvidenceFinder,
   type EvidenceFinderSource,
@@ -301,18 +305,37 @@ export function ReconciliationEvidencePickerModal({
   row,
   source,
 }: ReconciliationEvidencePickerModalProps) {
+  const [query, setQuery] = useState('')
+  const [dateFilter, setDateFilter] = useState('')
   const browseRows = useMemo(
     () => (row && source ? listEvidenceFinderBrowseRows(allRows, source, row.id) : []),
     [allRows, row, source],
+  )
+  const filteredBrowseRows = useMemo(
+    () => filterEvidenceFinderBrowseRows(browseRows, { query, date: dateFilter }),
+    [browseRows, query, dateFilter],
   )
   const remainingDifferenceKrw = useMemo(
     () => (row ? computeRemainingDifferenceKrw(row.amountKrw, row.candidates) : null),
     [row],
   )
   const sourceLabel = evidenceFinderSourceOptions.find((option) => option.source === source)?.label ?? '증빙'
+  const hasAiCandidates = useMemo(
+    () => (row ? hasEvidenceFinderAiMatch(row.candidates, browseRows) : false),
+    [browseRows, row],
+  )
 
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
+    <Dialog
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) {
+          setQuery('')
+          setDateFilter('')
+        }
+        onOpenChange(nextOpen)
+      }}
+      open={open}
+    >
       <DialogContent className="flex max-h-[min(88vh,760px)] w-full max-w-3xl flex-col gap-0 overflow-hidden border-company-border bg-company-surface p-0 sm:max-w-3xl">
         {row && source ? (
           <>
@@ -323,20 +346,29 @@ export function ReconciliationEvidencePickerModal({
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3 overflow-auto px-5 py-4">
+              {hasAiCandidates ? (
+                <p className="rounded-lg border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2 text-[12px] text-[#1d4ed8]">
+                  AI가 아래 목록에서 후보를 찾았습니다 — <span className="font-semibold">AI 추천</span> 배지가 붙은 행을 확인하세요.
+                </p>
+              ) : (
+                <p className="rounded-lg border border-company-border bg-company-nav-hover px-3 py-2 text-[12px] text-company-fg-muted">
+                  AI가 찾은 후보가 없습니다 — 목록에서 직접 찾아주세요.
+                </p>
+              )}
               <div className="flex flex-wrap gap-2">
                 <input
                   aria-label="증빙 검색"
-                  className="min-w-[180px] flex-1 cursor-not-allowed rounded-lg border border-company-border bg-company-nav-hover px-2.5 py-2 text-[12px] text-company-fg-subtle"
-                  disabled
+                  className="min-w-[180px] flex-1 rounded-lg border border-company-border bg-company-surface px-2.5 py-2 text-[12px] text-foreground outline-none focus:border-[#93c5fd]"
+                  onChange={(event) => setQuery(event.target.value)}
                   placeholder="거래처, 금액, 품목"
-                  title="Slice 2a-4에서 검색이 연결됩니다."
+                  value={query}
                 />
                 <input
                   aria-label="증빙 일자"
-                  className="w-[120px] cursor-not-allowed rounded-lg border border-company-border bg-company-nav-hover px-2.5 py-2 text-[12px] text-company-fg-subtle"
-                  disabled
-                  placeholder="일자"
-                  title="Slice 2a-4에서 필터가 연결됩니다."
+                  className="w-[120px] rounded-lg border border-company-border bg-company-surface px-2.5 py-2 text-[12px] text-foreground outline-none focus:border-[#93c5fd]"
+                  onChange={(event) => setDateFilter(event.target.value)}
+                  placeholder="일자 (YYYY-MM-DD)"
+                  value={dateFilter}
                 />
               </div>
               <div className="overflow-hidden rounded-[10px] border border-company-border">
@@ -351,31 +383,60 @@ export function ReconciliationEvidencePickerModal({
                     </tr>
                   </thead>
                   <tbody>
-                    {browseRows.length > 0 ? (
-                      browseRows.map((browseRow) => (
-                        <tr key={browseRow.id} className="border-b border-company-border last:border-b-0">
-                          <td className="px-3 py-2 font-mono text-company-fg-muted">
-                            {browseRow.transactionDate?.slice(5, 10) ?? '-'}
-                          </td>
-                          <td className="max-w-[120px] truncate px-3 py-2">{browseRow.counterparty ?? '-'}</td>
-                          <td className="max-w-[160px] truncate px-3 py-2">{browseRow.description}</td>
-                          <td className="px-3 py-2 text-right font-mono">{formatKrwAmount(browseRow.amountKrw)}</td>
-                          <td className="px-3 py-2">
-                            <button
-                              className="cursor-not-allowed rounded border border-company-border px-2 py-0.5 text-[11px] font-semibold text-company-fg-subtle"
-                              disabled
-                              title={disabledActionNote}
-                              type="button"
-                            >
-                              선택
-                            </button>
-                          </td>
-                        </tr>
-                      ))
+                    {filteredBrowseRows.length > 0 ? (
+                      filteredBrowseRows.map((browseRow) => {
+                        const matchedCandidate = row
+                          ? resolveEvidenceFinderRowMatch(row.candidates, browseRow.id)
+                          : null
+
+                        return (
+                          <tr
+                            key={browseRow.id}
+                            className={cn(
+                              'border-b border-company-border last:border-b-0',
+                              matchedCandidate ? 'bg-[#eff6ff]' : '',
+                            )}
+                          >
+                            <td className="px-3 py-2 font-mono text-company-fg-muted">
+                              {browseRow.transactionDate?.slice(5, 10) ?? '-'}
+                            </td>
+                            <td className="max-w-[120px] truncate px-3 py-2">
+                              <span className="inline-flex items-center gap-1.5">
+                                {matchedCandidate ? (
+                                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#bfdbfe] bg-[#dbeafe] px-1.5 py-0.5 text-[10px] font-semibold text-[#1d4ed8]">
+                                    <Sparkles className="size-2.5" />
+                                    AI 추천
+                                  </span>
+                                ) : null}
+                                <span className="truncate">{browseRow.counterparty ?? '-'}</span>
+                              </span>
+                            </td>
+                            <td className="max-w-[160px] truncate px-3 py-2">
+                              {browseRow.description}
+                              {matchedCandidate ? (
+                                <span className="mt-0.5 block text-[10.5px] font-medium text-[#1d4ed8]">
+                                  {matchCandidateReasonLabel(matchedCandidate.reason)}
+                                </span>
+                              ) : null}
+                            </td>
+                            <td className="px-3 py-2 text-right font-mono">{formatKrwAmount(browseRow.amountKrw)}</td>
+                            <td className="px-3 py-2">
+                              <button
+                                className="cursor-not-allowed rounded border border-company-border px-2 py-0.5 text-[11px] font-semibold text-company-fg-subtle"
+                                disabled
+                                title={disabledActionNote}
+                                type="button"
+                              >
+                                선택
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })
                     ) : (
                       <tr>
                         <td className="px-3 py-8 text-center text-company-fg-muted" colSpan={5}>
-                          해당 출처의 browse fixture가 없습니다.
+                          {browseRows.length > 0 ? '검색 조건에 맞는 항목이 없습니다.' : '해당 출처의 browse fixture가 없습니다.'}
                         </td>
                       </tr>
                     )}

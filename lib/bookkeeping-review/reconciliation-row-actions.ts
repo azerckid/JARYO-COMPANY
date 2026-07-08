@@ -79,6 +79,43 @@ export function listEvidenceFinderBrowseRows(
   )
 }
 
+export function filterEvidenceFinderBrowseRows(
+  rows: ReconciliationLedgerRow[],
+  filters: { query: string; date: string },
+): ReconciliationLedgerRow[] {
+  const query = filters.query.trim().toLowerCase().replace(/,/g, '')
+  const date = filters.date.trim()
+
+  return rows.filter((row) => {
+    if (date && !(row.transactionDate ?? '').includes(date)) {
+      return false
+    }
+    if (!query) {
+      return true
+    }
+    const haystack = [
+      row.counterparty ?? '',
+      row.description,
+      row.amountKrw !== null ? String(row.amountKrw) : '',
+    ].join(' ').toLowerCase()
+    return haystack.includes(query)
+  })
+}
+
+export function resolveEvidenceFinderRowMatch(
+  candidates: ReconciliationMatchCandidate[],
+  browseRowId: string,
+): ReconciliationMatchCandidate | null {
+  return candidates.find((candidate) => candidate.rowId === browseRowId) ?? null
+}
+
+export function hasEvidenceFinderAiMatch(
+  candidates: ReconciliationMatchCandidate[],
+  browseRows: ReconciliationLedgerRow[],
+): boolean {
+  return browseRows.some((browseRow) => resolveEvidenceFinderRowMatch(candidates, browseRow.id) !== null)
+}
+
 export function resolveLinkedEvidenceDisplay(row: ReconciliationLedgerRow): LinkedEvidenceDisplay[] {
   if (row.evidenceActionState !== 'linked') {
     return []
