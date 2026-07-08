@@ -3,6 +3,7 @@ import { RECONCILIATION_LEDGER_DISPLAY_FIXTURE } from './reconciliation-display-
 import {
   computeRemainingDifferenceKrw,
   evidenceActionChipLabel,
+  evidenceFinderActionLabel,
   hasAiEvidenceSuggestion,
   listEvidenceFinderBrowseRows,
   matchesEvidenceFinderSource,
@@ -31,6 +32,7 @@ describe('reconciliation-row-actions', () => {
     expect(hasAiEvidenceSuggestion(row!)).toBe(true)
     expect(evidenceActionChipLabel(row!.evidenceActionState)?.label).toBe('증빙있음')
     expect(shouldShowEvidenceFinder(row!)).toBe(true)
+    expect(evidenceFinderActionLabel(row!)).toBe('증빙 확인')
   })
 
   it('shows 증빙있음 for linked rows and still offers the evidence finder', () => {
@@ -46,6 +48,7 @@ describe('reconciliation-row-actions', () => {
     }
 
     expect(shouldShowEvidenceFinder(linkedRow)).toBe(true)
+    expect(evidenceFinderActionLabel(linkedRow)).toBe('증빙 확인')
   })
 
   it('hides evidence finder for explanation rows', () => {
@@ -53,6 +56,14 @@ describe('reconciliation-row-actions', () => {
     expect(explanationRow).toBeDefined()
     expect(evidenceActionChipLabel(explanationRow!.evidenceActionState)?.label).toBe('소명 필요')
     expect(shouldShowEvidenceFinder(explanationRow!)).toBe(false)
+  })
+
+  it('keeps 증빙 찾기 label for rows that still need evidence', () => {
+    const evidenceRequiredRow = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === 'preview-tax-hardson')
+    expect(evidenceRequiredRow).toBeDefined()
+    expect(evidenceActionChipLabel(evidenceRequiredRow!.evidenceActionState)?.label).toBe('증빙 필요')
+    expect(shouldShowEvidenceFinder(evidenceRequiredRow!)).toBe(true)
+    expect(evidenceFinderActionLabel(evidenceRequiredRow!)).toBe('증빙 찾기')
   })
 
   it('resolves linked evidence from candidates or row fallback', () => {

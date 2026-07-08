@@ -159,6 +159,14 @@ export function shouldShowEvidenceFinder(row: ReconciliationLedgerRow): boolean 
     && row.evidenceActionState !== 'explained_no_evidence'
 }
 
+export function evidenceFinderActionLabel(row: ReconciliationLedgerRow): '증빙 확인' | '증빙 찾기' {
+  if (row.evidenceActionState === 'candidate' || row.evidenceActionState === 'linked') {
+    return '증빙 확인'
+  }
+
+  return '증빙 찾기'
+}
+
 export function evidenceActionChipLabel(
   state: ReconciliationLedgerRow['evidenceActionState'],
 ): { label: string; tone: 'ok' | 'warn' | 'danger' | 'muted' } | null {

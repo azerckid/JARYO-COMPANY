@@ -23,6 +23,7 @@ import type { ReconciliationLedgerRow } from '@/lib/bookkeeping-review/reconcili
 import {
   computeRemainingDifferenceKrw,
   evidenceActionChipLabel,
+  evidenceFinderActionLabel,
   evidenceFinderSourceOptions,
   formatKrwAmount,
   formatRemainingDifferenceLabel,
@@ -95,15 +96,20 @@ export function ReconciliationEvidenceCell({
       ) : null}
 
       {showEvidenceFinder ? (
-        <EvidenceFinderDropdown onOpenEvidencePicker={onOpenEvidencePicker} />
+        <EvidenceFinderDropdown
+          label={evidenceFinderActionLabel(row)}
+          onOpenEvidencePicker={onOpenEvidencePicker}
+        />
       ) : null}
     </div>
   )
 }
 
 function EvidenceFinderDropdown({
+  label,
   onOpenEvidencePicker,
 }: {
+  readonly label: string
   readonly onOpenEvidencePicker: (source: EvidenceFinderSource) => void
 }) {
   return (
@@ -112,7 +118,7 @@ function EvidenceFinderDropdown({
         className="inline-flex h-auto w-fit items-center gap-1 rounded-md border border-company-border bg-company-surface px-2 py-1 text-[11.5px] font-semibold text-foreground hover:bg-company-nav-hover"
         onClick={(event) => event.stopPropagation()}
       >
-        증빙 찾기
+        {label}
         <ChevronDown className="size-3 text-company-fg-muted" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[140px]">
