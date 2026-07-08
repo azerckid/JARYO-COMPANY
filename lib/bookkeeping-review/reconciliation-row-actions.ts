@@ -150,20 +150,8 @@ export function hasAiEvidenceSuggestion(row: ReconciliationLedgerRow): boolean {
   return row.candidates.length > 0 && row.evidenceActionState === 'candidate'
 }
 
-export function shouldShowEvidenceFinder(row: ReconciliationLedgerRow): boolean {
-  if (row.rowConclusion.primaryAction === 'open_source_collection') {
-    return false
-  }
-
-  if (row.evidenceActionState === 'linked') {
-    return false
-  }
-
-  return (
-    row.evidenceActionState === 'evidence_required'
-    || hasAiEvidenceSuggestion(row)
-    || row.rowConclusion.primaryAction === 'connect_evidence'
-  )
+export function shouldShowEvidenceFinder(_row: ReconciliationLedgerRow): boolean {
+  return true
 }
 
 export function evidenceActionChipLabel(

@@ -33,7 +33,7 @@ describe('reconciliation-row-actions', () => {
     expect(shouldShowEvidenceFinder(row!)).toBe(true)
   })
 
-  it('shows 증빙있음 for linked rows and hides evidence finder', () => {
+  it('shows 증빙있음 for linked rows and still offers the evidence finder', () => {
     expect(evidenceActionChipLabel('linked')?.label).toBe('증빙있음')
 
     const linkedRow = {
@@ -45,7 +45,7 @@ describe('reconciliation-row-actions', () => {
       },
     }
 
-    expect(shouldShowEvidenceFinder(linkedRow)).toBe(false)
+    expect(shouldShowEvidenceFinder(linkedRow)).toBe(true)
   })
 
   it('resolves linked evidence from candidates or row fallback', () => {
