@@ -50,15 +50,15 @@ describe('mapLiveEvidenceActionState', () => {
     expect(mapLiveEvidenceActionState(row)).toBe('candidate')
   })
 
-  it('requires evidence for bank/tax_invoice/other sources with no candidates', () => {
+  it('requires evidence for bank/other sources with no candidates', () => {
     expect(mapLiveEvidenceActionState(buildRow({ sourceType: 'bank' }))).toBe('evidence_required')
-    expect(mapLiveEvidenceActionState(buildRow({ sourceType: 'tax_invoice' }))).toBe('evidence_required')
     expect(mapLiveEvidenceActionState(buildRow({ sourceType: 'other' }))).toBe('evidence_required')
   })
 
-  it('treats card/receipt sources with no candidates as self-sufficient evidence', () => {
+  it('treats card/receipt/tax_invoice sources with no candidates as self-sufficient evidence', () => {
     expect(mapLiveEvidenceActionState(buildRow({ sourceType: 'card' }))).toBe('linked')
     expect(mapLiveEvidenceActionState(buildRow({ sourceType: 'receipt' }))).toBe('linked')
+    expect(mapLiveEvidenceActionState(buildRow({ sourceType: 'tax_invoice' }))).toBe('linked')
   })
 })
 

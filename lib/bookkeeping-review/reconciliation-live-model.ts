@@ -1,8 +1,8 @@
 import type {
   BookkeepingReviewQueueRow,
-  BookkeepingSourceType,
   ReconciliationMatchCandidate as LiveMatchCandidate,
 } from './summary'
+import { isEvidenceSource } from './summary'
 import { matchCandidateReasonLabel } from './reconciliation-row-actions'
 import type {
   ReconciliationEvidenceActionState,
@@ -15,10 +15,6 @@ import type {
 
 const disabledActionNote = 'Slice 2b 전까지 저장·확정이 비활성화됩니다.'
 
-function requiresEvidenceMatch(sourceType: BookkeepingSourceType): boolean {
-  return sourceType === 'bank' || sourceType === 'tax_invoice' || sourceType === 'other'
-}
-
 export function mapLiveEvidenceActionState(row: BookkeepingReviewQueueRow): ReconciliationEvidenceActionState {
   if (row.status === 'excluded') {
     return 'excluded'
@@ -28,7 +24,10 @@ export function mapLiveEvidenceActionState(row: BookkeepingReviewQueueRow): Reco
     return 'candidate'
   }
 
-  if (requiresEvidenceMatch(row.sourceType)) {
+  // card/receipt/tax_invoice rows are themselves evidence documents (see
+  // isEvidenceSource in summary.ts) — a missing bank-side match means the
+  // payment/settlement isn't confirmed yet, not that evidence is missing.
+  if (!isEvidenceSource(row.sourceType)) {
     return 'evidence_required'
   }
 
