@@ -156,7 +156,10 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [x] 자료대조원장 Phase 2 행동 계약 작성 — [Reconciliation Ledger Phase 2 Brief](../03_Technical_Specs/41_RECONCILIATION_LEDGER_V2_PRE_CODE_BRIEF.md)
   - [x] 자료대조원장 Phase 2 implementation order 고정 — [Brief §2.1](../03_Technical_Specs/41_RECONCILIATION_LEDGER_V2_PRE_CODE_BRIEF.md) traceability across Prototype Review, §0.2, §8, §9, JC-010 AC
   - [x] 자료대조원장 UI-first lite 순서 고정 — display contract + fixture를 실제 read model wiring보다 먼저 둠
-  - [ ] 자료대조원장 Slice 2a-0 display contract + fixture 착수 — Brief §2.1 step 2a-0 (ReconciliationLedgerDisplayModel, Preview 12 fixture, disabled actions)
+  - [x] 자료대조원장 Slice 2a-0 display contract + fixture 착수 — Brief §2.1 step 2a-0, landed on main (`01971b1`)
+  - [x] 자료대조원장 Slice 2a-2 UI shell 착수 — Brief §2.1 step 2a-2, landed on main (`169ade8`)
+  - [x] 자료대조원장 Slice 2a-3 table-cell 증빙/계정 액션 착수 — Brief §2.1 step 2a-3, PR #150·#152·#156·#157·#158 merged
+  - [ ] 자료대조원장 Slice 2a-4 evidence finder browse + AI display shell 착수 — Brief §2.1 step 2a-4 (다음 작업)
   - [ ] 자료대조원장 Slice 2a-5 full read model wiring 착수 — Brief §2.1 step 2a-5 (기간, action-state, 매칭, blocker, nextActions, taxBlockerSummaries, closingChecklist)
   - [x] 자료대조원장 반복 패턴 추천 계약 검토 — 전월/최근 확정 이력 기반 추천, 확정 row 정의, AI 추천과 패턴 추천 관계, 자동 확정 금지
   - [x] 자료대조원장 AI escalation/fallback 계약 검토 — 규칙→패턴→단일 AI→multi-provider consensus→수동 검토, LLM 실패·타임아웃 시 화면 비차단
