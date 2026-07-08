@@ -198,7 +198,7 @@ export function mapClassificationRow(row: ClassificationRowInput): BookkeepingRe
   }
 }
 
-function isEvidenceSource(sourceType: BookkeepingSourceType) {
+export function isEvidenceSource(sourceType: BookkeepingSourceType) {
   return EVIDENCE_SOURCE_TYPES.has(sourceType)
 }
 
@@ -263,7 +263,7 @@ export function buildReconciliationInfo(row: BookkeepingReviewQueueRow, allRows:
   if (row.requiresManualAccount) {
     blockers.push({ code: 'explanation_required', label: '사용내역 소명 필요' })
   }
-  if ((row.sourceType === 'bank' || row.sourceType === 'tax_invoice' || row.sourceType === 'other') && candidates.length === 0) {
+  if (!isEvidenceSource(row.sourceType) && candidates.length === 0) {
     blockers.push({ code: 'missing_evidence', label: '연결 증빙 필요' })
   }
   if (candidates.length > 1) {

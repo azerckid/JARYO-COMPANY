@@ -148,6 +148,19 @@ describe('attachReconciliationInfo', () => {
     expect(bank.reconciliation.matchState).toBe('missing_evidence')
     expect(bank.reconciliation.blockers.some((blocker) => blocker.code === 'missing_evidence')).toBe(true)
   })
+
+  it('does not flag a standalone tax invoice/card/receipt row as missing evidence, since the row is itself the evidence', () => {
+    const [invoice, card, receipt] = attachReconciliationInfo([
+      row({ id: 'invoice', sourceType: 'tax_invoice', amountKrw: 77000, transactionDate: '2026-06-10', status: 'confirmed' }),
+      row({ id: 'card', sourceType: 'card', amountKrw: 88000, transactionDate: '2026-06-10', status: 'confirmed' }),
+      row({ id: 'receipt', sourceType: 'receipt', amountKrw: 99000, transactionDate: '2026-06-10', status: 'confirmed' }),
+    ])
+
+    for (const evidenceRow of [invoice, card, receipt]) {
+      expect(evidenceRow.reconciliation.blockers.some((blocker) => blocker.code === 'missing_evidence')).toBe(false)
+      expect(evidenceRow.reconciliation.matchState).not.toBe('missing_evidence')
+    }
+  })
 })
 
 describe('mapClassificationRow', () => {
