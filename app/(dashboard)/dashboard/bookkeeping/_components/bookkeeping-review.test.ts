@@ -66,6 +66,8 @@ describe('bookkeeping review UI boundaries (JC-010)', () => {
     expect(reconciliationViewSource).toContain('PeriodScopeControl')
     expect(reconciliationViewSource).not.toContain('Path 1 데이터 준비 관문')
     expect(reconciliationViewSource).toContain('filter="bank"')
+    expect(reconciliationViewSource).toContain('결제상태')
+    expect(reconciliationViewSource).toContain('CardRowActionCell')
     expect(reconciliationPageSource).toContain('normalizeReconciliationDisplayFilter(source)')
   })
 

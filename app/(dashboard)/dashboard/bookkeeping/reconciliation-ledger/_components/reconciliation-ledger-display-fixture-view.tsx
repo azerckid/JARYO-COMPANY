@@ -130,7 +130,8 @@ export function ReconciliationLedgerDisplayFixtureView({
   const periodMode = rows[0]?.periodMode ?? 'quarter'
   const checklist = displayModel.closingChecklist
   const taxInvoiceLayout = usesTaxInvoiceLedgerLayout(activeFilter)
-  const tableVariant = resolveReconciliationLedgerTableVariant({ taxInvoiceLayout, surface: 'fixture' })
+  const cardLayout = activeFilter === 'card'
+  const tableVariant = resolveReconciliationLedgerTableVariant({ cardLayout, taxInvoiceLayout, surface: 'fixture' })
   const tableColumnCount = reconciliationLedgerColumnCount(tableVariant)
   return (
     <div className="flex min-h-full flex-col bg-company-bg">
@@ -214,6 +215,17 @@ export function ReconciliationLedgerDisplayFixtureView({
                   <th className="px-3 py-3">증빙 상태</th>
                   <th className="px-3 py-3">계정항목</th>
                 </>
+              ) : cardLayout ? (
+                <>
+                  <th className="px-3 py-3">거래일</th>
+                  <th className="px-3 py-3">카드</th>
+                  <th className="px-3 py-3">가맹점</th>
+                  <th className="px-3 py-3 text-right">금액</th>
+                  <th className="px-3 py-3 text-right">부가세</th>
+                  <th className="px-3 py-3">결제상태</th>
+                  <th className="px-3 py-3">계정항목</th>
+                  <th className="px-3 py-3">처리</th>
+                </>
               ) : (
                 <>
                   <th className="px-3 py-3">거래일</th>
@@ -233,6 +245,7 @@ export function ReconciliationLedgerDisplayFixtureView({
             filteredRows.map((row) => (
               <FixtureRow
                 key={row.id}
+                cardLayout={cardLayout}
                 isFixtureMode={isFixtureMode}
                 onOpenEvidencePicker={(source) => setEvidencePicker({ rowId: row.id, source })}
                 onOpenExclusion={() => setExclusionRowId(row.id)}
@@ -401,6 +414,7 @@ function PeriodScopeControl({
 }
 
 function FixtureRow({
+  cardLayout,
   isFixtureMode,
   onOpenEvidencePicker,
   onOpenExclusion,
@@ -409,6 +423,7 @@ function FixtureRow({
   row,
   taxInvoiceLayout,
 }: {
+  readonly cardLayout: boolean
   readonly isFixtureMode: boolean
   readonly onOpenEvidencePicker: (source: EvidenceFinderSource) => void
   readonly onOpenExclusion: () => void
@@ -424,6 +439,42 @@ function FixtureRow({
     taxAmountKrw: row.taxAmountKrw,
     direction: row.direction,
   })
+
+  if (cardLayout) {
+    return (
+      <tr
+        className={cn(
+          'border-b border-company-border last:border-b-0 hover:bg-[#fafafa]',
+          tone === 'danger' ? 'bg-[#fff7f7]' : '',
+        )}
+      >
+        <td className="px-3 py-3 font-mono text-company-fg-muted">{formatDate(row.transactionDate)}</td>
+        <td className="px-3 py-3">
+          <span className="inline-flex items-center gap-2 font-semibold text-foreground">
+            <span className="grid size-[22px] place-items-center rounded-md bg-[#1d4ed8] text-[11px] font-bold text-white">카</span>
+            카드 승인
+          </span>
+        </td>
+        <td className="overflow-hidden px-3 py-3">
+          <LedgerCellText className="font-semibold text-foreground" fallback="가맹점 미정" value={row.counterparty} />
+          <div className="mt-0.5 text-[11.5px] text-company-fg-subtle">{directionLabel(row.direction)}</div>
+        </td>
+        <td className="px-3 py-3 text-right font-mono font-semibold text-foreground">{formatKrw(row.amountKrw)}</td>
+        <td className="px-3 py-3 text-right font-mono text-company-fg-muted">{formatKrw(row.taxAmountKrw)}</td>
+        <td className="px-3 py-3">
+          <StatusChip tone={row.evidenceActionState === 'excluded' ? 'muted' : 'ok'}>
+            {row.evidenceActionState === 'excluded' ? '제외됨' : '승인'}
+          </StatusChip>
+        </td>
+        <td className="px-3 py-3">
+          <ReconciliationAccountSelector isFixtureMode={isFixtureMode} onOpenExclusion={onOpenExclusion} row={row} />
+        </td>
+        <td className="px-3 py-3">
+          <CardRowActionCell onOpenExplanation={onOpenExplanation} row={row} />
+        </td>
+      </tr>
+    )
+  }
 
   if (taxInvoiceLayout) {
     return (
@@ -505,6 +556,36 @@ function FixtureRow({
       <td className="max-w-[200px] px-3 py-3 text-[12px] text-company-fg-muted">{row.rowConclusion.headline}</td>
     </tr>
   )
+}
+
+function CardRowActionCell({
+  onOpenExplanation,
+  row,
+}: {
+  readonly onOpenExplanation: () => void
+  readonly row: ReconciliationLedgerRow
+}) {
+  if (row.evidenceActionState === 'explanation_required') {
+    return (
+      <button
+        className="rounded-md border border-[#fecaca] bg-[#fef2f2] px-2 py-1 text-[11.5px] font-semibold text-[#dc2626] hover:bg-[#fee2e2]"
+        onClick={onOpenExplanation}
+        type="button"
+      >
+        소명 입력
+      </button>
+    )
+  }
+
+  if (row.evidenceActionState === 'excluded') {
+    return <StatusChip tone="muted">제외됨</StatusChip>
+  }
+
+  if (row.finalAccount) {
+    return <StatusChip tone="ok">계정 확정</StatusChip>
+  }
+
+  return <StatusChip tone="warn">계정 확인</StatusChip>
 }
 
 function ClosingChecklistPanel({
