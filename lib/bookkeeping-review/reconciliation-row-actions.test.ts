@@ -11,6 +11,8 @@ import {
   formatExclusionReasonMemo,
   hasAiEvidenceSuggestion,
   hasEvidenceFinderAiMatch,
+  isFoundEvidenceReference,
+  isSavedEvidenceReference,
   listEvidenceFinderBrowseRows,
   matchesEvidenceFinderSource,
   resolveEvidenceFinderRowMatch,
@@ -216,6 +218,23 @@ describe('reconciliation-row-actions', () => {
     const taxInvoiceBrowseRows = listEvidenceFinderBrowseRows(rows, 'tax_invoice', row!.id)
 
     expect(hasEvidenceFinderAiMatch([manualReferenceCandidate], taxInvoiceBrowseRows)).toBe(false)
+  })
+
+  it('treats only manual_reference as an already saved evidence connection', () => {
+    const row = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === RECONCILIATION_BANK_FIXTURE_ROW_IDS.bankToTaxInvoice)
+    expect(row).toBeDefined()
+    expect(row!.candidates[0]).toBeDefined()
+
+    const foundByAiOrRule = row!.candidates[0]!
+    const savedReference = {
+      ...foundByAiOrRule,
+      reason: 'manual_reference' as const,
+    }
+
+    expect(isSavedEvidenceReference(foundByAiOrRule)).toBe(false)
+    expect(isFoundEvidenceReference(foundByAiOrRule)).toBe(true)
+    expect(isSavedEvidenceReference(savedReference)).toBe(true)
+    expect(isFoundEvidenceReference(savedReference)).toBe(false)
   })
 })
 

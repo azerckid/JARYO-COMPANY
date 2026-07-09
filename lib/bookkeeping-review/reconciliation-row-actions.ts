@@ -119,13 +119,21 @@ export function resolveEvidenceFinderRowMatch(
   return candidates.find((candidate) => candidate.rowId === browseRowId) ?? null
 }
 
+export function isSavedEvidenceReference(candidate: ReconciliationMatchCandidate | null): boolean {
+  return candidate?.reason === 'manual_reference'
+}
+
+export function isFoundEvidenceReference(candidate: ReconciliationMatchCandidate | null): boolean {
+  return candidate !== null && !isSavedEvidenceReference(candidate)
+}
+
 export function hasEvidenceFinderAiMatch(
   candidates: ReconciliationMatchCandidate[],
   browseRows: ReconciliationLedgerRow[],
 ): boolean {
   return browseRows.some((browseRow) => {
     const candidate = resolveEvidenceFinderRowMatch(candidates, browseRow.id)
-    return candidate !== null && candidate.reason !== 'manual_reference'
+    return isFoundEvidenceReference(candidate)
   })
 }
 

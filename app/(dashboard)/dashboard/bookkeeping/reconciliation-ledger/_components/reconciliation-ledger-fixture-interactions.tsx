@@ -35,6 +35,8 @@ import {
   formatKrwAmount,
   formatRemainingDifferenceLabel,
   hasEvidenceFinderAiMatch,
+  isFoundEvidenceReference,
+  isSavedEvidenceReference,
   listEvidenceFinderBrowseRows,
   matchCandidateReasonLabel,
   resolveEvidenceFinderRowMatch,
@@ -406,6 +408,13 @@ export function ReconciliationEvidencePickerModal({
     () => (row ? hasEvidenceFinderAiMatch(row.candidates, browseRows) : false),
     [browseRows, row],
   )
+  const highlightedCandidate = useMemo(
+    () => (row && highlightedEvidenceRowId
+      ? resolveEvidenceFinderRowMatch(row.candidates, highlightedEvidenceRowId)
+      : null),
+    [highlightedEvidenceRowId, row],
+  )
+  const highlightedIsSavedReference = isSavedEvidenceReference(highlightedCandidate)
 
   function connectEvidence(evidenceRowId: string) {
     if (!row) return
@@ -456,11 +465,13 @@ export function ReconciliationEvidencePickerModal({
             <div className="space-y-3 overflow-auto px-5 py-4">
               {highlightedEvidenceRowId ? (
                 <p className="rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-3 py-2 text-[12px] text-[#16a34a]">
-                  현재 연결된 증빙 행을 아래 목록에서 강조했습니다.
+                  {highlightedIsSavedReference
+                    ? '현재 연결된 증빙 행을 아래 목록에서 강조했습니다.'
+                    : '찾은 증빙 행을 아래 목록에서 강조했습니다.'}
                 </p>
               ) : hasAiCandidates ? (
                 <p className="rounded-lg border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2 text-[12px] text-[#1d4ed8]">
-                  AI가 아래 목록에서 후보를 찾았습니다 — <span className="font-semibold">AI 추천</span> 배지가 붙은 행을 확인하세요.
+                  AI가 아래 목록에서 증빙을 찾았습니다 — <span className="font-semibold">찾은 증빙</span> 배지가 붙은 행을 확인하세요.
                 </p>
               ) : (
                 <p className="rounded-lg border border-company-border bg-company-nav-hover px-3 py-2 text-[12px] text-company-fg-muted">
@@ -500,8 +511,9 @@ export function ReconciliationEvidencePickerModal({
                         const matchedCandidate = row
                           ? resolveEvidenceFinderRowMatch(row.candidates, browseRow.id)
                           : null
-                        const isConnectedEvidence = highlightedEvidenceRowId === browseRow.id
-                        const showAiBadge = matchedCandidate !== null && matchedCandidate.reason !== 'manual_reference'
+                        const isHighlightedEvidence = highlightedEvidenceRowId === browseRow.id
+                        const isConnectedEvidence = isHighlightedEvidence && isSavedEvidenceReference(matchedCandidate)
+                        const isFoundEvidence = isFoundEvidenceReference(matchedCandidate)
 
                         return (
                           <tr
@@ -509,7 +521,7 @@ export function ReconciliationEvidencePickerModal({
                             className={cn(
                               'border-b border-company-border last:border-b-0',
                               isConnectedEvidence ? 'bg-[#f0fdf4] ring-1 ring-inset ring-[#86efac]' : '',
-                              !isConnectedEvidence && matchedCandidate ? 'bg-[#eff6ff]' : '',
+                              !isConnectedEvidence && (isHighlightedEvidence || isFoundEvidence) ? 'bg-[#eff6ff]' : '',
                             )}
                           >
                             <td className="px-3 py-2 font-mono text-company-fg-muted">
@@ -522,10 +534,10 @@ export function ReconciliationEvidencePickerModal({
                                     연결됨
                                   </span>
                                 ) : null}
-                                {showAiBadge ? (
+                                {isFoundEvidence ? (
                                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#bfdbfe] bg-[#dbeafe] px-1.5 py-0.5 text-[10px] font-semibold text-[#1d4ed8]">
                                     <Sparkles className="size-2.5" />
-                                    AI 추천
+                                    찾은 증빙
                                   </span>
                                 ) : null}
                                 <span className="truncate">{browseRow.counterparty ?? '-'}</span>
