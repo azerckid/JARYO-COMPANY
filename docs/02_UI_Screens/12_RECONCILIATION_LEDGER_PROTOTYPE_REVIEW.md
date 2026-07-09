@@ -32,6 +32,7 @@ The adopted direction is **ledger table + cell actions + focused modals**. The C
 - The one-line conclusion column shows the recommended decision and basis before any modal opens.
 - Previous-period pattern recommendation means the UI can say why it suggests an account/evidence/exclusion, for example last month or recent months had the same counterparty, amount pattern, evidence source, or exclusion decision.
 - Candidate counts are not a user-facing answer. The row cell or modal must show either AI-found evidence rows or a manual **증빙 찾기** path, and let the user connect, reject, search manually, unlink, or replace.
+- For rows already marked **증빙있음**, **증빙 확인** must show the connected evidence summary before the source selector. If the user clicks that connected evidence summary, the relevant source list opens and the connected row is visually distinguished with a selected background, border, or marker. The source selector remains available only for review/replace/search, not as the first answer.
 - On mobile/narrow screens, row-level modals may become full-screen dialogs, but the interaction contract stays the same.
 - Convenience should come from prioritization, not more modes: next-action queue first, tabs second.
 - The row shows a one-line conclusion before detailed evidence and AI/pattern rationale opens in a modal.
@@ -45,8 +46,9 @@ The adopted direction is **ledger table + cell actions + focused modals**. The C
 The current app screen is still an initial slice. It should not be treated as the completed 자료대조원장 until these workbench functions exist:
 
 - bank deposit/withdrawal to tax-invoice matching,
-- card payment to evidence connection,
+- bank-row evidence connection to tax invoice, cash receipt, or card rows; card rows themselves focus on account/explanation/exclusion by default,
 - evidence finder with 세금계산서/현금영수증/체크카드 selection,
+- connected evidence review that opens the source list and highlights the linked row,
 - explanation and bank usage-description memo,
 - visible AI account recommendation confidence and user account selection,
 - personal/private or low-business-use expense detection,
