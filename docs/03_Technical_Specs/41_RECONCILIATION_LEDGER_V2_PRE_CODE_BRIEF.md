@@ -1,6 +1,6 @@
 # Reconciliation Ledger Phase 2 Pre-Code Technical Brief
 > Created: 2026-07-08 02:01 KST
-> Last Updated: 2026-07-08 07:45 KST
+> Last Updated: 2026-07-09 19:31 KST
 
 ## 0. Purpose
 
@@ -37,10 +37,10 @@ The earlier side-panel idea from planning is no longer the default Phase 2 UX. I
 
 The row-level interaction must include:
 
-1. Evidence-status cell: `증빙있음` means concrete evidence rows exist; `증빙 확인` opens the evidence review/read flow for found evidence; `증빙 찾기` is used only when the user must search manually; `소명 입력` opens an explanation modal.
+1. Evidence-status cell: `증빙있음` means concrete evidence rows exist; `증빙 확인` opens the evidence review/read flow for found evidence; `증빙 찾기` is used only when the user must search manually; `소명 입력` opens an explanation modal. When a row already has a connected evidence row, the `증빙 확인` surface must show that connected evidence summary first. Clicking that summary opens the matching source list (세금계산서, 현금영수증, or 체크카드/카드) with the connected evidence row visibly highlighted.
 2. Account cell: searchable account selector with recommended/pattern basis shown inline.
 3. One-line conclusion column: recommended account/evidence/exclusion decision and its basis, visible before any modal is opened.
-4. Evidence finder modal: source selector for 세금계산서, 현금영수증, 체크카드/카드, plus search/date/amount controls, concrete evidence rows, selected total, remaining difference, and disabled save until Slice 2b.
+4. Evidence finder/review modal: source selector for 세금계산서, 현금영수증, 체크카드/카드, plus search/date/amount controls, concrete evidence rows, selected total, remaining difference, and save controls by slice. In review mode, already-connected evidence appears above the source selector; selecting it scrolls/filters to the relevant source list and highlights the linked row.
 5. Explanation/exclusion modal: business-use memo, personal/private, business-unrelated, duplicate, wrong-period, internal-transfer, or other exclusion reasons.
 6. Save state: confirmed only when evidence, account, counterparty, explanation/exclusion, and period relevance are resolved as needed.
 
@@ -53,10 +53,10 @@ The current implementation is only the first read-only step. The following funct
 | Required function | Meaning | Current status | Implementation direction |
 |:---|:---|:---|:---|
 | Bank deposit/withdrawal ↔ tax invoice matching | Match bank movements with issued/received tax invoices by amount, date, and counterparty | Missing/partial | Auto-suggest concrete matches; allow user confirm/unlink/manual search |
-| Card payment ↔ evidence connection | Connect card approvals to tax invoices, cash receipts, or other proof | Missing/partial | Evidence finder source tabs and row-level connect actions |
+| Bank movement ↔ evidence connection | Connect bank deposits/withdrawals to tax invoices, cash receipts, or card rows when those rows explain the bank movement | Missing/partial | Evidence finder source tabs and row-level connect actions. Card rows are evidence candidates for bank movements, not evidence-search starting points by default; card rows focus on account, explanation, and exclusion. |
 | Period scope selector | Let the user review the ledger by filing-relevant period unit: month, quarter, half-year, year, or custom range | Missing/partial | Default from the current filing context, but allow user switch without changing filing data |
 | Evidence action status taxonomy | Replace final-looking "증빙없음" labels with action states such as 증빙 필요, 소명 필요, 소명 완료, 증빙 예외, 제외됨 | Missing/partial | Treat missing evidence as a blocker cause, not a completed row state |
-| Evidence finder | From a bank/card row, choose 세금계산서/현금영수증/체크카드 and select evidence rows | Missing | Evidence-status cell opens source selector and evidence browse modal with search, date/amount filters, add/select, remaining difference |
+| Evidence finder | From a bank row, choose 세금계산서/현금영수증/체크카드 and select evidence rows | Missing | Evidence-status cell opens source selector and evidence browse modal with search, date/amount filters, add/select, remaining difference. Card rows themselves focus on account/explanation/exclusion and must not require another evidence-search step by default. |
 | Explanation memo | Let user explain unclear business use for a transaction | Missing | Row-level modal/panel field saved as memo in v1 |
 | Bank usage-description memo | Let user write what a bank movement was for when evidence is weak or context is unclear | Missing | Same row-level explanation modal; make it visible in audit/readiness |
 | Previous-period pattern recommendation | Learn from prior confirmed rows such as same counterparty, memo, amount range, evidence type, account, or exclusion decision | Missing | Show the prior-period basis and let the user accept, change, or reject; never auto-confirm |
@@ -72,7 +72,7 @@ Until these are implemented, the screen must be described as an initial read-onl
 
 Candidate counts are internal matching details, not user-facing status. The row cell or modal must expose the actual evidence rows and actions: concrete evidence exists, or the user must find evidence manually.
 
-- Clear match: show the concrete evidence row and actions to confirm, unlink, or replace. In Slice 2a-3 fixture UI, rows with concrete evidence show a **증빙있음** chip in the evidence-status column; clicking it opens a read-only modal with the evidence summary (source, counterparty, amount, date, match basis). Unlink/replace actions remain disabled until Slice 2b-2.
+- Clear match: show the concrete evidence row and actions to confirm, unlink, or replace. In Slice 2a-3 fixture UI, rows with concrete evidence show a **증빙있음** chip in the evidence-status column; clicking it opens a read-only modal with the evidence summary (source, counterparty, amount, date, match basis). After Slice 2b-2a persists a link, `증빙 확인` must not open only the source selector; it must first show the currently connected evidence summary, and clicking that summary must open the relevant source list with the linked row highlighted. Unlink/replace actions remain separate 2b-2 follow-ups unless explicitly implemented.
 - Ambiguous match: show concrete suggested evidence rows and actions such as "이 증빙 연결", "아님", and "직접 찾기".
 - No match: show "증빙 찾기" as the primary action.
 
@@ -169,9 +169,11 @@ Traceability legend:
 | 2a-2 | 2a-lite | UI shell and honest labels | U:1-4; P: hero, source summary, ledger table columns; §0.4 next-action queue, tax blocker reasons, closing checklist | Readiness hero, source summary, next-action queue, period scope control, action tabs, table chips, tax blocker reasons, and closing checklist render from the display model; inactive controls stay disabled until their step lands |
 | 2a-3 | 2a-lite | Table-cell evidence/account actions (display only) | U:6-7; §0.1; §0.3; P: evidence status cell, account popover, one-line conclusion column; §0.4 one-line panel conclusion | Fixture table uses full-width columns (거래일, 출처, 거래처, 적요, 금액, 증빙 상태, 계정항목, 한 줄 결론). **증빙 상태** cell shows **증빙있음** status with **증빙 확인** action for concrete evidence, **증빙 찾기** dropdown only when manual search is needed (세금계산서/현금영수증/체크카드 → browse modal), or **소명 입력** button. Account cell opens grouped search popover with AI recommendation hint. Save/connect/confirm controls stay disabled until 2b. |
 | 2a-4 | 2a-lite | Evidence finder browse + AI display shell | G: evidence finder, AI account recommendation, private/business-unrelated detection; §5.3; A: AI non-blocking, 증빙 확인/찾기 flow; §0.4 source-collection back link | Finder opens from the evidence-status cell in read/browse mode with source selector and filters from fixture/display data; AI/heuristic recommendation areas show reasons or manual-review fallback; missing-source problems show a 자료수집 backlink; save/connect buttons remain disabled until 2b-2 |
-| 2a-5 | 2a | Full read model wiring | G: bank↔tax-invoice matching, card↔evidence, period scope, evidence action status; §5.1; A: period switch, action-state labels, matching candidates | Existing bookkeeping/source summaries populate the same `ReconciliationLedgerDisplayModel`; fixture can be swapped for real data without changing UI props; rows derive action states instead of showing final-looking "증빙없음"; query contract uses `evidence_required` and `explanation_required` instead of legacy `missing_evidence` tab only |
+| 2a-5 | 2a | Full read model wiring | G: bank↔evidence matching (세금계산서/현금영수증/카드 as evidence rows), period scope, evidence action status; §5.1; A: period switch, action-state labels, matching candidates | Existing bookkeeping/source summaries populate the same `ReconciliationLedgerDisplayModel`; fixture can be swapped for real data without changing UI props; rows derive action states instead of showing final-looking "증빙없음"; query contract uses `evidence_required` and `explanation_required` instead of legacy `missing_evidence` tab only |
 | 2b-1 | 2b | Account, explanation, exclusion mutations | G: explanation memo, bank usage-description memo, exclusion reason, inline account edit, user account selection; P: memo, exclusion, inline account; §0.4 shallow undo | User confirms/changes account from the account cell, saves explanation memo, and excludes with required reason from row-level modals via existing classification APIs; no redirect to the classification queue for the primary flow; the latest apply/confirm action can be cancelled from the current session |
-| 2b-2 | 2b | Evidence connect, exception, amount mismatch | G: bank↔tax-invoice and card↔evidence confirmation; P: connect evidence, confirm evidence exception, resolve amount mismatch | User can connect/unlink evidence, mark evidence exception, and resolve amount mismatch from the evidence modal; remaining difference updates before save |
+| 2b-2a | 2b | Evidence connect save | G: bank-to-evidence confirmation (세금계산서/현금영수증/카드); P: connect evidence | User can select one concrete evidence row from the evidence modal and persist the bank-to-evidence link; reload shows the row as `증빙있음` from the stored link. Completed by PR #173 (`linked_evidence_row_id`, migration 0066). |
+| 2b-2b | 2b | Connected evidence review and source-list highlight | G: evidence finder; P: review concrete evidence rows; U: evidence-status cell | For a row with `증빙있음`, `증빙 확인` shows the connected evidence summary above the source selector. Clicking that summary opens the matching source list and visibly highlights the connected row with a distinct background/border/selected marker, so the user can verify which tax invoice, cash receipt, or card row is connected. |
+| 2b-2c | 2b | Evidence unlink, exception, amount mismatch | G: evidence exception and amount mismatch; P: unlink/replace, confirm evidence exception, resolve amount mismatch | User can unlink/replace evidence, mark evidence exception, and resolve amount mismatch from the evidence modal; remaining difference updates before save |
 | 2b-3 | 2b | Pattern apply/reject | §5.2; A: pattern recommendation AC; §0.4 batch suggestion acceptance | User can accept, change, or reject `patternSuggestion`; safe repeated suggestion groups can be batch-accepted only when eligibility is visible and the user explicitly confirms; rejected/changed decisions become the newer learning signal |
 | 2c | 2c | Durable confirmed links | Slice 2c trigger only | Start only if 2b proves user-confirmed bank↔evidence pairs must survive reload/audit beyond existing classification metadata |
 | 2d | downstream | Path 1 gate consumption | A: filing-preparation blocker counts; Backlog AC: confirmed ledger only | Filing-preparation and tax-type read models consume resolved ledger/blocker state from 자료대조원장 instead of treating raw classification rows as ready |
@@ -579,7 +581,10 @@ inactive search or settings controls must look disabled until implemented.
   - `taxBlockerSummaries` only reports the `vat` track from live data; the other four tracks depend on data sources (payroll, filing-preparation) this screen does not read.
   - `patternSuggestion` is always `null` for live rows — §5.2 previous-period pattern learning is out of scope for 2a-5, so `batchSuggestionGroups` is always empty for live data.
   - Non-blocking naming: `ReconciliationLedgerDisplayFixtureView`/`reconciliation-ledger-display-fixture-view.tsx` still carry "Fixture" in their names despite now rendering live data too. A rename is a mechanical follow-up, not required before Slice 2b.
-- [ ] Slice 2b mutation mapping reviewed before code.
+- [x] Slice 2b-1 account/explanation/exclusion mutations implemented — PR #166~#169, merged to main.
+- [x] Slice 2b-2a evidence connect save implemented — PR #173, merged to main (`4922096`). Prod DB migration 0066 was applied before merge: `linked_evidence_row_id` nullable text column, `bookkeeping_tx_linked_evidence_idx`, `foreign_key_check` 0.
+- [ ] Slice 2b-2b connected evidence review/detail highlight — `증빙 확인` must show the connected evidence summary first, and clicking that summary must open the relevant source list with the connected row highlighted.
+- [ ] Slice 2b-2c unlink/exception/amount mismatch behavior approved before code.
 - [ ] Slice 2c durable match-link schema approved if needed.
 
 ## 11. Related Documents
