@@ -30,6 +30,7 @@ const evidenceSourceLabels: Record<ReconciliationSource, string> = {
 }
 
 export type LinkedEvidenceDisplay = {
+  rowId: string | null
   source: ReconciliationSource
   sourceLabel: string
   date: string | null
@@ -67,6 +68,15 @@ export function matchesEvidenceFinderSource(
   }
 
   return rowSource === finderSource
+}
+
+export function evidenceFinderSourceForLinkedEvidence(
+  source: ReconciliationSource,
+): EvidenceFinderSource | null {
+  if (source === 'tax_invoice') return 'tax_invoice'
+  if (source === 'receipt' || source === 'cash_receipt') return 'cash_receipt'
+  if (source === 'card') return 'card'
+  return null
 }
 
 export function listEvidenceFinderBrowseRows(
@@ -109,20 +119,32 @@ export function resolveEvidenceFinderRowMatch(
   return candidates.find((candidate) => candidate.rowId === browseRowId) ?? null
 }
 
+export function isSavedEvidenceReference(candidate: ReconciliationMatchCandidate | null): boolean {
+  return candidate?.reason === 'manual_reference'
+}
+
+export function isFoundEvidenceReference(candidate: ReconciliationMatchCandidate | null): boolean {
+  return candidate !== null && !isSavedEvidenceReference(candidate)
+}
+
 export function hasEvidenceFinderAiMatch(
   candidates: ReconciliationMatchCandidate[],
   browseRows: ReconciliationLedgerRow[],
 ): boolean {
-  return browseRows.some((browseRow) => resolveEvidenceFinderRowMatch(candidates, browseRow.id) !== null)
+  return browseRows.some((browseRow) => {
+    const candidate = resolveEvidenceFinderRowMatch(candidates, browseRow.id)
+    return isFoundEvidenceReference(candidate)
+  })
 }
 
 export function resolveLinkedEvidenceDisplay(row: ReconciliationLedgerRow): LinkedEvidenceDisplay[] {
-  if (row.evidenceActionState !== 'linked') {
+  if (row.evidenceActionState !== 'linked' && row.evidenceActionState !== 'candidate') {
     return []
   }
 
   if (row.candidates.length > 0) {
     return row.candidates.map((candidate) => ({
+      rowId: candidate.rowId,
       source: candidate.source,
       sourceLabel: evidenceSourceLabels[candidate.source],
       date: candidate.date,
@@ -135,6 +157,7 @@ export function resolveLinkedEvidenceDisplay(row: ReconciliationLedgerRow): Link
 
   return [
     {
+      rowId: null,
       source: row.source,
       sourceLabel: evidenceSourceLabels[row.source],
       date: row.transactionDate,

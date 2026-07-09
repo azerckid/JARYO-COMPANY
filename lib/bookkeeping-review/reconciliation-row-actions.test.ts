@@ -5,11 +5,14 @@ import {
   computeRemainingDifferenceKrw,
   evidenceActionChipLabel,
   evidenceFinderActionLabel,
+  evidenceFinderSourceForLinkedEvidence,
   evidenceRowHighlightTone,
   filterEvidenceFinderBrowseRows,
   formatExclusionReasonMemo,
   hasAiEvidenceSuggestion,
   hasEvidenceFinderAiMatch,
+  isFoundEvidenceReference,
+  isSavedEvidenceReference,
   listEvidenceFinderBrowseRows,
   matchesEvidenceFinderSource,
   resolveEvidenceFinderRowMatch,
@@ -98,8 +101,33 @@ describe('reconciliation-row-actions', () => {
     expect(rentRow).toBeDefined()
     expect(interestRow).toBeDefined()
 
-    expect(resolveLinkedEvidenceDisplay(rentRow!)[0]?.source).toBe('tax_invoice')
-    expect(resolveLinkedEvidenceDisplay(interestRow!)[0]?.source).toBe('bank')
+    const rentEvidence = resolveLinkedEvidenceDisplay(rentRow!)[0]
+    const interestEvidence = resolveLinkedEvidenceDisplay(interestRow!)[0]
+
+    expect(rentEvidence?.source).toBe('tax_invoice')
+    expect(rentEvidence?.rowId).toBe(rentRow!.candidates[0]!.rowId)
+    expect(rentRow!.candidates[0]!.reason).toBe('manual_reference')
+    expect(interestEvidence?.source).toBe('bank')
+    expect(interestEvidence?.rowId).toBeNull()
+  })
+
+  it('resolves found evidence for rows shown as 증빙있음 before manual save', () => {
+    const row = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === RECONCILIATION_BANK_FIXTURE_ROW_IDS.bankToTaxInvoice)
+    expect(row).toBeDefined()
+    expect(row!.evidenceActionState).toBe('candidate')
+    expect(evidenceActionChipLabel(row!.evidenceActionState)?.label).toBe('증빙있음')
+
+    const foundEvidence = resolveLinkedEvidenceDisplay(row!)[0]
+    expect(foundEvidence?.rowId).toBe(row!.candidates[0]!.rowId)
+    expect(foundEvidence?.source).toBe('tax_invoice')
+  })
+
+  it('maps linked evidence sources to evidence finder source lists', () => {
+    expect(evidenceFinderSourceForLinkedEvidence('tax_invoice')).toBe('tax_invoice')
+    expect(evidenceFinderSourceForLinkedEvidence('receipt')).toBe('cash_receipt')
+    expect(evidenceFinderSourceForLinkedEvidence('cash_receipt')).toBe('cash_receipt')
+    expect(evidenceFinderSourceForLinkedEvidence('card')).toBe('card')
+    expect(evidenceFinderSourceForLinkedEvidence('bank')).toBeNull()
   })
 
   it('lists browse rows for evidence finder by source', () => {
@@ -175,6 +203,38 @@ describe('reconciliation-row-actions', () => {
 
     const cashReceiptBrowseRows = listEvidenceFinderBrowseRows(rows, 'cash_receipt', row!.id)
     expect(hasEvidenceFinderAiMatch(row!.candidates, cashReceiptBrowseRows)).toBe(false)
+  })
+
+  it('does not treat manual reference links as AI matches', () => {
+    const rows = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows
+    const row = rows.find((item) => item.id === RECONCILIATION_BANK_FIXTURE_ROW_IDS.bankToTaxInvoice)
+    expect(row).toBeDefined()
+    expect(row!.candidates[0]).toBeDefined()
+
+    const manualReferenceCandidate = {
+      ...row!.candidates[0]!,
+      reason: 'manual_reference' as const,
+    }
+    const taxInvoiceBrowseRows = listEvidenceFinderBrowseRows(rows, 'tax_invoice', row!.id)
+
+    expect(hasEvidenceFinderAiMatch([manualReferenceCandidate], taxInvoiceBrowseRows)).toBe(false)
+  })
+
+  it('treats only manual_reference as an already saved evidence connection', () => {
+    const row = RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows.find((item) => item.id === RECONCILIATION_BANK_FIXTURE_ROW_IDS.bankToTaxInvoice)
+    expect(row).toBeDefined()
+    expect(row!.candidates[0]).toBeDefined()
+
+    const foundByAiOrRule = row!.candidates[0]!
+    const savedReference = {
+      ...foundByAiOrRule,
+      reason: 'manual_reference' as const,
+    }
+
+    expect(isSavedEvidenceReference(foundByAiOrRule)).toBe(false)
+    expect(isFoundEvidenceReference(foundByAiOrRule)).toBe(true)
+    expect(isSavedEvidenceReference(savedReference)).toBe(true)
+    expect(isFoundEvidenceReference(savedReference)).toBe(false)
   })
 })
 

@@ -17,6 +17,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -27,12 +28,15 @@ import {
   computeRemainingDifferenceKrw,
   evidenceActionChipLabel,
   evidenceFinderActionLabel,
+  evidenceFinderSourceForLinkedEvidence,
   evidenceFinderSourceOptions,
   filterEvidenceFinderBrowseRows,
   formatExclusionReasonMemo,
   formatKrwAmount,
   formatRemainingDifferenceLabel,
   hasEvidenceFinderAiMatch,
+  isFoundEvidenceReference,
+  isSavedEvidenceReference,
   listEvidenceFinderBrowseRows,
   matchCandidateReasonLabel,
   resolveEvidenceFinderRowMatch,
@@ -111,15 +115,15 @@ const chipClass: Record<Tone, string> = {
 
 export interface ReconciliationEvidenceCellProps {
   readonly onOpenEvidencePicker: (source: EvidenceFinderSource) => void
+  readonly onOpenFoundEvidence: (source: EvidenceFinderSource, evidenceRowId: string) => void
   readonly onOpenExplanation: () => void
-  readonly onViewLinkedEvidence: () => void
   readonly row: ReconciliationLedgerRow
 }
 
 export function ReconciliationEvidenceCell({
   onOpenEvidencePicker,
+  onOpenFoundEvidence,
   onOpenExplanation,
-  onViewLinkedEvidence,
   row,
 }: ReconciliationEvidenceCellProps) {
   const statusChip = evidenceActionChipLabel(row.evidenceActionState)
@@ -134,17 +138,6 @@ export function ReconciliationEvidenceCell({
           type="button"
         >
           소명 입력
-        </button>
-      ) : row.evidenceActionState === 'linked' && statusChip ? (
-        <button
-          className={cn(
-            'inline-flex rounded-full border px-2.5 py-0.5 text-[11.5px] font-semibold hover:opacity-90',
-            chipClass[statusChip.tone],
-          )}
-          onClick={onViewLinkedEvidence}
-          type="button"
-        >
-          {statusChip.label}
         </button>
       ) : statusChip ? (
         <StatusChip tone={statusChip.tone}>{statusChip.label}</StatusChip>
@@ -163,6 +156,8 @@ export function ReconciliationEvidenceCell({
         <EvidenceFinderDropdown
           label={evidenceFinderActionLabel(row)}
           onOpenEvidencePicker={onOpenEvidencePicker}
+          onOpenFoundEvidence={onOpenFoundEvidence}
+          row={row}
         />
       ) : null}
     </div>
@@ -172,10 +167,22 @@ export function ReconciliationEvidenceCell({
 function EvidenceFinderDropdown({
   label,
   onOpenEvidencePicker,
+  onOpenFoundEvidence,
+  row,
 }: {
   readonly label: string
   readonly onOpenEvidencePicker: (source: EvidenceFinderSource) => void
+  readonly onOpenFoundEvidence: (source: EvidenceFinderSource, evidenceRowId: string) => void
+  readonly row: ReconciliationLedgerRow
 }) {
+  const foundEvidence = resolveLinkedEvidenceDisplay(row).find((evidence) => {
+    if (!evidence.rowId) return false
+    return evidenceFinderSourceForLinkedEvidence(evidence.source) !== null
+  })
+  const foundEvidenceSource = foundEvidence
+    ? evidenceFinderSourceForLinkedEvidence(foundEvidence.source)
+    : null
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -185,7 +192,26 @@ function EvidenceFinderDropdown({
         {label}
         <ChevronDown className="size-3 text-company-fg-muted" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-[140px]">
+      <DropdownMenuContent align="start" className="min-w-[260px]">
+        {foundEvidence && foundEvidenceSource ? (
+          <>
+            <DropdownMenuItem
+              className="block px-2 py-2"
+              onClick={() => onOpenFoundEvidence(foundEvidenceSource, foundEvidence.rowId!)}
+            >
+              <span className="block text-[11px] font-semibold text-[#16a34a]">찾은 증빙</span>
+              <span className="mt-0.5 block truncate text-[12px] font-semibold text-foreground">
+                {foundEvidence.sourceLabel}
+                {' · '}
+                {foundEvidence.counterparty ?? '거래처 미정'}
+                {' · '}
+                {formatKrwAmount(foundEvidence.amountKrw)}
+                {foundEvidence.date ? ` · ${foundEvidence.date.slice(5, 10)}` : ''}
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
         {evidenceFinderSourceOptions.map((option) => (
           <DropdownMenuItem
             key={option.source}
@@ -341,73 +367,9 @@ export function ReconciliationAccountSelector({ isFixtureMode, onOpenExclusion, 
   )
 }
 
-export interface ReconciliationLinkedEvidenceModalProps {
-  readonly onOpenChange: (open: boolean) => void
-  readonly open: boolean
-  readonly row: ReconciliationLedgerRow | null
-}
-
-export function ReconciliationLinkedEvidenceModal({
-  onOpenChange,
-  open,
-  row,
-}: ReconciliationLinkedEvidenceModalProps) {
-  const linkedEvidence = useMemo(
-    () => (row ? resolveLinkedEvidenceDisplay(row) : []),
-    [row],
-  )
-
-  return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="flex w-full max-w-lg flex-col gap-0 overflow-hidden border-company-border bg-company-surface p-0 sm:max-w-lg">
-        {row ? (
-          <>
-            <DialogHeader className="border-b border-company-border px-5 py-4 pr-12">
-              <DialogTitle className="text-base font-semibold text-foreground">연결된 증빙</DialogTitle>
-              <DialogDescription className="text-[13px] text-company-fg-muted">
-                {row.counterparty ?? '거래처 미정'} · {formatKrwAmount(row.amountKrw)}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3 px-5 py-4">
-              {linkedEvidence.map((evidence) => (
-                <div
-                  key={`${evidence.source}-${evidence.date}-${evidence.amountKrw}`}
-                  className="rounded-[10px] border border-company-border bg-[#fcfcfd] px-3 py-3"
-                >
-                  <p className="text-[12px] font-semibold text-foreground">
-                    {evidence.sourceLabel} · {formatKrwAmount(evidence.amountKrw)}
-                  </p>
-                  <p className="mt-1 text-[12px] text-company-fg-muted">
-                    {evidence.counterparty ?? '거래처 미정'}
-                    {evidence.date ? ` · ${evidence.date.slice(5, 10)}` : ''}
-                  </p>
-                  {evidence.description ? (
-                    <p className="mt-1 text-[12px] text-company-fg-subtle">{evidence.description}</p>
-                  ) : null}
-                  {evidence.basisLabel ? (
-                    <p className="mt-1 text-[11px] text-company-fg-subtle">{evidence.basisLabel}</p>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-            <DialogFooter className="border-t border-company-border bg-[#fcfcfd] px-5 py-3 sm:justify-end">
-              <button
-                className="rounded-lg border border-company-border px-3 py-2 text-[12px] font-semibold text-company-fg-muted"
-                onClick={() => onOpenChange(false)}
-                type="button"
-              >
-                닫기
-              </button>
-            </DialogFooter>
-          </>
-        ) : null}
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 export interface ReconciliationEvidencePickerModalProps {
   readonly allRows: ReconciliationLedgerRow[]
+  readonly highlightedEvidenceRowId?: string | null
   readonly isFixtureMode: boolean
   readonly onOpenChange: (open: boolean) => void
   readonly open: boolean
@@ -417,6 +379,7 @@ export interface ReconciliationEvidencePickerModalProps {
 
 export function ReconciliationEvidencePickerModal({
   allRows,
+  highlightedEvidenceRowId = null,
   isFixtureMode,
   onOpenChange,
   open,
@@ -445,6 +408,13 @@ export function ReconciliationEvidencePickerModal({
     () => (row ? hasEvidenceFinderAiMatch(row.candidates, browseRows) : false),
     [browseRows, row],
   )
+  const highlightedCandidate = useMemo(
+    () => (row && highlightedEvidenceRowId
+      ? resolveEvidenceFinderRowMatch(row.candidates, highlightedEvidenceRowId)
+      : null),
+    [highlightedEvidenceRowId, row],
+  )
+  const highlightedIsSavedReference = isSavedEvidenceReference(highlightedCandidate)
 
   function connectEvidence(evidenceRowId: string) {
     if (!row) return
@@ -493,9 +463,15 @@ export function ReconciliationEvidencePickerModal({
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3 overflow-auto px-5 py-4">
-              {hasAiCandidates ? (
+              {highlightedEvidenceRowId ? (
+                <p className="rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-3 py-2 text-[12px] text-[#16a34a]">
+                  {highlightedIsSavedReference
+                    ? '현재 연결된 증빙 행을 아래 목록에서 강조했습니다.'
+                    : '찾은 증빙 행을 아래 목록에서 강조했습니다.'}
+                </p>
+              ) : hasAiCandidates ? (
                 <p className="rounded-lg border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2 text-[12px] text-[#1d4ed8]">
-                  AI가 아래 목록에서 후보를 찾았습니다 — <span className="font-semibold">AI 추천</span> 배지가 붙은 행을 확인하세요.
+                  AI가 아래 목록에서 증빙을 찾았습니다 — <span className="font-semibold">찾은 증빙</span> 배지가 붙은 행을 확인하세요.
                 </p>
               ) : (
                 <p className="rounded-lg border border-company-border bg-company-nav-hover px-3 py-2 text-[12px] text-company-fg-muted">
@@ -535,13 +511,17 @@ export function ReconciliationEvidencePickerModal({
                         const matchedCandidate = row
                           ? resolveEvidenceFinderRowMatch(row.candidates, browseRow.id)
                           : null
+                        const isHighlightedEvidence = highlightedEvidenceRowId === browseRow.id
+                        const isConnectedEvidence = isHighlightedEvidence && isSavedEvidenceReference(matchedCandidate)
+                        const isFoundEvidence = isFoundEvidenceReference(matchedCandidate)
 
                         return (
                           <tr
                             key={browseRow.id}
                             className={cn(
                               'border-b border-company-border last:border-b-0',
-                              matchedCandidate ? 'bg-[#eff6ff]' : '',
+                              isConnectedEvidence ? 'bg-[#f0fdf4] ring-1 ring-inset ring-[#86efac]' : '',
+                              !isConnectedEvidence && (isHighlightedEvidence || isFoundEvidence) ? 'bg-[#eff6ff]' : '',
                             )}
                           >
                             <td className="px-3 py-2 font-mono text-company-fg-muted">
@@ -549,10 +529,15 @@ export function ReconciliationEvidencePickerModal({
                             </td>
                             <td className="max-w-[120px] truncate px-3 py-2">
                               <span className="inline-flex items-center gap-1.5">
-                                {matchedCandidate ? (
+                                {isConnectedEvidence ? (
+                                  <span className="inline-flex shrink-0 items-center rounded-full border border-[#bbf7d0] bg-[#dcfce7] px-1.5 py-0.5 text-[10px] font-semibold text-[#16a34a]">
+                                    연결됨
+                                  </span>
+                                ) : null}
+                                {isFoundEvidence ? (
                                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#bfdbfe] bg-[#dbeafe] px-1.5 py-0.5 text-[10px] font-semibold text-[#1d4ed8]">
                                     <Sparkles className="size-2.5" />
-                                    AI 추천
+                                    찾은 증빙
                                   </span>
                                 ) : null}
                                 <span className="truncate">{browseRow.counterparty ?? '-'}</span>
