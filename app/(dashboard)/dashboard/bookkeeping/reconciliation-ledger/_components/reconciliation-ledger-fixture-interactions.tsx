@@ -42,6 +42,7 @@ import {
 } from '@/lib/bookkeeping-review/reconciliation-row-actions'
 import {
   confirmReconciliationRowAccount,
+  connectReconciliationRowEvidence,
   revertReconciliationRowState,
   saveReconciliationRowExclusion,
   saveReconciliationRowExplanation,
@@ -407,6 +408,7 @@ export function ReconciliationLinkedEvidenceModal({
 
 export interface ReconciliationEvidencePickerModalProps {
   readonly allRows: ReconciliationLedgerRow[]
+  readonly isFixtureMode: boolean
   readonly onOpenChange: (open: boolean) => void
   readonly open: boolean
   readonly row: ReconciliationLedgerRow | null
@@ -415,11 +417,15 @@ export interface ReconciliationEvidencePickerModalProps {
 
 export function ReconciliationEvidencePickerModal({
   allRows,
+  isFixtureMode,
   onOpenChange,
   open,
   row,
   source,
 }: ReconciliationEvidencePickerModalProps) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [connectingRowId, setConnectingRowId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [dateFilter, setDateFilter] = useState('')
   const browseRows = useMemo(
@@ -439,6 +445,32 @@ export function ReconciliationEvidencePickerModal({
     () => (row ? hasEvidenceFinderAiMatch(row.candidates, browseRows) : false),
     [browseRows, row],
   )
+
+  function connectEvidence(evidenceRowId: string) {
+    if (!row) return
+    setConnectingRowId(evidenceRowId)
+    startTransition(async () => {
+      const result = await connectReconciliationRowEvidence({
+        uploadSessionId: row.uploadSessionId,
+        rowId: row.id,
+        evidenceRowId,
+      })
+      setConnectingRowId(null)
+      if (!result.ok) {
+        toast.error(result.message)
+        return
+      }
+      showUndoableSuccessToast({
+        message: '증빙을 연결했습니다.',
+        uploadSessionId: row.uploadSessionId,
+        rowId: row.id,
+        previous: result.previous,
+        router,
+      })
+      onOpenChange(false)
+      router.refresh()
+    })
+  }
 
   return (
     <Dialog
@@ -537,12 +569,18 @@ export function ReconciliationEvidencePickerModal({
                             <td className="px-3 py-2 text-right font-mono">{formatKrwAmount(browseRow.amountKrw)}</td>
                             <td className="px-3 py-2">
                               <button
-                                className="cursor-not-allowed rounded border border-company-border px-2 py-0.5 text-[11px] font-semibold text-company-fg-subtle"
-                                disabled
-                                title={disabledActionNote}
+                                className={cn(
+                                  'rounded border px-2 py-0.5 text-[11px] font-semibold',
+                                  isFixtureMode || (isPending && connectingRowId !== browseRow.id)
+                                    ? 'cursor-not-allowed border-company-border text-company-fg-subtle'
+                                    : 'border-[#93c5fd] text-[#1d4ed8] hover:bg-[#eff6ff]',
+                                )}
+                                disabled={isFixtureMode || isPending}
+                                onClick={() => connectEvidence(browseRow.id)}
+                                title={isFixtureMode ? disabledActionNote : undefined}
                                 type="button"
                               >
-                                선택
+                                {connectingRowId === browseRow.id ? '연결 중…' : '선택'}
                               </button>
                             </td>
                           </tr>
@@ -558,26 +596,15 @@ export function ReconciliationEvidencePickerModal({
                   </tbody>
                 </table>
               </div>
-              <div className="flex items-center justify-between text-[12px] text-company-fg-muted">
-                <span>선택 합계 0원</span>
-                <span>{formatRemainingDifferenceLabel(remainingDifferenceKrw)}</span>
-              </div>
+              <p className="text-[12px] text-company-fg-muted">{formatRemainingDifferenceLabel(remainingDifferenceKrw)}</p>
             </div>
-            <DialogFooter className="border-t border-company-border bg-[#fcfcfd] px-5 py-3 sm:justify-between">
+            <DialogFooter className="border-t border-company-border bg-[#fcfcfd] px-5 py-3">
               <button
                 className="rounded-lg border border-company-border px-3 py-2 text-[12px] font-semibold text-company-fg-muted"
                 onClick={() => onOpenChange(false)}
                 type="button"
               >
-                취소
-              </button>
-              <button
-                className="cursor-not-allowed rounded-lg border border-company-border bg-company-nav-hover px-3 py-2 text-[12px] font-semibold text-company-fg-subtle"
-                disabled
-                title={disabledActionNote}
-                type="button"
-              >
-                연결 저장
+                닫기
               </button>
             </DialogFooter>
           </>

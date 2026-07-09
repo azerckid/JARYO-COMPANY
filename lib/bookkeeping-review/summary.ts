@@ -81,6 +81,7 @@ export type BookkeepingReviewQueueRow = {
   direction: 'income' | 'expense' | 'unknown'
   requiresManualAccount: boolean
   staffMemo: string | null
+  linkedEvidenceRowId: string | null
   reconciliation: ReconciliationInfo
 }
 
@@ -126,6 +127,7 @@ type ClassificationRowInput = {
   sourceType: BookkeepingSourceType
   direction: 'income' | 'expense' | 'unknown'
   staffMemo: string | null
+  linkedEvidenceRowId: string | null
 }
 
 type VoucherLineInput = { side: string; accountName: string | null; accountCode: string | null; amountKrw: number }
@@ -201,6 +203,7 @@ export function mapClassificationRow(row: ClassificationRowInput): BookkeepingRe
     direction: row.direction,
     requiresManualAccount: requiresManualAccount(confidence, row.status),
     staffMemo: row.staffMemo,
+    linkedEvidenceRowId: row.linkedEvidenceRowId,
     reconciliation: emptyReconciliationInfo(),
   }
 }
@@ -252,9 +255,36 @@ function buildReconciliationCandidate(row: BookkeepingReviewQueueRow, candidate:
   }
 }
 
+// JC-010 2b-2: a user-confirmed evidence link (linkedEvidenceRowId) is
+// represented as a single 'manual_reference' candidate so the existing
+// candidate-based display pipeline (resolveLinkedEvidenceDisplay etc.)
+// can render it without a separate "confirmed link" data shape. It takes
+// priority over AI same-amount/same-day candidates — the user has already
+// resolved the ambiguity those candidates exist to flag.
+function buildLinkedEvidenceCandidate(row: BookkeepingReviewQueueRow, allRows: BookkeepingReviewQueueRow[]): ReconciliationMatchCandidate | null {
+  if (!row.linkedEvidenceRowId) return null
+  const linked = allRows.find((candidate) => candidate.id === row.linkedEvidenceRowId)
+  if (!linked) return null
+  return {
+    id: `${row.id}__${linked.id}`,
+    sourceType: linked.sourceType,
+    rowId: linked.id,
+    date: linked.transactionDate,
+    counterparty: linked.counterparty,
+    amountKrw: linked.amountKrw,
+    confidence: 'high',
+    reason: 'manual_reference',
+  }
+}
+
 export function buildReconciliationInfo(row: BookkeepingReviewQueueRow, allRows: BookkeepingReviewQueueRow[]): ReconciliationInfo {
   if (row.status === 'excluded') {
     return emptyReconciliationInfo('excluded')
+  }
+
+  const linkedCandidate = buildLinkedEvidenceCandidate(row, allRows)
+  if (linkedCandidate) {
+    return { matchState: 'confirmed', candidates: [linkedCandidate], blockers: [] }
   }
 
   const candidates = allRows
@@ -459,6 +489,7 @@ export async function loadBookkeepingReviewSummary({
       sourceType: bookkeepingTransactionClassification.sourceType,
       direction: bookkeepingTransactionClassification.direction,
       staffMemo: bookkeepingTransactionClassification.staffMemo,
+      linkedEvidenceRowId: bookkeepingTransactionClassification.linkedEvidenceRowId,
     })
     .from(bookkeepingTransactionClassification)
     .where(and(

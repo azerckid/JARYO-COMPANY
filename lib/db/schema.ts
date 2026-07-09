@@ -913,6 +913,12 @@ export const bookkeepingTransactionClassification = sqliteTable('bookkeeping_tra
   status: text('status', {
     enum: ['suggested', 'needs_decision', 'confirmed', 'unclassified', 'excluded'],
   }).notNull().default('suggested'),
+  // JC-010 2b-2: 자료대조원장에서 통장 행이 사용자가 확정한 증빙 행(세금계산서/
+  // 현금영수증/카드)을 가리키는 단방향 링크. AI 후보 매칭(같은 금액·같은 날짜
+  // 휴리스틱, evidenceJson과는 무관)과 구분되는 사용자 확정 연결이다. FK 제약은
+  // 두지 않는다(다른 사용자 입력 필드들과 동일 컨벤션) — 연결 대상 행 존재
+  // 여부는 서비스 레이어에서 검증한다.
+  linkedEvidenceRowId: text('linked_evidence_row_id'),
   confirmedByStaffId: text('confirmed_by_staff_id').references(() => staff.id),
   confirmedAt: text('confirmed_at'),
   createdAt: text('created_at').notNull(),
@@ -922,6 +928,7 @@ export const bookkeepingTransactionClassification = sqliteTable('bookkeeping_tra
   sessionIdx: index('bookkeeping_tx_session_idx').on(t.tenantId, t.uploadSessionId),
   sourceBatchIdx: index('bookkeeping_tx_source_batch_idx').on(t.tenantId, t.sourceBatchId),
   statusIdx: index('bookkeeping_tx_status_idx').on(t.tenantId, t.status),
+  linkedEvidenceIdx: index('bookkeeping_tx_linked_evidence_idx').on(t.tenantId, t.linkedEvidenceRowId),
 }))
 
 // ---------------------------------------------------------------------------

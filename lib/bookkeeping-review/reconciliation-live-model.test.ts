@@ -26,6 +26,7 @@ function buildRow(overrides: Partial<BookkeepingReviewQueueRow> = {}): Bookkeepi
     direction: 'expense',
     requiresManualAccount: false,
     staffMemo: null,
+    linkedEvidenceRowId: null,
     reconciliation: { matchState: 'confirmed', candidates: [], blockers: [] },
     ...overrides,
   }
@@ -80,6 +81,22 @@ describe('mapLiveEvidenceActionState', () => {
   it('does not route personal-use-suspicious bank/other rows to explanation_required (evidence_required takes priority)', () => {
     const row = buildRow({ sourceType: 'bank', counterparty: '헤어살롱', description: '미용실 결제' })
     expect(mapLiveEvidenceActionState(row)).toBe('evidence_required')
+  })
+
+  it('maps a row with a confirmed evidence link to linked, even when AI candidates also exist (JC-010 2b-2)', () => {
+    const row = buildRow({
+      sourceType: 'bank',
+      linkedEvidenceRowId: 'evidence-row',
+      reconciliation: {
+        matchState: 'confirmed',
+        candidates: [{
+          id: 'c1', sourceType: 'tax_invoice', rowId: 'evidence-row', date: '2026-07-08',
+          counterparty: '테스트 거래처', amountKrw: 100_000, confidence: 'high', reason: 'manual_reference',
+        }],
+        blockers: [],
+      },
+    })
+    expect(mapLiveEvidenceActionState(row)).toBe('linked')
   })
 
   it('routes a personal-use-suspicious row to explanation_required even when a bank-match candidate exists (PR #167 review P2)', () => {

@@ -265,6 +265,7 @@ export function ReconciliationLedgerDisplayFixtureView({
 
         <ReconciliationEvidencePickerModal
           allRows={rows}
+          isFixtureMode={isFixtureMode}
           onOpenChange={(open) => {
             if (!open) {
               setEvidencePicker(null)

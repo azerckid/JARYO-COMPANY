@@ -28,6 +28,7 @@ function buildRow(overrides: Partial<BookkeepingReviewQueueRow> = {}): Bookkeepi
     direction: 'expense',
     requiresManualAccount: false,
     staffMemo: null,
+    linkedEvidenceRowId: null,
     reconciliation: { matchState: 'confirmed', candidates: [], blockers: [] },
     ...overrides,
   }

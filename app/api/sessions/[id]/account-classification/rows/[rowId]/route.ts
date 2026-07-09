@@ -33,6 +33,7 @@ export async function PATCH(
       staffMemo: input.data.staffMemo,
       status: input.data.status,
       purposeRequestRowId: input.data.purposeRequestRowId,
+      linkedEvidenceRowId: input.data.linkedEvidenceRowId,
     })
 
     if (!result.ok) {

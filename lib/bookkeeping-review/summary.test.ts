@@ -32,6 +32,7 @@ function row(partial: Partial<BookkeepingReviewQueueRow>): BookkeepingReviewQueu
     status: 'suggested',
     requiresManualAccount: false,
     staffMemo: null,
+    linkedEvidenceRowId: null,
     reconciliation: emptyReconciliationInfo(),
     ...partial,
     sourceType: partial.sourceType ?? 'other',
@@ -162,6 +163,44 @@ describe('attachReconciliationInfo', () => {
       expect(evidenceRow.reconciliation.matchState).not.toBe('missing_evidence')
     }
   })
+
+  it('represents a user-confirmed evidence link as a single manual_reference candidate (JC-010 2b-2)', () => {
+    const [bank, invoice] = attachReconciliationInfo([
+      row({ id: 'bank', sourceType: 'bank', amountKrw: 77000, transactionDate: '2026-06-10', linkedEvidenceRowId: 'invoice' }),
+      row({ id: 'invoice', sourceType: 'tax_invoice', amountKrw: 77000, transactionDate: '2026-06-10', status: 'confirmed' }),
+    ])
+
+    expect(bank.reconciliation.matchState).toBe('confirmed')
+    expect(bank.reconciliation.candidates).toHaveLength(1)
+    expect(bank.reconciliation.candidates[0]).toMatchObject({ rowId: 'invoice', sourceType: 'tax_invoice', confidence: 'high', reason: 'manual_reference' })
+    expect(bank.reconciliation.blockers).toHaveLength(0)
+    // The other side is untouched — the link is one-directional (bank -> evidence).
+    expect(invoice.reconciliation.candidates[0]).toMatchObject({ rowId: 'bank', sourceType: 'bank', reason: 'same_amount_same_day' })
+  })
+
+  it('prefers a confirmed link over AI same-amount/same-day candidates once one exists', () => {
+    const [bank] = attachReconciliationInfo([
+      row({ id: 'bank', sourceType: 'bank', amountKrw: 50000, transactionDate: '2026-06-10', linkedEvidenceRowId: 'card' }),
+      row({ id: 'card', sourceType: 'card', amountKrw: 50000, transactionDate: '2026-06-10' }),
+      row({ id: 'receipt', sourceType: 'receipt', amountKrw: 50000, transactionDate: '2026-06-11' }),
+    ])
+
+    // Without the link this would be 'ambiguous' with 2 AI candidates (see the
+    // test above) — a confirmed link collapses that ambiguity entirely.
+    expect(bank.reconciliation.matchState).toBe('confirmed')
+    expect(bank.reconciliation.candidates).toHaveLength(1)
+    expect(bank.reconciliation.candidates[0]!.rowId).toBe('card')
+  })
+
+  it('falls back to AI candidate matching when linkedEvidenceRowId points at a row not in allRows', () => {
+    const [bank] = attachReconciliationInfo([
+      row({ id: 'bank', sourceType: 'bank', amountKrw: 77000, transactionDate: '2026-06-10', linkedEvidenceRowId: 'missing-row' }),
+      row({ id: 'card', sourceType: 'card', amountKrw: 77000, transactionDate: '2026-06-10' }),
+    ])
+
+    expect(bank.reconciliation.matchState).toBe('candidate')
+    expect(bank.reconciliation.candidates[0]).toMatchObject({ rowId: 'card', reason: 'same_amount_same_day' })
+  })
 })
 
 describe('mapClassificationRow', () => {
@@ -180,6 +219,7 @@ describe('mapClassificationRow', () => {
       sourceType: 'card',
       direction: 'expense',
       staffMemo: null,
+      linkedEvidenceRowId: null,
     })
     expect(mapped.description).toBe('오피스디포') // description null → merchantName
     expect(mapped.counterparty).toBe('오피스디포')

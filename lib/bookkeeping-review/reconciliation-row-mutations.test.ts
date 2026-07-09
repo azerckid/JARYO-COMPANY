@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   confirmReconciliationRowAccount,
+  connectReconciliationRowEvidence,
   revertReconciliationRowState,
   saveReconciliationRowExclusion,
   saveReconciliationRowExplanation,
@@ -156,7 +157,7 @@ describe('saveReconciliationRowExclusion', () => {
 
 describe('revertReconciliationRowState', () => {
   it('PATCHes the classification row endpoint with the previous snapshot verbatim', async () => {
-    const previous = { finalAccount: 'employee_welfare', staffMemo: '기존 메모', status: 'confirmed' }
+    const previous = { finalAccount: 'employee_welfare', staffMemo: '기존 메모', status: 'confirmed', linkedEvidenceRowId: 'row-9' }
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true, previous: null }) })
     vi.stubGlobal('fetch', fetchMock)
 
@@ -176,13 +177,14 @@ describe('revertReconciliationRowState', () => {
           finalAccount: 'employee_welfare',
           staffMemo: '기존 메모',
           status: 'confirmed',
+          linkedEvidenceRowId: 'row-9',
         }),
       },
     )
   })
 
-  it('reverts a null finalAccount/staffMemo back to null (undoing a first-time confirm/exclude)', async () => {
-    const previous = { finalAccount: null, staffMemo: null, status: 'suggested' }
+  it('reverts a null finalAccount/staffMemo/linkedEvidenceRowId back to null (undoing a first-time confirm/exclude/connect)', async () => {
+    const previous = { finalAccount: null, staffMemo: null, status: 'suggested', linkedEvidenceRowId: null }
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true, previous: null }) })
     vi.stubGlobal('fetch', fetchMock)
 
@@ -195,7 +197,7 @@ describe('revertReconciliationRowState', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/sessions/session-1/account-classification/rows/row-1',
       expect.objectContaining({
-        body: JSON.stringify({ finalAccount: null, staffMemo: null, status: 'suggested' }),
+        body: JSON.stringify({ finalAccount: null, staffMemo: null, status: 'suggested', linkedEvidenceRowId: null }),
       }),
     )
   })
@@ -209,9 +211,47 @@ describe('revertReconciliationRowState', () => {
     const result = await revertReconciliationRowState({
       uploadSessionId: 'session-1',
       rowId: 'row-1',
-      previous: { finalAccount: null, staffMemo: null, status: 'suggested' },
+      previous: { finalAccount: null, staffMemo: null, status: 'suggested', linkedEvidenceRowId: null },
     })
 
     expect(result).toEqual({ ok: false, message: '이미 다른 값으로 변경되었습니다.' })
+  })
+})
+
+describe('connectReconciliationRowEvidence', () => {
+  it('PATCHes the classification row endpoint with linkedEvidenceRowId', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true, previous: { finalAccount: null, staffMemo: null, status: 'suggested', linkedEvidenceRowId: null } }) })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await connectReconciliationRowEvidence({
+      uploadSessionId: 'session-1',
+      rowId: 'row-1',
+      evidenceRowId: 'row-2',
+    })
+
+    expect(result.ok).toBe(true)
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/sessions/session-1/account-classification/rows/row-1',
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linkedEvidenceRowId: 'row-2' }),
+      },
+    )
+  })
+
+  it('returns the server error message on failure', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: '세금계산서·현금영수증·카드 거래만 증빙으로 연결할 수 있습니다.' }),
+    }))
+
+    const result = await connectReconciliationRowEvidence({
+      uploadSessionId: 'session-1',
+      rowId: 'row-1',
+      evidenceRowId: 'row-2',
+    })
+
+    expect(result).toEqual({ ok: false, message: '세금계산서·현금영수증·카드 거래만 증빙으로 연결할 수 있습니다.' })
   })
 })
