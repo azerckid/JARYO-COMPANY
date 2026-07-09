@@ -463,6 +463,38 @@ describe('updateBookkeepingClassificationRow evidence link (JC-010 2b-2)', () =>
     if (!result.ok) expect(result.status).toBe(400)
   })
 
+  it('rejects a non-bank row (card/receipt/tax_invoice) initiating a link — only bank rows link to evidence (review P1)', async () => {
+    // CLASSIFICATION_ROW_ID is seeded as sourceType 'bank' by beforeEach.
+    // Here the row TRYING to save a link is the card/tax_invoice row
+    // instead — the UI never offers this (evidence finder only opens for
+    // bank rows), but the API must reject it too, not just trust the client.
+    await seedEvidenceRow('tax_invoice')
+    const otherEvidenceRowId = 'classification-row-second-evidence'
+    await client.execute({
+      sql: `INSERT INTO bookkeeping_transaction_classification
+            (id, tenant_id, classification_run_id, upload_session_id, source_type, transaction_date, merchant_name, description, amount_krw, direction, recommended_account, recommendation_confidence, recommendation_reason, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, 'card', '2026-06-11', '문구점', '문구 구매', 8000, 'expense', 'supplies', 'high', '문구', 'suggested', '2026-06-01', '2026-06-01')`,
+      args: [otherEvidenceRowId, TENANT, RUN_ID, SESSION_ID],
+    })
+
+    const result = await updateBookkeepingClassificationRow({
+      rowId: EVIDENCE_ROW_ID, // sourceType: 'tax_invoice', not 'bank'
+      sessionId: SESSION_ID,
+      tenantId: TENANT,
+      staffRecord,
+      linkedEvidenceRowId: otherEvidenceRowId,
+    })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.status).toBe(400)
+
+    const [row] = await testDb
+      .select()
+      .from(bookkeepingTransactionClassification)
+      .where(eq(bookkeepingTransactionClassification.id, EVIDENCE_ROW_ID))
+    expect(row.linkedEvidenceRowId).toBeNull()
+  })
+
   it('rejects linking a nonexistent row', async () => {
     const result = await updateBookkeepingClassificationRow({
       rowId: CLASSIFICATION_ROW_ID,

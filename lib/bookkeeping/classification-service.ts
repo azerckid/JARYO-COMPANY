@@ -951,6 +951,14 @@ export async function updateBookkeepingClassificationRow(params: {
   }
 
   if (params.linkedEvidenceRowId !== undefined && params.linkedEvidenceRowId !== null) {
+    // JC-010 2b-2 scope: only bank rows link to evidence. Card/receipt/
+    // tax_invoice rows are themselves evidence (2b-1 decision) and never
+    // initiate a link; without this check, the same PATCH endpoint would
+    // let a card row set its own linkedEvidenceRowId, which the UI never
+    // offers but the API would otherwise silently accept.
+    if (row.sourceType !== 'bank') {
+      return { ok: false as const, status: 400, error: '통장 거래만 증빙을 연결할 수 있습니다.' }
+    }
     if (params.linkedEvidenceRowId === row.id) {
       return { ok: false as const, status: 400, error: '같은 거래를 증빙으로 연결할 수 없습니다.' }
     }
