@@ -156,6 +156,15 @@ function buildMatchedTaxCandidate(
   }
 }
 
+function asManualReferenceCandidate(
+  candidate: NonNullable<ReconciliationLedgerRow['candidates']>[number],
+): NonNullable<ReconciliationLedgerRow['candidates']>[number] {
+  return {
+    ...candidate,
+    reason: 'manual_reference',
+  }
+}
+
 function buildBankFixtureRow(sample: (typeof BANK_SAMPLE_DEFINITIONS)[number]): ReconciliationLedgerRow {
   const override = BANK_FIXTURE_OVERRIDES[sample.suffix]
   const skipPairedTax = sample.suffix === `${JULY_FIXTURE_SUFFIX}_b27`
@@ -164,7 +173,7 @@ function buildBankFixtureRow(sample: (typeof BANK_SAMPLE_DEFINITIONS)[number]): 
   const linkedCandidates = override && 'candidates' in override
     ? (override.candidates ?? [])
     : override?.evidenceActionState === 'linked' && taxCandidate
-      ? [taxCandidate]
+      ? [asManualReferenceCandidate(taxCandidate)]
       : override?.candidates ?? (taxCandidate ? [taxCandidate] : [])
 
   return {

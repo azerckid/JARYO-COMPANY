@@ -104,6 +104,7 @@ describe('reconciliation-row-actions', () => {
 
     expect(rentEvidence?.source).toBe('tax_invoice')
     expect(rentEvidence?.rowId).toBe(rentRow!.candidates[0]!.rowId)
+    expect(rentRow!.candidates[0]!.reason).toBe('manual_reference')
     expect(interestEvidence?.source).toBe('bank')
     expect(interestEvidence?.rowId).toBeNull()
   })
