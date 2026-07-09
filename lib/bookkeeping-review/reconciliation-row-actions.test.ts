@@ -8,10 +8,12 @@ import {
   evidenceFinderSourceForLinkedEvidence,
   evidenceRowHighlightTone,
   filterEvidenceFinderBrowseRows,
+  formatEvidenceExceptionMemo,
   formatExclusionReasonMemo,
   hasAiEvidenceSuggestion,
   hasEvidenceFinderAiMatch,
   isFoundEvidenceReference,
+  isEvidenceExceptionMemo,
   isSavedEvidenceReference,
   listEvidenceFinderBrowseRows,
   matchesEvidenceFinderSource,
@@ -80,6 +82,20 @@ describe('reconciliation-row-actions', () => {
     expect(excludedRow).toBeDefined()
     expect(evidenceActionChipLabel(excludedRow!.evidenceActionState)?.label).toBe('제외됨')
     expect(shouldShowEvidenceFinder(excludedRow!)).toBe(false)
+  })
+
+  it('hides evidence finder for evidence exception rows', () => {
+    const evidenceExceptionRow = {
+      ...RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows[0]!,
+      evidenceActionState: 'evidence_exception' as const,
+      rowConclusion: {
+        ...RECONCILIATION_LEDGER_DISPLAY_FIXTURE.rows[0]!.rowConclusion,
+        primaryAction: 'review_only' as const,
+      },
+    }
+
+    expect(evidenceActionChipLabel(evidenceExceptionRow.evidenceActionState)).toEqual({ label: '증빙 예외', tone: 'warn' })
+    expect(shouldShowEvidenceFinder(evidenceExceptionRow)).toBe(false)
   })
 
   it('uses danger row highlight only for evidence or explanation blockers', () => {
@@ -245,5 +261,21 @@ describe('formatExclusionReasonMemo', () => {
 
   it('trims surrounding whitespace from the reason', () => {
     expect(formatExclusionReasonMemo('  업무무관  ')).toBe('제외 사유: 업무무관')
+  })
+})
+
+describe('formatEvidenceExceptionMemo', () => {
+  it('prefixes the reason with a consistent "증빙 예외: " label', () => {
+    expect(formatEvidenceExceptionMemo('내부이체 - 국민 9012에서 마이너스 한도 계좌로 이동')).toBe('증빙 예외: 내부이체 - 국민 9012에서 마이너스 한도 계좌로 이동')
+  })
+
+  it('trims surrounding whitespace from the reason', () => {
+    expect(formatEvidenceExceptionMemo('  세금 납부  ')).toBe('증빙 예외: 세금 납부')
+  })
+
+  it('detects formatted evidence exception memos', () => {
+    expect(isEvidenceExceptionMemo('증빙 예외: 내부이체 - 운영비 계좌 이동')).toBe(true)
+    expect(isEvidenceExceptionMemo('제외 사유: 개인 사용')).toBe(false)
+    expect(isEvidenceExceptionMemo(null)).toBe(false)
   })
 })

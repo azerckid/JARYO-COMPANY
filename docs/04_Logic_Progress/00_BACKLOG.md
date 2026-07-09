@@ -172,7 +172,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [x] 자료대조원장 Slice 2b-2a 증빙 연결 저장 완료 — Brief §2.1 step 2b-2a, PR #173 merged(`4922096`), prod DB migration 0066 적용 후 진행
   - [x] 자료대조원장 Slice 2b-2b 증빙 확인 상세 보기/연결 행 강조 구현 — PR #175 merged(`f708af1`). `증빙 확인` 클릭 시 **찾은 증빙 한 줄**을 먼저 표시하고, 그 한 줄 클릭 시 해당 출처 목록에서 연결/발견 행을 배경색·테두리·선택 표시로 강조
   - [x] 자료대조원장 Slice 2b-2c-1 증빙 연결 해제·변경 구현 — 저장된 `manual_reference` 링크는 강조 행에서 해제 가능, 다른 행 선택은 기존 연결을 교체
-  - [ ] 자료대조원장 Slice 2b-2c-2 증빙 예외 처리 범위 확정 — 예외 유형·메모 저장 방식 결정 필요
+  - [x] 자료대조원장 Slice 2b-2c-2 증빙 예외 처리 구현 — `staffMemo`에 `증빙 예외: ...` 형식으로 저장하고 기존 `linkedEvidenceRowId`를 비움. 예외 처리된 행은 `증빙 예외` 칩으로 표시하고 증빙 찾기/확인 드롭다운을 닫음
   - [ ] 자료대조원장 Slice 2b-2c-3 금액 차이 처리 범위 확정 — 선택 합계·잔여 차액·부분 연결 정책 결정 필요
   - [ ] 자료대조원장 Slice 2c durable match-link schema 필요 여부 판단
 - Acceptance Criteria:

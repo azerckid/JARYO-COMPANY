@@ -104,6 +104,19 @@ export async function disconnectReconciliationRowEvidence(params: {
   })
 }
 
+export async function saveReconciliationRowEvidenceException(params: {
+  uploadSessionId: string
+  rowId: string
+  memo: string
+}): Promise<ReconciliationRowMutationResult> {
+  return patchClassificationRow({
+    uploadSessionId: params.uploadSessionId,
+    rowId: params.rowId,
+    body: { staffMemo: params.memo, linkedEvidenceRowId: null },
+    fallbackErrorMessage: '증빙 예외 처리에 실패했습니다.',
+  })
+}
+
 // Shallow undo (Brief 41 §0.4): PATCHes the row straight back to the
 // pre-mutation snapshot the server returned. No separate audit-log store —
 // callers keep `previous` in memory only for the current session/toast.

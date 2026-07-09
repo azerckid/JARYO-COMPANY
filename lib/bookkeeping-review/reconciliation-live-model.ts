@@ -3,7 +3,7 @@ import type {
   ReconciliationMatchCandidate as LiveMatchCandidate,
 } from './summary'
 import { isEvidenceSource } from './summary'
-import { matchCandidateReasonLabel } from './reconciliation-row-actions'
+import { isEvidenceExceptionMemo, matchCandidateReasonLabel } from './reconciliation-row-actions'
 import { looksPersonallyUseSuspicious } from './reconciliation-personal-use-detection'
 import type {
   ReconciliationEvidenceActionState,
@@ -19,6 +19,10 @@ const disabledActionNote = 'Slice 2b 전까지 저장·확정이 비활성화됩
 export function mapLiveEvidenceActionState(row: BookkeepingReviewQueueRow): ReconciliationEvidenceActionState {
   if (row.status === 'excluded') {
     return 'excluded'
+  }
+
+  if (isEvidenceExceptionMemo(row.staffMemo)) {
+    return 'evidence_exception'
   }
 
   // A user-confirmed evidence link (JC-010 2b-2) always wins over the
@@ -101,6 +105,8 @@ export function buildLiveRowConclusion(
 
   const headline = (() => {
     if (evidenceActionState === 'excluded') return '제외된 거래입니다'
+    if (evidenceActionState === 'evidence_exception' && row.status !== 'confirmed') return '증빙 예외 처리 완료 · 계정항목을 확정해야 합니다'
+    if (evidenceActionState === 'evidence_exception') return '증빙 예외 처리된 거래입니다'
     if (evidenceActionState === 'candidate' && topCandidate) return `AI가 증빙을 찾았습니다 (${matchCandidateReasonLabel(topCandidate.reason)}) — 확인해주세요`
     if (evidenceActionState === 'candidate') return '증빙을 확인해주세요'
     if (evidenceActionState === 'evidence_required') return '증빙을 연결해야 합니다'
@@ -111,6 +117,7 @@ export function buildLiveRowConclusion(
   })()
 
   const basisLabel = (() => {
+    if (evidenceActionState === 'evidence_exception') return row.staffMemo ?? '증빙 예외 사유 기록됨'
     if (topCandidate) return matchCandidateReasonLabel(topCandidate.reason)
     if (evidenceActionState === 'explanation_required' || evidenceActionState === 'explained_no_evidence') {
       return '업무무관 의심 패턴 (영화관·미용실·PC방 등)'

@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils'
 import {
   ReconciliationAccountSelector,
   ReconciliationEvidenceCell,
+  ReconciliationEvidenceExceptionModal,
   ReconciliationEvidencePickerModal,
   ReconciliationExclusionModal,
   ReconciliationExplanationModal,
@@ -98,6 +99,7 @@ export function ReconciliationLedgerDisplayFixtureView({
     [initialRowId, rows],
   )
   const [evidencePicker, setEvidencePicker] = useState<EvidencePickerState | null>(null)
+  const [evidenceExceptionRowId, setEvidenceExceptionRowId] = useState<string | null>(null)
   const [explanationRowId, setExplanationRowId] = useState<string | null>(() => {
     if (initialRow?.evidenceActionState === 'explanation_required') {
       return initialRow.id
@@ -109,6 +111,10 @@ export function ReconciliationLedgerDisplayFixtureView({
   const evidencePickerRow = useMemo(
     () => (evidencePicker ? rows.find((row) => row.id === evidencePicker.rowId) ?? null : null),
     [evidencePicker, rows],
+  )
+  const evidenceExceptionRow = useMemo(
+    () => (evidenceExceptionRowId ? rows.find((row) => row.id === evidenceExceptionRowId) ?? null : null),
+    [evidenceExceptionRowId, rows],
   )
   const explanationRow = useMemo(
     () => (explanationRowId ? rows.find((row) => row.id === explanationRowId) ?? null : null),
@@ -242,6 +248,7 @@ export function ReconciliationLedgerDisplayFixtureView({
                 key={row.id}
                 cardLayout={cardLayout}
                 isFixtureMode={isFixtureMode}
+                onOpenEvidenceException={() => setEvidenceExceptionRowId(row.id)}
                 onOpenEvidencePicker={(source) => setEvidencePicker({ highlightedEvidenceRowId: null, rowId: row.id, source })}
                 onOpenFoundEvidence={(source, evidenceRowId) => {
                   setEvidencePicker({ highlightedEvidenceRowId: evidenceRowId, rowId: row.id, source })
@@ -272,6 +279,18 @@ export function ReconciliationLedgerDisplayFixtureView({
           open={evidencePicker !== null && evidencePickerRow !== null}
           row={evidencePickerRow}
           source={evidencePicker?.source ?? null}
+        />
+
+        <ReconciliationEvidenceExceptionModal
+          key={`evidence-exception-${evidenceExceptionRowId ?? 'closed'}`}
+          isFixtureMode={isFixtureMode}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEvidenceExceptionRowId(null)
+            }
+          }}
+          open={evidenceExceptionRow !== null}
+          row={evidenceExceptionRow}
         />
 
         <ReconciliationExplanationModal
@@ -405,6 +424,7 @@ function PeriodScopeControl({
 function FixtureRow({
   cardLayout,
   isFixtureMode,
+  onOpenEvidenceException,
   onOpenEvidencePicker,
   onOpenFoundEvidence,
   onOpenExclusion,
@@ -414,6 +434,7 @@ function FixtureRow({
 }: {
   readonly cardLayout: boolean
   readonly isFixtureMode: boolean
+  readonly onOpenEvidenceException: () => void
   readonly onOpenEvidencePicker: (source: EvidenceFinderSource) => void
   readonly onOpenFoundEvidence: (source: EvidenceFinderSource, evidenceRowId: string) => void
   readonly onOpenExclusion: () => void
@@ -493,6 +514,7 @@ function FixtureRow({
         </td>
         <td className="px-3 py-3">
           <ReconciliationEvidenceCell
+            onOpenEvidenceException={onOpenEvidenceException}
             onOpenEvidencePicker={onOpenEvidencePicker}
             onOpenFoundEvidence={onOpenFoundEvidence}
             onOpenExplanation={onOpenExplanation}
@@ -533,6 +555,7 @@ function FixtureRow({
       <td className="px-3 py-3 text-right font-mono font-semibold text-foreground">{formatKrw(row.amountKrw)}</td>
       <td className="px-3 py-3">
         <ReconciliationEvidenceCell
+          onOpenEvidenceException={onOpenEvidenceException}
           onOpenEvidencePicker={onOpenEvidencePicker}
           onOpenFoundEvidence={onOpenFoundEvidence}
           onOpenExplanation={onOpenExplanation}

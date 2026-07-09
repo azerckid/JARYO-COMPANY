@@ -99,6 +99,22 @@ describe('mapLiveEvidenceActionState', () => {
     expect(mapLiveEvidenceActionState(row)).toBe('linked')
   })
 
+  it('maps formatted evidence exception memos to evidence_exception before links or candidates', () => {
+    const row = buildRow({
+      staffMemo: '증빙 예외: 내부이체 - 국민 9012 운영비 계좌 이동',
+      linkedEvidenceRowId: 'evidence-row',
+      reconciliation: {
+        matchState: 'candidate',
+        candidates: [{
+          id: 'c1', sourceType: 'tax_invoice', rowId: 'evidence-row', date: '2026-07-08',
+          counterparty: '테스트 거래처', amountKrw: 100_000, confidence: 'high', reason: 'manual_reference',
+        }],
+        blockers: [],
+      },
+    })
+    expect(mapLiveEvidenceActionState(row)).toBe('evidence_exception')
+  })
+
   it('routes a personal-use-suspicious row to explanation_required even when a bank-match candidate exists (PR #167 review P2)', () => {
     const row = buildRow({
       sourceType: 'card',
@@ -149,6 +165,10 @@ describe('resolveLivePrimaryAction', () => {
   it('uses write_explanation for explanation_required', () => {
     expect(resolveLivePrimaryAction(buildRow(), 'explanation_required')).toBe('write_explanation')
   })
+
+  it('continues to require account confirmation after evidence exception when the row is not confirmed', () => {
+    expect(resolveLivePrimaryAction(buildRow({ status: 'suggested' }), 'evidence_exception')).toBe('confirm_account')
+  })
 })
 
 describe('buildLiveRowConclusion', () => {
@@ -182,6 +202,14 @@ describe('buildLiveRowConclusion', () => {
     expect(conclusion.primaryAction).toBe('write_explanation')
   })
 
+  it('explains evidence exceptions from the saved memo', () => {
+    const row = buildRow({ staffMemo: '증빙 예외: 내부이체 - 국민 9012 운영비 계좌 이동' })
+    const conclusion = buildLiveRowConclusion(row, 'evidence_exception')
+    expect(conclusion.headline).toBe('증빙 예외 처리 완료 · 계정항목을 확정해야 합니다')
+    expect(conclusion.basisLabel).toBe('증빙 예외: 내부이체 - 국민 9012 운영비 계좌 이동')
+    expect(conclusion.primaryAction).toBe('confirm_account')
+  })
+
   it('never uses forbidden candidate-count wording (Brief 41 §0.3)', () => {
     const withCandidate = buildRow({
       reconciliation: {
@@ -200,6 +228,7 @@ describe('buildLiveRowConclusion', () => {
       buildLiveRowConclusion(withoutCandidate, 'candidate'),
       buildLiveRowConclusion(withoutCandidate, 'evidence_required'),
       buildLiveRowConclusion(withoutCandidate, 'linked'),
+      buildLiveRowConclusion(withoutCandidate, 'evidence_exception'),
       buildLiveRowConclusion(withoutCandidate, 'excluded'),
     ]) {
       expect(conclusion.headline).not.toContain('후보')
@@ -246,6 +275,17 @@ describe('buildLiveReconciliationLedgerRow', () => {
       { mode: 'month', label: '2026년 7월 기장검토' },
     )
     expect(() => reconciliationLedgerRowSchema.parse(evidenceRequiredRow)).not.toThrow()
+  })
+
+  it('produces a schema-valid row for evidence_exception and keeps evidence finder actions closed', () => {
+    const evidenceExceptionRow = buildLiveReconciliationLedgerRow(
+      buildRow({ staffMemo: '증빙 예외: 세금 납부 - 지방세 납부 고지서 기준' }),
+      { mode: 'month', label: '2026년 7월 기장검토' },
+    )
+    expect(() => reconciliationLedgerRowSchema.parse(evidenceExceptionRow)).not.toThrow()
+    expect(evidenceExceptionRow.evidenceActionState).toBe('evidence_exception')
+    expect(evidenceExceptionRow.actions.canExplain).toBe(false)
+    expect(evidenceExceptionRow.actions.canConfirmAccount).toBe(true)
   })
 
   it('disallows account confirmation for excluded rows so canConfirmAccount matches the UI guard', () => {

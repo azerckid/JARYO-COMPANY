@@ -31,6 +31,7 @@ import {
   evidenceFinderSourceForLinkedEvidence,
   evidenceFinderSourceOptions,
   filterEvidenceFinderBrowseRows,
+  formatEvidenceExceptionMemo,
   formatExclusionReasonMemo,
   formatKrwAmount,
   formatRemainingDifferenceLabel,
@@ -50,6 +51,7 @@ import {
   disconnectReconciliationRowEvidence,
   revertReconciliationRowState,
   saveReconciliationRowExclusion,
+  saveReconciliationRowEvidenceException,
   saveReconciliationRowExplanation,
   type ReconciliationRowPreviousState,
 } from '@/lib/bookkeeping-review/reconciliation-row-mutations'
@@ -116,6 +118,7 @@ const chipClass: Record<Tone, string> = {
 
 export interface ReconciliationEvidenceCellProps {
   readonly onOpenEvidencePicker: (source: EvidenceFinderSource) => void
+  readonly onOpenEvidenceException: () => void
   readonly onOpenFoundEvidence: (source: EvidenceFinderSource, evidenceRowId: string) => void
   readonly onOpenExplanation: () => void
   readonly row: ReconciliationLedgerRow
@@ -123,6 +126,7 @@ export interface ReconciliationEvidenceCellProps {
 
 export function ReconciliationEvidenceCell({
   onOpenEvidencePicker,
+  onOpenEvidenceException,
   onOpenFoundEvidence,
   onOpenExplanation,
   row,
@@ -156,6 +160,7 @@ export function ReconciliationEvidenceCell({
       {showEvidenceFinder ? (
         <EvidenceFinderDropdown
           label={evidenceFinderActionLabel(row)}
+          onOpenEvidenceException={onOpenEvidenceException}
           onOpenEvidencePicker={onOpenEvidencePicker}
           onOpenFoundEvidence={onOpenFoundEvidence}
           row={row}
@@ -168,10 +173,12 @@ export function ReconciliationEvidenceCell({
 function EvidenceFinderDropdown({
   label,
   onOpenEvidencePicker,
+  onOpenEvidenceException,
   onOpenFoundEvidence,
   row,
 }: {
   readonly label: string
+  readonly onOpenEvidenceException: () => void
   readonly onOpenEvidencePicker: (source: EvidenceFinderSource) => void
   readonly onOpenFoundEvidence: (source: EvidenceFinderSource, evidenceRowId: string) => void
   readonly row: ReconciliationLedgerRow
@@ -183,6 +190,7 @@ function EvidenceFinderDropdown({
   const foundEvidenceSource = foundEvidence
     ? evidenceFinderSourceForLinkedEvidence(foundEvidence.source)
     : null
+  const canMarkEvidenceException = row.source === 'bank'
 
   return (
     <DropdownMenu>
@@ -209,6 +217,14 @@ function EvidenceFinderDropdown({
                 {formatKrwAmount(foundEvidence.amountKrw)}
                 {foundEvidence.date ? ` · ${foundEvidence.date.slice(5, 10)}` : ''}
               </span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
+        {canMarkEvidenceException ? (
+          <>
+            <DropdownMenuItem onClick={onOpenEvidenceException}>
+              증빙 예외 처리
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
@@ -740,6 +756,147 @@ export function ReconciliationExplanationModal({
                 type="button"
               >
                 저장
+              </button>
+            </DialogFooter>
+          </>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+const evidenceExceptionReasonOptions = [
+  '내부이체',
+  '대출',
+  '세금 납부',
+  '환불/취소',
+  '이자/수수료',
+  '보증금',
+  '기타',
+] as const
+
+export interface ReconciliationEvidenceExceptionModalProps {
+  readonly isFixtureMode: boolean
+  readonly onOpenChange: (open: boolean) => void
+  readonly open: boolean
+  readonly row: ReconciliationLedgerRow | null
+}
+
+export function ReconciliationEvidenceExceptionModal({
+  isFixtureMode,
+  onOpenChange,
+  open,
+  row,
+}: ReconciliationEvidenceExceptionModalProps) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [reason, setReason] = useState<(typeof evidenceExceptionReasonOptions)[number]>('내부이체')
+  const [draft, setDraft] = useState('')
+  const saveDisabled = isFixtureMode || isPending || draft.trim().length === 0
+
+  function saveEvidenceException() {
+    if (!row) return
+    startTransition(async () => {
+      const result = await saveReconciliationRowEvidenceException({
+        uploadSessionId: row.uploadSessionId,
+        rowId: row.id,
+        memo: formatEvidenceExceptionMemo(`${reason} - ${draft.trim()}`),
+      })
+      if (!result.ok) {
+        toast.error(result.message)
+        return
+      }
+      showUndoableSuccessToast({
+        message: '증빙 예외로 처리했습니다.',
+        uploadSessionId: row.uploadSessionId,
+        rowId: row.id,
+        previous: result.previous,
+        router,
+      })
+      onOpenChange(false)
+      router.refresh()
+    })
+  }
+
+  return (
+    <Dialog
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) {
+          setReason('내부이체')
+          setDraft('')
+        }
+        onOpenChange(nextOpen)
+      }}
+      open={open}
+    >
+      <DialogContent className="flex w-full max-w-lg flex-col gap-0 overflow-hidden border-company-border bg-company-surface p-0 sm:max-w-lg">
+        {row ? (
+          <>
+            <DialogHeader className="border-b border-company-border px-5 py-4 pr-12">
+              <DialogTitle className="text-base font-semibold text-foreground">증빙 예외 처리</DialogTitle>
+              <DialogDescription className="text-[13px] text-company-fg-muted">
+                {row.counterparty ?? '거래처 미정'} · {formatKrwAmount(row.amountKrw)}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 px-5 py-4">
+              <div className="rounded-[10px] border border-company-border bg-[#fcfcfd] px-3 py-2 text-[12px] text-company-fg-muted">
+                <p className="font-medium text-foreground">{row.description}</p>
+                <p className="mt-1">내부이체·대출·세금 납부처럼 세금계산서/현금영수증/카드 매칭이 맞지 않는 거래만 예외로 처리합니다.</p>
+              </div>
+              <div>
+                <span className="text-[12px] font-semibold text-foreground">예외 유형</span>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {evidenceExceptionReasonOptions.map((option) => (
+                    <button
+                      key={option}
+                      className={cn(
+                        'rounded-full border px-2.5 py-1 text-[11.5px] font-semibold',
+                        reason === option
+                          ? 'border-[#fde68a] bg-[#fffbeb] text-[#d97706]'
+                          : 'border-company-border bg-company-surface text-company-fg-muted hover:bg-company-nav-hover',
+                      )}
+                      onClick={() => setReason(option)}
+                      type="button"
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <label className="block">
+                <span className="text-[12px] font-semibold text-foreground">예외 메모</span>
+                <textarea
+                  className="mt-1.5 min-h-[100px] w-full resize-y rounded-lg border border-company-border bg-company-surface px-3 py-2 text-[13px] outline-none focus:border-[#93c5fd]"
+                  onChange={(event) => setDraft(event.target.value)}
+                  placeholder="예: 국민 9012 운영비 계좌에서 마이너스 한도 계좌로 이동"
+                  value={draft}
+                />
+                <span className="mt-1 block text-[11.5px] text-company-fg-subtle">
+                  저장 시 &quot;증빙 예외: {reason} - {draft.trim() || '...'}&quot; 형식으로 기록됩니다.
+                </span>
+              </label>
+            </div>
+            <DialogFooter className="border-t border-company-border bg-[#fcfcfd] px-5 py-3 sm:justify-between">
+              <button
+                className="rounded-lg border border-company-border px-3 py-2 text-[12px] font-semibold text-company-fg-muted"
+                onClick={() => onOpenChange(false)}
+                type="button"
+              >
+                취소
+              </button>
+              <button
+                className={cn(
+                  'rounded-lg border px-3 py-2 text-[12px] font-semibold',
+                  saveDisabled
+                    ? 'cursor-not-allowed border-company-border bg-company-nav-hover text-company-fg-subtle'
+                    : 'border-[#fde68a] bg-[#d97706] text-white hover:opacity-90',
+                )}
+                disabled={saveDisabled}
+                onClick={saveEvidenceException}
+                title={isFixtureMode ? disabledActionNote : undefined}
+                type="button"
+              >
+                증빙 예외 처리
               </button>
             </DialogFooter>
           </>
