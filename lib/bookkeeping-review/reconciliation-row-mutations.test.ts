@@ -5,6 +5,7 @@ import {
   disconnectReconciliationRowEvidence,
   revertReconciliationRowState,
   saveReconciliationRowExclusion,
+  saveReconciliationRowEvidenceException,
   saveReconciliationRowExplanation,
 } from './reconciliation-row-mutations'
 
@@ -291,5 +292,47 @@ describe('disconnectReconciliationRowEvidence', () => {
     })
 
     expect(result).toEqual({ ok: false, message: '연결된 증빙이 없습니다.' })
+  })
+})
+
+describe('saveReconciliationRowEvidenceException', () => {
+  it('PATCHes staffMemo and clears any linked evidence row', async () => {
+    const previous = { finalAccount: null, staffMemo: null, status: 'suggested', linkedEvidenceRowId: 'row-2' }
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true, previous }) })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await saveReconciliationRowEvidenceException({
+      uploadSessionId: 'session-1',
+      rowId: 'row-1',
+      memo: '증빙 예외: 내부이체 - 국민 9012 운영비 계좌 이동',
+    })
+
+    expect(result).toEqual({ ok: true, previous })
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/sessions/session-1/account-classification/rows/row-1',
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          staffMemo: '증빙 예외: 내부이체 - 국민 9012 운영비 계좌 이동',
+          linkedEvidenceRowId: null,
+        }),
+      },
+    )
+  })
+
+  it('returns the server error message on failure', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: '증빙 예외 메모가 필요합니다.' }),
+    }))
+
+    const result = await saveReconciliationRowEvidenceException({
+      uploadSessionId: 'session-1',
+      rowId: 'row-1',
+      memo: '',
+    })
+
+    expect(result).toEqual({ ok: false, message: '증빙 예외 메모가 필요합니다.' })
   })
 })

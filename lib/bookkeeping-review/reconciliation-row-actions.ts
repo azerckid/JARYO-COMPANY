@@ -206,9 +206,18 @@ export function rowPrimaryActionLabel(action: ReconciliationRowPrimaryAction): s
 // (2b-1 결정). "제외 사유: ..." 접두사로 형식을 통일해 나중에 구조화된
 // 필드로 마이그레이션할 때 문자열에서 사유만 안전하게 분리할 수 있게 한다.
 const EXCLUSION_REASON_PREFIX = '제외 사유: '
+const EVIDENCE_EXCEPTION_PREFIX = '증빙 예외: '
 
 export function formatExclusionReasonMemo(reason: string): string {
   return `${EXCLUSION_REASON_PREFIX}${reason.trim()}`
+}
+
+export function formatEvidenceExceptionMemo(reason: string): string {
+  return `${EVIDENCE_EXCEPTION_PREFIX}${reason.trim()}`
+}
+
+export function isEvidenceExceptionMemo(memo: string | null | undefined): boolean {
+  return memo?.trim().startsWith(EVIDENCE_EXCEPTION_PREFIX) ?? false
 }
 
 export function formatKrwAmount(value: number | null): string {
@@ -226,6 +235,7 @@ export function shouldShowEvidenceFinder(row: ReconciliationLedgerRow): boolean 
 
   return row.evidenceActionState !== 'explanation_required'
     && row.evidenceActionState !== 'explained_no_evidence'
+    && row.evidenceActionState !== 'evidence_exception'
     && row.evidenceActionState !== 'excluded'
 }
 
