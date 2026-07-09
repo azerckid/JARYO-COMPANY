@@ -128,6 +128,23 @@ describe('buildReconciliationPatternSuggestions', () => {
     expect(suggestion?.basisLabel).toContain('업무무관 제외 사유로 처리')
   })
 
+  it('does not treat evidence exception history as an exclusion pattern', () => {
+    const target = buildRow({ id: 'target', transactionDate: '2026-07-08', counterparty: '페이즈 주식회사', sourceType: 'bank' })
+    const rows = [
+      target,
+      buildRow({
+        id: 'prior-exception',
+        transactionDate: '2026-06-08',
+        counterparty: '페이즈 주식회사',
+        sourceType: 'bank',
+        status: 'suggested',
+        staffMemo: '증빙 예외: 내부이체',
+      }),
+    ]
+
+    expect(buildReconciliationPatternSuggestions(rows).get(target.id)).toBeUndefined()
+  })
+
   it('keeps exclusion as the primary visible basis while preserving account and evidence suggestions', () => {
     const target = buildRow({ id: 'target', transactionDate: '2026-07-08', counterparty: '반복거래처', sourceType: 'bank' })
     const rows = [

@@ -1,5 +1,5 @@
 import { labelForBookkeepingAccountCategory } from '@/lib/bookkeeping/account-categories'
-import { evidenceSourceLabel, exclusionReasonLabel, isEvidenceExceptionMemo } from './reconciliation-row-actions'
+import { evidenceSourceLabel, exclusionReasonLabel } from './reconciliation-row-actions'
 import type { BookkeepingReviewQueueRow, BookkeepingSourceType } from './summary'
 import type { ReconciliationExclusionReason, ReconciliationPatternSuggestion, ReconciliationSource } from './reconciliation-display-model'
 
@@ -156,7 +156,7 @@ function buildExclusionPatternSuggestion(
 
   const priorExcludedRows = rows.filter((candidate) => {
     if (!samePatternScope(row, candidate)) return false
-    return candidate.status === 'excluded' || isEvidenceExceptionMemo(candidate.staffMemo)
+    return candidate.status === 'excluded'
   })
   const dominant = pickDominantValue(
     priorExcludedRows
