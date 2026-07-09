@@ -21,6 +21,15 @@ export function mapLiveEvidenceActionState(row: BookkeepingReviewQueueRow): Reco
     return 'excluded'
   }
 
+  // A user-confirmed evidence link (JC-010 2b-2) always wins over the
+  // AI candidate list — buildReconciliationInfo collapses candidates down
+  // to a single manual_reference entry once linkedEvidenceRowId is set,
+  // so checking the raw field here (rather than candidates.length) keeps
+  // this branch from falling through to the 'candidate' case below.
+  if (row.linkedEvidenceRowId) {
+    return 'linked'
+  }
+
   // Personal-use suspicion must be checked before the candidate/evidence
   // match logic: confirming that a bank record matches this payment answers
   // "did this payment happen", not "was this a legitimate business expense".

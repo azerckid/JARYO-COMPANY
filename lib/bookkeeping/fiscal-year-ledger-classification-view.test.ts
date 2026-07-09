@@ -129,6 +129,7 @@ beforeAll(async () => {
       final_account text,
       staff_memo text,
       status text NOT NULL DEFAULT 'suggested',
+      linked_evidence_row_id text,
       confirmed_by_staff_id text,
       confirmed_at text,
       created_at text NOT NULL,

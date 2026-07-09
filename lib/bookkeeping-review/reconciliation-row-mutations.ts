@@ -2,6 +2,7 @@ export type ReconciliationRowPreviousState = {
   finalAccount: string | null
   staffMemo: string | null
   status: string
+  linkedEvidenceRowId: string | null
 }
 
 export type ReconciliationRowMutationResult =
@@ -74,6 +75,23 @@ export async function saveReconciliationRowExclusion(params: {
   })
 }
 
+// JC-010 2b-2: connects a bank row to a chosen tax_invoice/receipt/card row
+// as its confirmed evidence. Card rows are never the target of this
+// mutation — a card approval is itself the evidence, not something that
+// needs a separate evidence link (2b-1 scope decision).
+export async function connectReconciliationRowEvidence(params: {
+  uploadSessionId: string
+  rowId: string
+  evidenceRowId: string
+}): Promise<ReconciliationRowMutationResult> {
+  return patchClassificationRow({
+    uploadSessionId: params.uploadSessionId,
+    rowId: params.rowId,
+    body: { linkedEvidenceRowId: params.evidenceRowId },
+    fallbackErrorMessage: '증빙 연결에 실패했습니다.',
+  })
+}
+
 // Shallow undo (Brief 41 §0.4): PATCHes the row straight back to the
 // pre-mutation snapshot the server returned. No separate audit-log store —
 // callers keep `previous` in memory only for the current session/toast.
@@ -89,6 +107,7 @@ export async function revertReconciliationRowState(params: {
       finalAccount: params.previous.finalAccount,
       staffMemo: params.previous.staffMemo,
       status: params.previous.status,
+      linkedEvidenceRowId: params.previous.linkedEvidenceRowId,
     },
     fallbackErrorMessage: '되돌리기에 실패했습니다.',
   })

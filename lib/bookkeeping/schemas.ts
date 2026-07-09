@@ -54,6 +54,7 @@ export const updateClassificationRowSchema = z.object({
   staffMemo: z.string().max(1000).nullable().optional(),
   status: bookkeepingRowStatusSchema.optional(),
   purposeRequestRowId: z.string().min(1).nullable().optional(),
+  linkedEvidenceRowId: z.string().min(1).nullable().optional(),
 })
 
 export const bulkConfirmClassificationRowsSchema = z.object({

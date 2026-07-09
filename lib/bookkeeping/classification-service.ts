@@ -894,6 +894,12 @@ export async function getLatestBookkeepingClassification(params: {
   return resolveBookkeepingClassificationView(params)
 }
 
+// JC-010 2b-2: 통장 행이 연결할 수 있는 증빙 소스 타입. summary.ts의
+// isEvidenceSource와 동일한 목록이지만, mutation 레이어(lib/bookkeeping)가
+// read-model 레이어(lib/bookkeeping-review)를 import하지 않도록 여기서
+// 별도로 정의한다.
+const LINKABLE_EVIDENCE_SOURCE_TYPES = new Set<string>(['card', 'receipt', 'tax_invoice'])
+
 export async function updateBookkeepingClassificationRow(params: {
   rowId: string
   sessionId: string
@@ -903,6 +909,7 @@ export async function updateBookkeepingClassificationRow(params: {
   staffMemo?: string | null
   status?: BookkeepingRowStatus
   purposeRequestRowId?: string | null
+  linkedEvidenceRowId?: string | null
 }) {
   const sessionRow = await getSessionForStaff(params)
   if (!sessionRow) {
@@ -932,12 +939,48 @@ export async function updateBookkeepingClassificationRow(params: {
   const nextStatus = params.status ?? row.status
   const nextFinalAccount = params.finalAccount === undefined ? row.finalAccount : params.finalAccount
   const nextMemo = params.staffMemo === undefined ? row.staffMemo : params.staffMemo
+  const nextLinkedEvidenceRowId = params.linkedEvidenceRowId === undefined
+    ? row.linkedEvidenceRowId
+    : params.linkedEvidenceRowId
 
   if (nextStatus === 'confirmed' && !nextFinalAccount) {
     return { ok: false as const, status: 400, error: '확정하려면 계정항목을 선택해야 합니다.' }
   }
   if (nextStatus === 'excluded' && !nextMemo?.trim()) {
     return { ok: false as const, status: 400, error: '제외하려면 메모가 필요합니다.' }
+  }
+
+  if (params.linkedEvidenceRowId !== undefined && params.linkedEvidenceRowId !== null) {
+    // JC-010 2b-2 scope: only bank rows link to evidence. Card/receipt/
+    // tax_invoice rows are themselves evidence (2b-1 decision) and never
+    // initiate a link; without this check, the same PATCH endpoint would
+    // let a card row set its own linkedEvidenceRowId, which the UI never
+    // offers but the API would otherwise silently accept.
+    if (row.sourceType !== 'bank') {
+      return { ok: false as const, status: 400, error: '통장 거래만 증빙을 연결할 수 있습니다.' }
+    }
+    if (params.linkedEvidenceRowId === row.id) {
+      return { ok: false as const, status: 400, error: '같은 거래를 증빙으로 연결할 수 없습니다.' }
+    }
+
+    const [evidenceRow] = await db
+      .select({ id: bookkeepingTransactionClassification.id, sourceType: bookkeepingTransactionClassification.sourceType })
+      .from(bookkeepingTransactionClassification)
+      .where(
+        and(
+          eq(bookkeepingTransactionClassification.id, params.linkedEvidenceRowId),
+          eq(bookkeepingTransactionClassification.uploadSessionId, params.sessionId),
+          eq(bookkeepingTransactionClassification.tenantId, params.tenantId),
+        ),
+      )
+      .limit(1)
+
+    if (!evidenceRow) {
+      return { ok: false as const, status: 400, error: '연결할 증빙 거래를 찾을 수 없습니다.' }
+    }
+    if (!LINKABLE_EVIDENCE_SOURCE_TYPES.has(evidenceRow.sourceType)) {
+      return { ok: false as const, status: 400, error: '세금계산서·현금영수증·카드 거래만 증빙으로 연결할 수 있습니다.' }
+    }
   }
 
   let purposeRowToConfirm: typeof bookkeepingTransactionPurposeRequestRow.$inferSelect | null = null
@@ -973,6 +1016,7 @@ export async function updateBookkeepingClassificationRow(params: {
         finalAccount: nextFinalAccount,
         staffMemo: nextMemo,
         status: nextStatus,
+        linkedEvidenceRowId: nextLinkedEvidenceRowId,
         confirmedByStaffId: nextStatus === 'confirmed' ? params.staffRecord.id : row.confirmedByStaffId,
         confirmedAt: nextStatus === 'confirmed' ? ts : row.confirmedAt,
         updatedAt: ts,
@@ -1037,6 +1081,7 @@ export async function updateBookkeepingClassificationRow(params: {
       finalAccount: row.finalAccount,
       staffMemo: row.staffMemo,
       status: row.status,
+      linkedEvidenceRowId: row.linkedEvidenceRowId,
     },
   }
 }

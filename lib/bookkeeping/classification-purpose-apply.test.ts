@@ -126,6 +126,7 @@ beforeAll(async () => {
       final_account text,
       staff_memo text,
       status text NOT NULL DEFAULT 'suggested',
+      linked_evidence_row_id text,
       confirmed_by_staff_id text,
       confirmed_at text,
       created_at text NOT NULL,
@@ -380,6 +381,7 @@ describe('updateBookkeepingClassificationRow shallow undo snapshot (Brief 41 §0
         finalAccount: null,
         staffMemo: null,
         status: 'needs_decision',
+        linkedEvidenceRowId: null,
       })
     }
   })
@@ -409,7 +411,165 @@ describe('updateBookkeepingClassificationRow shallow undo snapshot (Brief 41 §0
         finalAccount: 'employee_welfare',
         staffMemo: null,
         status: 'confirmed',
+        linkedEvidenceRowId: null,
       })
     }
+  })
+})
+
+describe('updateBookkeepingClassificationRow evidence link (JC-010 2b-2)', () => {
+  const EVIDENCE_ROW_ID = 'classification-row-evidence'
+
+  async function seedEvidenceRow(sourceType: string) {
+    await client.execute({
+      sql: `INSERT INTO bookkeeping_transaction_classification
+            (id, tenant_id, classification_run_id, upload_session_id, source_type, transaction_date, merchant_name, description, amount_krw, direction, recommended_account, recommendation_confidence, recommendation_reason, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, '2026-06-10', '카페골목', '커피 구매', 15000, 'expense', 'employee_welfare', 'high', '커피', 'suggested', '2026-06-01', '2026-06-01')`,
+      args: [EVIDENCE_ROW_ID, TENANT, RUN_ID, SESSION_ID, sourceType],
+    })
+  }
+
+  it('saves a link to a tax_invoice/receipt/card row in the same session', async () => {
+    await seedEvidenceRow('tax_invoice')
+
+    const result = await updateBookkeepingClassificationRow({
+      rowId: CLASSIFICATION_ROW_ID,
+      sessionId: SESSION_ID,
+      tenantId: TENANT,
+      staffRecord,
+      linkedEvidenceRowId: EVIDENCE_ROW_ID,
+    })
+
+    expect(result.ok).toBe(true)
+    const [row] = await testDb
+      .select()
+      .from(bookkeepingTransactionClassification)
+      .where(eq(bookkeepingTransactionClassification.id, CLASSIFICATION_ROW_ID))
+    expect(row.linkedEvidenceRowId).toBe(EVIDENCE_ROW_ID)
+  })
+
+  it('rejects linking a bank/other row (not itself evidence)', async () => {
+    await seedEvidenceRow('bank')
+
+    const result = await updateBookkeepingClassificationRow({
+      rowId: CLASSIFICATION_ROW_ID,
+      sessionId: SESSION_ID,
+      tenantId: TENANT,
+      staffRecord,
+      linkedEvidenceRowId: EVIDENCE_ROW_ID,
+    })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.status).toBe(400)
+  })
+
+  it('rejects a non-bank row (card/receipt/tax_invoice) initiating a link — only bank rows link to evidence (review P1)', async () => {
+    // CLASSIFICATION_ROW_ID is seeded as sourceType 'bank' by beforeEach.
+    // Here the row TRYING to save a link is the card/tax_invoice row
+    // instead — the UI never offers this (evidence finder only opens for
+    // bank rows), but the API must reject it too, not just trust the client.
+    await seedEvidenceRow('tax_invoice')
+    const otherEvidenceRowId = 'classification-row-second-evidence'
+    await client.execute({
+      sql: `INSERT INTO bookkeeping_transaction_classification
+            (id, tenant_id, classification_run_id, upload_session_id, source_type, transaction_date, merchant_name, description, amount_krw, direction, recommended_account, recommendation_confidence, recommendation_reason, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, 'card', '2026-06-11', '문구점', '문구 구매', 8000, 'expense', 'supplies', 'high', '문구', 'suggested', '2026-06-01', '2026-06-01')`,
+      args: [otherEvidenceRowId, TENANT, RUN_ID, SESSION_ID],
+    })
+
+    const result = await updateBookkeepingClassificationRow({
+      rowId: EVIDENCE_ROW_ID, // sourceType: 'tax_invoice', not 'bank'
+      sessionId: SESSION_ID,
+      tenantId: TENANT,
+      staffRecord,
+      linkedEvidenceRowId: otherEvidenceRowId,
+    })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.status).toBe(400)
+
+    const [row] = await testDb
+      .select()
+      .from(bookkeepingTransactionClassification)
+      .where(eq(bookkeepingTransactionClassification.id, EVIDENCE_ROW_ID))
+    expect(row.linkedEvidenceRowId).toBeNull()
+  })
+
+  it('rejects linking a nonexistent row', async () => {
+    const result = await updateBookkeepingClassificationRow({
+      rowId: CLASSIFICATION_ROW_ID,
+      sessionId: SESSION_ID,
+      tenantId: TENANT,
+      staffRecord,
+      linkedEvidenceRowId: 'no-such-row',
+    })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.status).toBe(400)
+  })
+
+  it('rejects linking a row to itself', async () => {
+    const result = await updateBookkeepingClassificationRow({
+      rowId: CLASSIFICATION_ROW_ID,
+      sessionId: SESSION_ID,
+      tenantId: TENANT,
+      staffRecord,
+      linkedEvidenceRowId: CLASSIFICATION_ROW_ID,
+    })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.status).toBe(400)
+  })
+
+  it('clears the link when linkedEvidenceRowId is explicitly set to null', async () => {
+    await seedEvidenceRow('card')
+    await updateBookkeepingClassificationRow({
+      rowId: CLASSIFICATION_ROW_ID,
+      sessionId: SESSION_ID,
+      tenantId: TENANT,
+      staffRecord,
+      linkedEvidenceRowId: EVIDENCE_ROW_ID,
+    })
+
+    const result = await updateBookkeepingClassificationRow({
+      rowId: CLASSIFICATION_ROW_ID,
+      sessionId: SESSION_ID,
+      tenantId: TENANT,
+      staffRecord,
+      linkedEvidenceRowId: null,
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.previous.linkedEvidenceRowId).toBe(EVIDENCE_ROW_ID)
+    const [row] = await testDb
+      .select()
+      .from(bookkeepingTransactionClassification)
+      .where(eq(bookkeepingTransactionClassification.id, CLASSIFICATION_ROW_ID))
+    expect(row.linkedEvidenceRowId).toBeNull()
+  })
+
+  it('leaves the link untouched when linkedEvidenceRowId is omitted', async () => {
+    await seedEvidenceRow('receipt')
+    await updateBookkeepingClassificationRow({
+      rowId: CLASSIFICATION_ROW_ID,
+      sessionId: SESSION_ID,
+      tenantId: TENANT,
+      staffRecord,
+      linkedEvidenceRowId: EVIDENCE_ROW_ID,
+    })
+
+    await updateBookkeepingClassificationRow({
+      rowId: CLASSIFICATION_ROW_ID,
+      sessionId: SESSION_ID,
+      tenantId: TENANT,
+      staffRecord,
+      staffMemo: '무관한 업데이트',
+    })
+
+    const [row] = await testDb
+      .select()
+      .from(bookkeepingTransactionClassification)
+      .where(eq(bookkeepingTransactionClassification.id, CLASSIFICATION_ROW_ID))
+    expect(row.linkedEvidenceRowId).toBe(EVIDENCE_ROW_ID)
   })
 })
