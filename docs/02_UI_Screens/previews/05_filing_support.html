@@ -298,15 +298,15 @@
       </div>
 
       <div class="section-head" id="jc-030-withholding-efiling">
-        <h2>Path 1 — 원천징수이행상황신고서 (JC-030)</h2>
-        <span class="hint">A01 간이세액 집계 · 서식·가이드 사전검증</span>
-        <span class="chip warn">공식 업로드 양식 확인 대기</span>
+        <h2>원천징수이행상황신고서 준비값 검증 (JC-030)</h2>
+        <span class="hint">A01 간이세액 집계 · 준비값·정합성 검증</span>
+        <span class="chip muted">Path 1 파일 지원 차단</span>
       </div>
       <section class="fg-panel" aria-label="원천징수이행상황신고서 전자신고 패널">
         <div class="fg-head">
           <div>
-            <h3>원천징수이행상황신고서 업로드 양식 준비</h3>
-            <p>6월 귀속 A01 간이세액 집계를 검증합니다. 홈택스가 직접 수용하는 공식 비암호화 업로드 양식과 메뉴를 확인하기 전까지 다운로드는 비활성입니다.</p>
+            <h3>원천징수이행상황신고서 준비값 확인</h3>
+            <p>6월 귀속 A01 간이세액 집계를 검증합니다. 공식 비암호화 업로드 양식과 직접 수용 경로가 확인되지 않아 SemuAgent는 현재 원천세 업로드 파일을 제공하지 않습니다.</p>
           </div>
           <button type="button" class="btn">검증 결과 보기</button>
         </div>
@@ -322,24 +322,24 @@
               <li class="ok">대상 세목: 원천징수이행상황신고서 (매월 · A01)</li>
               <li class="ok">귀속연월: 2026년 6월 · 신고구분 매월</li>
               <li class="ok">서식 필드 매핑 Part A 확정</li>
-              <li class="warn">바이너리 레이아웃 미입수 — 전자신고 이용안내 필요</li>
+              <li class="warn">Path 1 공식 비암호화 업로드 파일 미제공 — W0 차단 종료</li>
               <li class="muted">「국세청 검증 완료」 표시 금지</li>
             </ul>
           </div>
           <div class="fg-box">
             <h4>사전검증 결과 (예시)</h4>
             <ul class="fg-list">
-              <li class="ok">A01 ④⑤⑥ — JC-013 준비값 확인와 일치</li>
-              <li class="warn">바이너리 전자신고 레이아웃 미입수 — 다운로드 대기</li>
-              <li class="warn">세무서코드·담당자 연락처 — 파일 생성 시 입력 필요</li>
+              <li class="ok">A01 ④⑤⑥ — JC-013 준비값과 일치</li>
+              <li class="warn">A01 준비값 검증만 제공 — 업로드 파일 생성 없음</li>
+              <li class="muted">세무서코드·담당자 연락처 — 업로드 파일 계약이 없어 입력받지 않음</li>
             </ul>
           </div>
         </div>
         <div style="padding:12px 18px;border-top:1px solid #e9e5ff;display:flex;gap:8px;flex-wrap:wrap">
-          <button type="button" class="btn is-disabled" disabled aria-disabled="true" title="바이너리 레이아웃 입수 후 활성화">전자신고 파일 다운로드 (준비 중)</button>
+          <button type="button" class="btn is-disabled" disabled aria-disabled="true" title="현재 제품 범위에서 원천세 공식 비암호화 업로드 파일을 제공하지 않습니다">원천세 업로드 파일 미제공</button>
           <a href="04_payroll.html" class="btn">급여 열기</a>
         </div>
-        <div class="fg-foot"><b>책임 경계</b> — A01 서식 집계·JC-013 가이드 사전검증까지입니다. 홈택스 제출 보장·자동 신고·「국세청 검증 완료」 표시는 하지 않습니다.</div>
+        <div class="fg-foot"><b>책임 경계</b> — A01 서식 집계·준비값 검증까지만 제공합니다. 홈택스 직접입력 안내·변환파일 생성·자동 신고·「국세청 검증 완료」 표시는 하지 않습니다.</div>
       </section>
 
       <!-- Input guide + receipts -->

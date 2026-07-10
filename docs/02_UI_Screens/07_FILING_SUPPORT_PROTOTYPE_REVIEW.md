@@ -1,6 +1,6 @@
 # Filing Support Prototype Review
 > Created: 2026-07-01 22:10
-> Last Updated: 2026-07-01 22:20
+> Last Updated: 2026-07-10 22:14 KST
 
 ## 1. HTML UI Preview
 - Preview: [신고지원](./previews/05_filing_support.html)
@@ -12,8 +12,8 @@
 
 ## 3. Key User Flows
 - 부가세·급여·4대보험 산출물 → 신고 항목으로 집결.
-- 신고 항목별 패키지 확인/생성(부가세는 공제 검토 완료 전 잠금).
-- 신고 준비값 확인로 단계별 값 확인 → 회사가 홈택스에서 직접 제출.
+- 신고 항목별 준비값과 패키지 상태 확인(부가세는 자료대조·공제검토·provenance 완료 전 잠금).
+- 공식 비암호화 업로드 양식이 확인된 세목만 파일 생성 → 회사가 홈택스에서 직접 업로드·제출.
 - 제출 후 받은 접수증 업로드·보관.
 - 사후 체크리스트(납부·접수증 보관)로 마무리.
 
@@ -29,12 +29,21 @@
 - Displayed data: 신고 항목 상태(준비됨/대기/확인 필요), 신고 준비값 확인 값, 접수증 보관 목록, 사후 체크리스트.
 - Mutations / saved data: 패키지 생성, 접수증 업로드·보관, 체크리스트 상태 갱신.
 - Internal dependencies: 부가세(JC-011)·급여(JC-012) 산출물(선행 화면의 내부 데이터).
-- External dependencies: 없음. **자동 홈택스 제출·자동 납부는 제공하지 않음** — 실제 제출/납부는 회사가 홈택스에서 직접 수행.
+- External dependencies: Path 1 파일 지원 세목은 홈택스·국세청의 공식 비암호화 업로드 양식과 직접 수용 경로가 필요하다. **자동 홈택스 제출·자동 납부는 제공하지 않음** — 실제 제출/납부는 회사가 직접 수행.
 
 ## 6. 책임 경계 (명시)
-- 지원 범위: 첨부 패키지 생성 · 홈택스 단계별 준비값 확인 · 제출 접수증 보관 · 사후 체크리스트.
-- 비지원: 신고서 자동 제출, 세금 자동 납부, 홈택스 자격증명 서버 저장.
+- 지원 범위: 신고 준비값 검증 · 공식 비암호화 업로드 양식이 확인된 세목의 파일 생성 · 제출 접수증 보관 · 사후 체크리스트.
+- 비지원: 홈택스 직접입력 가이드, 회계프로그램 변환파일 추정, 암호화 파일, 신고서 자동 제출, 세금 자동 납부, 홈택스 자격증명 서버 저장.
 - 이 경계는 화면 상단 배너·하단 안내·Preview 문구에 반복 노출한다.
+
+### 6.1 Current Contract Caveat (2026-07-10)
+
+- 원천징수이행상황신고서는 준비값 검증만 유지한다. 공식 경로가 직접작성 또는
+  비밀번호 기반 회계프로그램 변환파일로 확인되어 현재 Path 1 파일 지원은 `closed blocked`다.
+- 부가세는 현재 홈택스 회계프로그램 파일변환 메뉴와 일부 첨부서류 도구까지만
+  확인했다. 최신 비암호화 수용 여부가 확인되기 전에는 파일 생성 UI를 활성화하지 않는다.
+- Preview의 기존 화면 구조 승인은 유지하되, 파일 생성 가능 여부와 책임 경계 문구는
+  최신 [Path 1 Roadmap](../03_Technical_Specs/36_PATH1_FORM_FILL_ROADMAP.md)을 따른다.
 
 ## 7. User Confirmation
 - 화면/UI 선확인 여부: 확인함
@@ -53,3 +62,5 @@
 - **UI_Screens**: [VAT Prototype Review](./05_VAT_PROTOTYPE_REVIEW.md) - 연동 화면(부가세)
 - **UI_Screens**: [Payroll Prototype Review](./06_PAYROLL_PROTOTYPE_REVIEW.md) - 연동 화면(급여)
 - **UI_Screens**: [HTML Preview](./previews/05_filing_support.html) - 브라우저 확인용 프로토타입
+- **Technical_Specs**: [Path 1 Form Fill Roadmap](../03_Technical_Specs/36_PATH1_FORM_FILL_ROADMAP.md) - 세목별 지원·차단 상태
+- **Technical_Specs**: [VAT Stage A Audit](../03_Technical_Specs/43_JC030_VAT_NONENCRYPTED_UPLOAD_TEMPLATE_AUDIT.md) - 부가세 공개 근거와 외부 확인 항목
