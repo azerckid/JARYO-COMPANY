@@ -1,6 +1,6 @@
 # JC-030 Withholding Official Upload Form Pre-Code Technical Brief
 > Created: 2026-07-07 04:40 KST
-> Last Updated: 2026-07-10 21:22 KST
+> Last Updated: 2026-07-10 22:14 KST
 
 ## 0.1 Flow Status
 
@@ -9,7 +9,7 @@
 완료: Slice 0b 서식 조사·Part A 매핑, Slice 1a 검증 패널, W0 공식 경로 감사
 판정: 원천세 W0 closed blocked — 직접작성 또는 비밀번호 기반 변환파일만 공식 확인
 종료: W1~W5 generator 구현 미착수·현재 계약에서 재개 금지
-현재: 부가세 Stage A 공식 비암호화 업로드 양식 감사
+현재: 부가세 Stage A 공개 자료 감사 완료, 로그인 화면·126 외부 확인 대기
 재개: 최신 공식 비암호화 원본과 직접 수용 메뉴가 새로 확인될 때만 본 Brief 활성화
 ```
 
