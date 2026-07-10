@@ -5,9 +5,8 @@ import { requireTenantSession } from '@/lib/auth-helpers'
 import { getActiveStaffForUser } from '@/lib/bookkeeping/classification-service'
 import { db } from '@/lib/db'
 import { client, vatDeductionReview, vatPeriodSummary } from '@/lib/db/schema'
-import { now, toDBString } from '@/lib/time'
 import { loadVatPackageGate } from '@/lib/vat/package-gate'
-import { buildVatPeriodRecalculation } from '@/lib/vat/summary'
+import { rebuildVatPeriodSummaryFromConfirmedLedger } from '@/lib/vat/provenance'
 import { vatPeriodKeySchema } from '@/lib/validations/vat'
 
 export async function POST(
@@ -18,7 +17,6 @@ export async function POST(
     const { user, tenantId } = await requireTenantSession()
     const { periodKey: rawPeriodKey } = await params
     const periodKey = vatPeriodKeySchema.safeParse(rawPeriodKey)
-
     if (!periodKey.success) {
       return NextResponse.json({ error: periodKey.error.message }, { status: 400 })
     }
@@ -34,21 +32,13 @@ export async function POST(
       .where(eq(client.tenantId, tenantId))
       .orderBy(client.createdAt)
       .limit(1)
-
     if (!businessEntity) {
       return NextResponse.json({ error: '사업장을 먼저 등록해 주세요.' }, { status: 404 })
     }
 
-    const [summary, reviewRows] = await Promise.all([
+    const [summaryRows, reviewRows] = await Promise.all([
       db
-        .select({
-          id: vatPeriodSummary.id,
-          outputTaxKrw: vatPeriodSummary.outputTaxKrw,
-          inputTaxKrw: vatPeriodSummary.inputTaxKrw,
-          inputTaxDeductibleKrw: vatPeriodSummary.inputTaxDeductibleKrw,
-          payableTaxKrw: vatPeriodSummary.payableTaxKrw,
-          pendingDeductionCount: vatPeriodSummary.pendingDeductionCount,
-        })
+        .select({ id: vatPeriodSummary.id })
         .from(vatPeriodSummary)
         .where(and(
           eq(vatPeriodSummary.tenantId, tenantId),
@@ -58,11 +48,7 @@ export async function POST(
         ))
         .limit(1),
       db
-        .select({
-          decision: vatDeductionReview.decision,
-          inputTaxKrw: vatDeductionReview.inputTaxKrw,
-          prorationRateBps: vatDeductionReview.prorationRateBps,
-        })
+        .select({ decision: vatDeductionReview.decision })
         .from(vatDeductionReview)
         .where(and(
           eq(vatDeductionReview.tenantId, tenantId),
@@ -70,56 +56,54 @@ export async function POST(
           eq(vatDeductionReview.periodKey, periodKey.data),
         )),
     ])
-
-    const periodSummary = summary[0]
-    if (!periodSummary) {
+    if (!summaryRows[0]) {
       return NextResponse.json({ error: '부가세 summary가 아직 생성되지 않았습니다.' }, { status: 404 })
     }
 
-    const recalculation = reviewRows.length > 0
-      ? buildVatPeriodRecalculation(periodSummary, reviewRows)
-      : {
-        inputTaxDeductibleKrw: periodSummary.inputTaxDeductibleKrw,
-        payableTaxKrw: periodSummary.payableTaxKrw,
-        pendingDeductionCount: periodSummary.pendingDeductionCount,
-      }
-    const pendingDeductionCount = recalculation.pendingDeductionCount
     const packageGate = await loadVatPackageGate({
       tenantId,
       clientId: businessEntity.id,
       periodKey: periodKey.data,
       hasSummary: true,
-      pendingDeductionCount,
+      pendingDeductionCount: reviewRows.filter((row) => row.decision === 'pending').length,
     })
 
-    if (!packageGate.isReady) {
+    if (packageGate.provenance.isReady) {
+      return NextResponse.json({ ok: true, alreadyVerified: true })
+    }
+    if (!packageGate.provenance.canRebuild) {
       return NextResponse.json({
-        error: '부가세 패키지 생성 조건을 먼저 완료해 주세요.',
-        code: 'vat_package_gate_blocked',
+        error: '확정 원장 재계산 조건을 먼저 완료해 주세요.',
+        code: 'vat_provenance_rebuild_blocked',
         blockerCount: packageGate.blockerCount,
         reasons: packageGate.reasons,
       }, { status: 409 })
     }
 
-    const ts = toDBString(now())
-    await db
-      .update(vatPeriodSummary)
-      .set({
-        inputTaxDeductibleKrw: recalculation.inputTaxDeductibleKrw,
-        payableTaxKrw: recalculation.payableTaxKrw,
-        pendingDeductionCount: 0,
-        packageStatus: 'generated',
-        generatedAt: ts,
-        updatedAt: ts,
-      })
-      .where(and(eq(vatPeriodSummary.id, periodSummary.id), eq(vatPeriodSummary.tenantId, tenantId)))
+    const result = await rebuildVatPeriodSummaryFromConfirmedLedger({
+      tenantId,
+      clientId: businessEntity.id,
+      periodKey: periodKey.data,
+    })
+    if (!result.ok) {
+      return NextResponse.json({
+        error: '확정 원장 재계산에 필요한 거래를 확인해 주세요.',
+        code: 'vat_provenance_rebuild_failed',
+        issues: result.issues,
+      }, { status: result.status })
+    }
 
     revalidatePath('/dashboard/vat')
     revalidatePath('/dashboard')
 
-    return NextResponse.json({ ok: true, packageStatus: 'generated' })
+    return NextResponse.json({
+      ok: true,
+      provenanceVersion: result.snapshot.provenanceVersion,
+      sourceRowCount: result.snapshot.sourceRowCount,
+      rebuiltAt: result.rebuiltAt,
+    })
   } catch (err) {
-    console.error('[POST /api/vat/periods/[periodKey]/package]', err)
+    console.error('[POST /api/vat/periods/[periodKey]/rebuild]', err)
     if (err instanceof Error && err.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

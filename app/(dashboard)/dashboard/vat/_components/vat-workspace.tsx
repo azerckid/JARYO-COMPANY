@@ -23,7 +23,11 @@ import type {
   VatTone,
 } from '@/lib/vat/summary'
 import { cn } from '@/lib/utils'
-import { VatDeductionActionButtons, VatPackageActionButton } from './vat-actions'
+import {
+  VatDeductionActionButtons,
+  VatPackageActionButton,
+  VatProvenanceRebuildButton,
+} from './vat-actions'
 
 const panelClass = 'overflow-hidden rounded-xl border border-company-border bg-company-surface shadow-company-card'
 
@@ -346,6 +350,9 @@ function PackagePreviewCard({
         <p id="vat-package-locknote" className="mt-3 rounded-lg border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-xs text-[#d97706]">
           {packagePreview.lockReason}
         </p>
+      ) : null}
+      {packageGate.provenance.canRebuild ? (
+        <VatProvenanceRebuildButton periodKey={periodKey} />
       ) : null}
       <VatPackageActionButton periodKey={periodKey} packagePreview={packagePreview} />
     </section>

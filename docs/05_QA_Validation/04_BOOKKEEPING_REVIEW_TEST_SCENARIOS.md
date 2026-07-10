@@ -123,7 +123,7 @@
 | S-123 | source collection 또는 reconciliation 미완 | VAT package UI | 생성 버튼 disabled + 정확한 사유와 이동 경로 표시 | PASS·구현 |
 | S-124 | source/reconciliation/VAT deduction 중 하나라도 미완 | VAT package POST | API가 conflict 응답으로 거부하고 reason/count/target route 반환 | PASS·단위/구현 |
 | S-125 | 세 gate가 모두 ready이나 VAT snapshot provenance 미확인 | VAT package POST | 생성 거부; confirmed-ledger provenance 확인 전 잠금 유지 | PASS·단위/구현 |
-| S-126 | 같은 tenant/period의 confirmed filing rows로 VAT 값 rebuild 완료 | VAT package POST | gate 통과 후에만 package status 전환 | Pending |
+| S-126 | 같은 tenant/period의 confirmed filing rows로 VAT 값 rebuild 완료 | VAT package POST | gate 통과 후에만 package status 전환 | PASS·단위/구현 |
 | S-127 | 원천세·간이지급명세서·지방소득세 payroll route | bookkeeping blocker 존재 | payroll 전용 validation만 적용되고 reconciliation gate로 차단되지 않음 | Pending |
 | S-128 | shared gate load | 실행 | classification/VAT/filing DB에 write side effect 없음 | PASS·단위 |
 | S-129 | VAT snapshot만 있고 normalized VAT fact/provenance metadata 없음 | package gate | snapshot 숫자가 맞아 보여도 provenance ready로 승격하지 않음 | PASS·감사 |
@@ -140,7 +140,8 @@
 - **자료대조원장 완료 범위**: Slice 2a/2b의 live read, row mutation, exact 1:1 evidence lifecycle, pattern display/account batch acceptance는 unit + browser E2E로 검증됐다.
 - **Slice 2d-1 완료**: S-120~S-122/S-128. dev DB `2026-H1`에서 gate total 698과 신고 준비 분해값(증빙 6 + 소명 5 + 계정 687 + 제외 0)이 일치했다.
 - **Slice 2d-3b 완료**: S-130~S-134. exact VAT fact schema/parser/sample/manual writer와 nullable summary provenance metadata를 추가했고 기존 row는 backfill하지 않았다.
-- **후속**: Slice 2d-3c는 S-126을 자동화하며 confirmed-ledger deterministic rebuild와 fingerprint verification을 연결한다. S-127 payroll 비차단 경계와 공식 Hometax 파일 assembly 검증은 각각 기존 payroll 계약과 JC-030 범위에서 유지한다.
+- **Slice 2d-3c 완료**: S-126. confirmed-ledger deterministic rebuild와 fingerprint verification을 연결했고, source/fact/review가 바뀌면 package gate가 다시 잠긴다.
+- **후속**: S-127 payroll 비차단 경계와 공식 Hometax 파일 assembly 검증은 각각 기존 payroll 계약과 JC-030 범위에서 유지한다.
 
 ## 4. Related Documents
 - **UI_Screens**: [Bookkeeping Review Prototype Review](../02_UI_Screens/04_BOOKKEEPING_REVIEW_PROTOTYPE_REVIEW.md) · [Bookkeeping HTML Preview](../02_UI_Screens/previews/02_bookkeeping_review.html) · [Reconciliation Prototype Review](../02_UI_Screens/12_RECONCILIATION_LEDGER_PROTOTYPE_REVIEW.md) · [Reconciliation HTML Preview](../02_UI_Screens/previews/12_reconciliation_ledger.html)
