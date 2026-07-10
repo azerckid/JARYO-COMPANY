@@ -1,6 +1,6 @@
 # Test Scenarios: Filing Support
 > Created: 2026-07-02 20:23
-> Last Updated: 2026-07-03 20:24
+> Last Updated: 2026-07-10 15:27 KST
 
 신고지원(JC-013) Layer 5 QA 시나리오. [Filing Support Pre-Code Brief](../03_Technical_Specs/09_FILING_SUPPORT_PRE_CODE_BRIEF.md)의
 Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다.
@@ -109,6 +109,25 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 | S-83 | 미인증 | 접근 | `/sign-in` redirect | PASS·구현 |
 | S-84 | tenant 없음 | 진입 | tenant-scoped 접근 차단 | PASS·구현 |
 
+### 2.10 Path 1 Tax-Type File Completion (Pending)
+
+이 시나리오는 [Path 1 Roadmap §2.1](../03_Technical_Specs/36_PATH1_FORM_FILL_ROADMAP.md)의
+세목별 완료선을 검증한다. 원천세 Slice 1b가 첫 적용 대상이며, 이후 세목도
+동일한 시나리오를 전용 fixture로 반복한다.
+
+| # | Given | When | Then | Result |
+|:---|:---|:---|:---|:---:|
+| S-90 | 공식 전자신고 규격 | 구현 착수 | 출처·버전·적용일·파일명·record 순서/길이·encoding이 문서화되지 않으면 generator 코드를 시작하지 않음 | Pending |
+| S-91 | 확정된 원천세 귀속월 | 양식 채움 확인 렌더 | A01 인원·총지급액·소득세와 사업자·기간이 생성 record와 동일 | Pending |
+| S-92 | payroll 미마감, needs-review 라인, 합계 불일치 중 하나 존재 | Preview 또는 generate API | 동일한 blocker code/message로 다운로드 차단 | Pending |
+| S-93 | 정상 대표 fixture | plain 파일 생성 | 파일명·record 종류/순서/길이·encoding·필수 코드·합계가 공식 규격과 일치 | Pending |
+| S-94 | 같은 입력 fixture | 두 번 생성 | byte-for-byte 동일한 파일 생성 | Pending |
+| S-95 | tenant A/B·사업장 A/B·귀속월 A/B 데이터 | tenant A/사업장 A/귀속월 A 생성 | 선택 범위 이외 데이터가 record에 포함되지 않음 | Pending |
+| S-96 | 일회성 입력과 생성 파일 | 생성·다운로드 후 | 파일·PII·자격증명·원문 payload가 서버 DB/storage/log에 영구 저장되지 않음 | Pending |
+| S-97 | 브라우저 다운로드 | 성공/오류/경고 상태 확인 | 실제 파일 다운로드, 정확한 filename/content type, 복구 가능한 오류 안내 | Pending |
+| S-98 | 생성된 대표 plain 파일 | 홈택스/위택스 변환프로그램 또는 파일 업로드 검증 | 형식 오류 없이 수용되거나, 오류가 발생하면 원인·수정·재검증 기록이 남음 | Pending |
+| S-99 | Path 1 화면·가이드 | 렌더 | 직접입력·자동제출·자격증명 저장·세무대리 문구가 없고 사용자 직접 업로드 책임을 표시 | Pending |
+
 ## 3. 자동화 계획
 
 - **단위 테스트 완료** (`lib/filing-support/summary.test.ts`): S-03, S-10, S-13~14, S-20~23, S-30~32, S-41~44, S-50~52.
@@ -116,11 +135,13 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 - **API 구현 완료**: receipt metadata upload/delete, checklist toggle, tenant/staff guard(S-40~43, S-50~53). 실제 Blob 저장 환경은 JC-014에서 검증 완료.
 - **브라우저 수동 검증 완료**: `/dashboard/filing-support?period=2026-H1` 로그인 렌더와 승인 Preview 구조를 확인.
 - **후속 E2E**: JC-014에서 실제 Blob·AI 파싱·정규화 저장은 통과했다. 실제 홈택스/EDI 접수증 파일 포맷별 업로드는 별도 fixture 확보 후 검증한다.
+- **Path 1 파일 후속**: 원천세 W0·W1 완료 후 S-90~S-99를 generator 단위 테스트, API 테스트, 브라우저 다운로드, 홈택스 변환 검증으로 순서대로 완료한다. S-98 전에는 원천세 Path 1을 `done`으로 표시하지 않는다.
 
 ## 4. Related Documents
 
 - **UI_Screens**: [Filing Support Prototype Review](../02_UI_Screens/07_FILING_SUPPORT_PROTOTYPE_REVIEW.md) · [HTML Preview](../02_UI_Screens/previews/05_filing_support.html)
 - **Technical_Specs**: [Filing Support Pre-Code Brief](../03_Technical_Specs/09_FILING_SUPPORT_PRE_CODE_BRIEF.md) · [DB Schema](../03_Technical_Specs/03_DB_SCHEMA.md) · [Component & Library Plan](../03_Technical_Specs/02_COMPONENT_LIBRARY_PLAN.md)
 - **Technical_Specs**: [VAT Pre-Code Brief](../03_Technical_Specs/07_VAT_PRE_CODE_BRIEF.md) · [Payroll Pre-Code Brief](../03_Technical_Specs/08_PAYROLL_PRE_CODE_BRIEF.md)
+- **Technical_Specs**: [Path 1 Roadmap](../03_Technical_Specs/36_PATH1_FORM_FILL_ROADMAP.md) · [Withholding Pre-Code Brief](../03_Technical_Specs/39_JC030_WITHHOLDING_EFILING_PRE_CODE_BRIEF.md) · [Path 1 E2E Audit](../03_Technical_Specs/40_PATH1_END_TO_END_FILING_READINESS_AUDIT.md)
 - **Logic_Progress**: [Backlog](../04_Logic_Progress/00_BACKLOG.md) - JC-013 Context Lock
 - **QA_Validation**: [VAT Test Scenarios](./05_VAT_TEST_SCENARIOS.md) · [Payroll Test Scenarios](./06_PAYROLL_TEST_SCENARIOS.md) - 선행 화면 QA 패턴

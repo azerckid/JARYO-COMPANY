@@ -1,15 +1,15 @@
 # JC-030 Slice 0a — 원천징수이행상황신고서 전자신고 레이아웃 입수
 > Created: 2026-07-07 04:25 KST
-> Last Updated: 2026-07-07 04:40 KST
+> Last Updated: 2026-07-10 15:27 KST
 
 ## 0. Flow Status
 
 ```text
 [Flow]
-현재: Path 1 세목 확대 — 원천세 Slice 0b 완료 · Field Mapping(38)·Brief(39) 초안
-Gate: 부분 통과 (서식 필드 매핑 초안 · 바이너리 레이아웃·build-records 미입수)
-완료: 별지 제21호(2024.3.22)·NTS 작성요령(2009) 참조 · A01↔JC-012/013 매핑
-다음: 전자신고 이용안내/변환프로그램 번들 입수 → UI-First Gate → 구현 1a/1b
+현재: 원천세 Slice 1b-W0 — 공식 바이너리 레이아웃 입수
+Gate: 부분 통과 (서식 필드 매핑·UI-First·Slice 1a 완료, 바이너리 레이아웃 미입수)
+완료: 별지 제21호(2024.3.22)·NTS 작성요령(2009) 참조 · A01↔JC-012/013 매핑 · 검증 패널
+다음: 전자신고 이용안내/변환프로그램 번들 입수 → W1 Part B·Brief 최종 승인 → W2 generator
 선행 완료: 근로소득 간이지급 — [28_JC030_SIMPLIFIED_WAGE_EFILING_LAYOUT_ACQUISITION.md](./28_JC030_SIMPLIFIED_WAGE_EFILING_LAYOUT_ACQUISITION.md)
 ```
 
@@ -161,9 +161,9 @@ JC-030 Path 1은 **변환제출용 파일 생성**을 담당한다.
 
 | 단계 | 게이트 |
 |:---|:---|
-| Field Mapping | [38](./38_JC030_WITHHOLDING_EFILING_FIELD_MAPPING.md) Part A 승인 · Part B 바이너리 입수 |
-| Pre-Code Brief | Field Mapping 승인 후 [39](./39_JC030_WITHHOLDING_EFILING_PRE_CODE_BRIEF.md) |
-| 코드 착수 | Pre-Code Brief + UI-First Gate(신고지원 또는 급여 연동 패널) |
+| W0 Layout | 본 문서의 바이너리 레이아웃·파일명·record·encoding 입수 |
+| W1 Field Mapping/Brief | [38](./38_JC030_WITHHOLDING_EFILING_FIELD_MAPPING.md) Part B와 [39](./39_JC030_WITHHOLDING_EFILING_PRE_CODE_BRIEF.md) 최종 승인 |
+| W2 코드 착수 | W0·W1 완료 후에만 `build-records`; UI-First와 Slice 1a는 이미 완료 |
 | UI 문구 | Scope Gate §5.3 — `국세청 검증 완료` 금지 |
 
 ## 9. Related Documents

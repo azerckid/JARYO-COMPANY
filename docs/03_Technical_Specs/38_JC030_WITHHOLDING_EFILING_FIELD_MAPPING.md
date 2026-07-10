@@ -1,15 +1,15 @@
 # JC-030 — 원천징수이행상황신고서 전자신고 필드 매핑
 > Created: 2026-07-07 04:40 KST
-> Last Updated: 2026-07-07 04:40 KST
+> Last Updated: 2026-07-10 15:27 KST
 
 ## 0. Flow Status
 
 ```text
 [Flow]
-현재: JC-030 원천세 — Slice 0b 완료 · Field Mapping 초안(서식 필드) · 바이너리 레이아웃 갭
-Gate: 부분 통과 (JC-012/013 ↔ 별지 제21호 A01 매핑 초안 · build-records 전 바이너리 스펙 미입수)
-완료: law.go.kr 별지 제21호(2024.3.22) · NTS 작성요령(2009) 홈택스 변환 절차
-다음: 전자신고 이용안내/변환프로그램 번들에서 바이너리 레코드 입수 → Pre-Code Brief(39) 승인
+현재: JC-030 원천세 Slice 1b-W0 — Field Mapping Part A 완료 · Part B 바이너리 레이아웃 갭
+Gate: 부분 통과 (JC-012/013 ↔ 별지 제21호 A01 매핑·UI·Slice 1a 완료, build-records 전 바이너리 스펙 미입수)
+완료: law.go.kr 별지 제21호(2024.3.22) · NTS 작성요령(2009) · 검증 패널
+다음: 바이너리 레코드 입수 → W1 Part B offset/length/encoding 확정 → Brief(39) 최종 승인
 필요 확인: 홈택스 자료실·변환프로그램 동봉 문서(제출 직전 최신본)
 ```
 
@@ -136,9 +136,10 @@ Slice 0b에서 **지급명세서형 `…전산매체 제출요령` HWP는 발견
 
 | 단계 | 조건 |
 |------|------|
-| Pre-Code Brief(39) | 본 문서 Part A 승인 + Part B 입수 계획 승인 |
-| `build-records` | Part B 바이너리 스펙 확정 후 |
-| UI 패널 | Brief(39) + UI-First (`/dashboard/filing-support` 원천세 항목 연동) |
+| W0 Layout | 전자신고 이용안내/변환프로그램에서 Part B 공식 규격 입수 |
+| W1 Pre-Code Brief(39) | Part B offset/length/encoding 매핑 + 최종 사용자 승인 |
+| W2 `build-records` | W0·W1 완료 후 |
+| UI 패널 | UI-First와 Slice 1a 검증 패널 완료; W2에서 동일 read model로 파일값 연결 |
 
 ## 8. Related Documents
 

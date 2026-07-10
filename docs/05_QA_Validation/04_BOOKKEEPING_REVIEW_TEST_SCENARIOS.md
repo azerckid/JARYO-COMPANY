@@ -113,7 +113,7 @@
 | S-113 | 증빙/제외 패턴 그룹 | 화면 렌더 | v1 일괄 수락 없음, 단건 확인만 유지 | PASS·구현 |
 | S-114 | 원장 table-first 화면 | 첫 화면 렌더 | 기간/행동 필터와 원장 표가 먼저 보이고 제거된 hero/source-summary/다음 할 일 카드가 재등장하지 않음 | PASS·구현 |
 
-### 2.12 Slice 2d Path 1 Gate (Pending)
+### 2.12 Slice 2d Path 1 Gate (Core Complete; Payroll Boundary Pending)
 
 | # | Given | When | Then | Result |
 |:---|:---|:---|:---|:---:|

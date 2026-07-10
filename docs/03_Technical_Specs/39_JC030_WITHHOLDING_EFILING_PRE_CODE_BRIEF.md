@@ -1,6 +1,16 @@
 # JC-030 Withholding E-Filing File Pre-Code Technical Brief
 > Created: 2026-07-07 04:40 KST
-> Last Updated: 2026-07-07 04:40 KST
+> Last Updated: 2026-07-10 15:27 KST
+
+## 0.1 Flow Status
+
+```text
+[Flow]
+완료: Slice 0b 서식 조사·Part A 매핑, Slice 1a 검증 패널
+현재: Slice 1b 선행 W0 — 공식 바이너리 레이아웃 입수
+다음: W1 Part B 매핑·Brief 승인 → W2 generator/Preview → W3 API/UI → W4 실제 변환 검증
+차단: record type/order/length, encoding, A01 offset을 공식 근거로 확인하기 전 generator 코드 금지
+```
 
 ## 0. Governing Principle
 
@@ -111,8 +121,29 @@ Response: `application/octet-stream` (바이너리 스펙 확정 후) 또는 `42
 |-------|------|--------|
 | **0b** | 참조 PDF 입수·Field Mapping | 완료 (바이너리 갭 명시) |
 | **1a** | filing-support 패널 — 서식 검증·JC-013 대조 only | **구현 완료** (바이너리 입수 전) |
-| **1b** | `build-records` + plain 다운로드 | **Part B 바이너리 스펙 입수** |
+| **1b-W0** | 공식 바이너리 레이아웃 입수 | 파일명·record·length·encoding·A01 offset·적용일 확인 |
+| **1b-W1** | Field Mapping Part B·Brief 최종 승인 | 모든 v1 필드/검증의 record 위치 확정 |
+| **1b-W2** | shared read model + `build-records` + 양식 채움 확인 | 화면 값과 record 값의 동일성 |
+| **1b-W3** | generate API + plain 다운로드 UI | tenant/client/month scope, 서버 미보관, blocker 우회 불가 |
+| **1b-W4** | file/browser/Hometax verification | byte·encoding·record fixture와 실제 변환/업로드 검증 통과 |
+| **1b-W5** | docs/QA closeout | Roadmap §2.1, Backlog, QA, Audit 동기화 |
 | **2b** | fcrypt | NTS Crypto PoC |
+
+Slice 1b는 W0부터 W5까지 완료되어야 끝난다. W0·W1 전에는 W2 generator
+코드를 작성하지 않는다.
+
+### 7.1 Slice 1b Completion Line
+
+- [ ] 공식 바이너리 규격의 출처·버전·적용일과 로컬 검증본이 기록된다.
+- [ ] A01 v1 필드가 exact record offset/length/encoding에 매핑된다.
+- [ ] payroll 마감·needs-review·합계 불일치가 Preview와 API 모두에서 생성 차단된다.
+- [ ] Preview와 plain record가 동일 read model을 사용한다.
+- [ ] 파일명, record 순서·길이, encoding, 필수 코드, 합계가 결정론적으로 검증된다.
+- [ ] 다른 tenant·사업장·귀속월 데이터가 섞이지 않는다.
+- [ ] 브라우저 다운로드와 대표 파일의 홈택스 변환/업로드 검증이 통과한다.
+- [ ] 파일·PII·자격증명은 서버에 영구 저장되지 않는다.
+- [ ] 사용자가 직접 업로드·제출하며 직접입력·자동제출 문구가 없다.
+- [ ] QA·Backlog·Completion Contract·Audit가 main 상태와 일치한다.
 
 ## 8. Preconditions (착수 전)
 
@@ -121,7 +152,8 @@ Response: `application/octet-stream` (바이너리 스펙 확정 후) 또는 `42
 - [ ] **바이너리 레이아웃 입수** (전자신고 이용안내 / 변환프로그램)
 - [x] UI-First Gate — filing-support 원천세 JC-030 패널 HTML
 - [x] Slice 1a — `lib/efiling-withholding` 검증 패널 (다운로드 비활성)
-- [ ] 사용자 Brief 승인
+- [ ] Slice 1b W0 공식 바이너리 레이아웃 입수
+- [ ] Slice 1b W1 Part B 매핑·Brief 최종 사용자 승인
 
 ## 9. Related Documents
 
@@ -129,3 +161,5 @@ Response: `application/octet-stream` (바이너리 스펙 확정 후) 또는 `42
 - [Layout Acquisition](./37_JC030_WITHHOLDING_EFILING_LAYOUT_ACQUISITION.md)
 - [Simplified Wage Pre-Code Brief](./30_JC030_EFILING_FILE_PRE_CODE_BRIEF.md) — 패턴 참조
 - [Path 1 Roadmap](./36_PATH1_FORM_FILL_ROADMAP.md)
+- [Path 1 E2E Readiness Audit](./40_PATH1_END_TO_END_FILING_READINESS_AUDIT.md)
+- [Filing Support QA](../05_QA_Validation/07_FILING_SUPPORT_TEST_SCENARIOS.md)

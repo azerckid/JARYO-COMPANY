@@ -1,44 +1,51 @@
 # Path 1 End-to-End Filing Readiness Audit
 > Created: 2026-07-07 23:29 KST
-> Last Updated: 2026-07-10 09:55 KST
+> Last Updated: 2026-07-10 15:27 KST
 
 ## 0. Purpose
 
-This document fixes the simplest beta workflow for SemuAgent Path 1 and checks
-whether the current product actually follows it.
-
-The user-approved target is:
+This document checks whether the current product follows the user-approved
+Path 1 workflow and states exactly what remains before beta.
 
 ```text
-자료수집에 회사 자료 업로드
--> 통장·카드·세금계산서·영수증·급여 자료 정규화
--> 귀속기간·중복·업무관련성·공제 가능성 검토
--> 계정항목 추천, 불확실한 항목은 사용자가 선택·메모
+회사 자료 업로드
+-> 정규화·귀속기간·중복 검토
+-> 자료대조원장에서 증빙·소명·계정·제외 확정
 -> 확정 데이터만 세목별 신고 준비 데이터로 집계
--> 홈택스 업로드용 공식 양식·파일에 들어갈 값을 화면에서 확인
--> SemuAgent가 양식·파일 후보를 생성
--> 사용자가 홈택스에서 직접 업로드·검증·제출
+-> 공식 양식·파일에 채워질 값을 화면에서 확인
+-> SemuAgent가 홈택스·위택스 업로드용 파일 생성
+-> 사용자가 직접 업로드·검증·제출
 ```
 
-There is no Hometax direct-entry path in beta. The app must not tell the user to
-copy values into Hometax screens as a primary workflow. Path 1 means
-**form/file preparation for Hometax upload**.
+There is no Hometax direct-entry path in beta. Path 1 means **official
+form/file preparation for upload**, not copying values into Hometax screens.
 
 ## 1. Current Answer
 
-The direction is correct, but the product is not finished end to end for every
-tax type.
+The common data-preparation foundation is now complete through Reconciliation
+Ledger Phase 2. Path 1 is still incomplete because actual official upload
+files exist for only one tax type.
 
-| Step | Current state | Evidence | Gap |
-|---|---|---|---|
-| 자료수집 | Live | `lib/source-collection/summary.ts`, `/dashboard/direct-upload` | Source completeness exists, but cross-source reconciliation is not a named Path 1 gate |
-| 정규화·귀속기간·중복 | Partial/live | `lib/bookkeeping/period-attribution-service.ts`, `lib/bookkeeping/attribution-gate.ts` | Include/hold/duplicate decisions exist, but bank-card-tax-invoice matching is not yet a single user-facing checklist |
-| 계정항목 추론·확정 | Live | `lib/bookkeeping/classification-service.ts`, `/dashboard/bookkeeping` | Account recommendation, user account selection, `confirmed`, `excluded`, memo are present |
-| 사적 사용·업무무관 제외 | Partial/live | `status='excluded'` requires memo; VAT deduction review supports non-deductible decisions | Needs a unified "why excluded" taxonomy across bookkeeping and VAT |
-| 세목별 신고 준비 데이터 | Live for core tracks | VAT, payroll/withholding, payment statements, local income tax, business status report read models | Some tracks are review data only; Path 1 files are not available for all tracks |
-| 양식에 채워질 값 확인 | Live for simplified wage | `filledFormPreview` in `lib/efiling-simplified-wage/panel-summary.ts` | Must become the repeatable pattern for each tax type |
-| 홈택스 업로드용 파일 | Live for simplified wage Path 1 | `lib/efiling-simplified-wage`, generate API, upload guide | Withholding is validation-panel only; VAT and other forms still pending |
-| 최종 제출 | User only | Product Baseline, Path 1 Roadmap | Auto-submit and credential storage remain excluded |
+| Step | Current state | Evidence | Remaining gap |
+|:---|:---|:---|:---|
+| 자료수집 | Live | `lib/source-collection/summary.ts`, `/dashboard/direct-upload` | Missing source groups still block the applicable filing period as designed |
+| 정규화·귀속기간·중복 | Live for v1 | `lib/bookkeeping/period-attribution-service.ts`, `lib/bookkeeping/attribution-gate.ts` | Deferred year/custom scope and complex split/merge are not required for current exact 1:1 v1 |
+| 자료대조·확정 원장 | **Live; Phase 2 complete** | `/dashboard/bookkeeping/reconciliation-ledger`, Brief 41 §9 | Exact evidence connection, account, explanation, exclusion, exception, pattern and shared gate are implemented; deferred edges remain explicit non-goals |
+| 신고 준비 공통 gate | **Live** | `loadReconciliationPath1Gate`, filing-preparation summary | VAT is the first consumer; payroll-only routes intentionally do not inherit unrelated bookkeeping blockers |
+| 부가세 확정 원장 provenance | **Live** | `lib/vat/facts.ts`, `lib/vat/provenance.ts`, rebuild/package gates | Exact VAT facts are not manufactured for old/sample rows; unresolved rows remain correctly blocked |
+| 세목별 신고 준비 데이터 | Live for core tracks | VAT, payroll/withholding, payment statements, local income, business status read models | A ready data screen is not yet an official upload file |
+| 양식에 채워질 값 확인 | Live for simplified wage; validation-only for withholding | `lib/efiling-simplified-wage`, `lib/efiling-withholding` | Withholding needs the final binary layout and file-backed preview; later tax types need their own UI-First Gate |
+| 홈택스 업로드용 파일 | Live for simplified wage only | simplified-wage generate API and upload guide | Withholding, VAT, local income, business status and annual statement files remain |
+| 최종 제출 | User only | Product Baseline, Roadmap 36 | Auto-submit and credential storage remain excluded |
+
+The useful status is therefore qualitative, not a single percentage:
+
+- **Common confirmed-data foundation:** complete for the planned v1 exact-match flow.
+- **Tax-type upload files:** one tax type implemented; withholding is next and partially prepared.
+- **Path 1 beta:** not complete until simplified wage and withholding pass the
+  full file-verification completion line.
+- **Planned Path 1 matrix:** not complete until the remaining ordered tax types
+  each pass the same completion line.
 
 ## 2. Product Contract
 
@@ -47,7 +54,7 @@ Path 1 beta is one path:
 1. SemuAgent prepares the official upload artifact.
 2. The user inspects the values before download.
 3. The user downloads the file.
-4. The user opens Hometax and uploads/submits directly.
+4. The user opens Hometax or Witax and uploads/submits directly.
 
 Not Path 1:
 
@@ -58,94 +65,121 @@ Not Path 1:
 
 ## 3. Data Preparation Contract
 
-Path 1 is only as good as the confirmed data beneath it. A tax-type file may be
-generated only from data that passed these gates:
+A tax-type file may be generated only from data that passed the applicable
+gates:
 
 | Gate | Required behavior |
-|---|---|
-| Source completeness | Required source groups for the period are present or explicitly marked not applicable |
-| Source normalization | Files are parsed into rows or explicitly blocked for review |
-| Period attribution | Rows/files are included in the filing period, held, marked reference-only, or excluded as duplicate |
-| Reconciliation | Bank, card, tax invoice, and receipt signals are compared where the tax type requires it |
-| Business relevance | Personal/private/business-unrelated items are excluded with a user-visible reason |
-| Account confirmation | Each filing-relevant transaction has a final account or is blocked |
-| Tax-specific review | VAT deduction, payroll employee status, local income, or business-status requirements are confirmed |
-| Form-fill preview | The user sees the exact values that will be put into the official file/form before download |
+|:---|:---|
+| Source completeness | Required source groups are present or explicitly not applicable |
+| Source normalization | Files are parsed into rows or blocked for review |
+| Period attribution | Rows are included, held, reference-only, or excluded as duplicate |
+| Reconciliation | Applicable bank/evidence rows have confirmed evidence, explanation, exception, or exclusion decisions |
+| Business relevance | Personal/private/business-unrelated items are excluded with a visible reason |
+| Account confirmation | Each filing-relevant transaction has a final account or blocks generation |
+| Tax-specific review | VAT deduction/provenance or payroll/local-income/business-status checks pass |
+| Form-fill preview | The user sees the exact values used by the generated file before download |
+| File conformance | The generated file matches the current official layout and passes representative conversion/upload validation |
 
 ## 4. What Is Already Designed Correctly
 
 - The product boundary is correct: SemuAgent prepares data and files; the user
-  submits in Hometax.
-- The common foundation exists: source collection -> bookkeeping review ->
-  confirmed rows.
-- The bookkeeping review already supports the key human loop:
-  AI/rule recommendation -> account selection -> approval -> confirmed data.
-- Exclusion exists as a status and requires a memo before the row can be
-  excluded.
-- VAT deduction review exists separately for deductible/non-deductible input tax
-  decisions.
-- The first Path 1 form-fill preview exists for simplified wage statements.
+  submits in Hometax or Witax.
+- Source collection, period attribution, the reconciliation workbench, and the
+  shared Path 1 gate now form one named preparation chain.
+- Reconciliation Phase 2 supports evidence connect/review/unlink/replace,
+  amount-difference blocking, account confirmation, explanation, exclusion,
+  exception, prior-pattern guidance, and safe batch account acceptance.
+- Filing preparation consumes the shared reconciliation gate.
+- VAT UI/API enforce the composite source/reconciliation/deduction/provenance
+  gate, and the deterministic rebuild verifies exact confirmed VAT facts.
+- Payroll-only paths remain independent from unrelated bookkeeping blockers.
+- Simplified wage provides the first complete form-fill preview and plain-file
+  generation pattern.
 
-## 5. What Is Not Yet Strong Enough
+## 5. Remaining Product Gaps
 
-### 5.1 Cross-source reconciliation is live; downstream gate consumption remains
+### 5.1 Reconciliation Phase 2 Is Complete
 
-The **기장검토 하위 "자료대조원장"** workbench now provides live tenant/period rows, exact 1:1 bank-to-tax-invoice/cash-receipt/card evidence discovery and connection, evidence review/unlink/replace, amount-difference blocking, account confirmation, explanation, exclusion, evidence exceptions, prior-pattern guidance, and the closing checklist.
+Brief 41 §9 has no unchecked Phase 2 items. Slices 2a through 2d-3c are complete:
 
-Filing preparation consumes the same shared reconciliation decision through Slice 2d-1, and the VAT UI/API enforce the composite package gate through Slice 2d-2. The remaining VAT gap is confirmed-ledger provenance and deterministic rebuild (2d-3b/2d-3c). VAT is the first package consumer. Payroll-based withholding, simplified wage/payment statements, and local-income paths must not be blocked by unrelated bookkeeping rows.
+- live tenant/period workbench and table-first actions;
+- evidence connect, review, unlink/replace, exceptions and amount-difference blocking;
+- account, explanation and exclusion mutations;
+- prior account/evidence/exclusion pattern guidance and safe batch account acceptance;
+- shared reconciliation Path 1 gate;
+- VAT package UI/API enforcement;
+- exact VAT fact storage, deterministic rebuild and fingerprint verification.
 
-### 5.2 Private or business-unrelated exclusion has a v1 shared language
+The following remain explicitly deferred, not hidden Phase 2 work:
 
-Bookkeeping rows can be `excluded` only with a user-visible reason/memo, while VAT deduction decisions remain a separate tax-specific review. The v1 memo convention is sufficient for the current workbench; dedicated exclusion/exception columns are deferred until audit requirements justify a migration.
+- year/custom reconciliation period scope;
+- evidence-exception edit/remove;
+- partial-payment and many-to-one split/merge;
+- broader LLM fallback/consensus implementation where deterministic rules and
+  historical patterns are insufficient.
 
-Path 1 uses the following shared exclusion language in v1:
+These are added only if a target tax-type file proves they are required.
 
-- personal/private use,
-- business-unrelated,
-- duplicate evidence,
-- wrong period,
-- reference-only,
-- non-deductible VAT,
-- unsupported/needs expert review.
+### 5.2 Form-Fill Preview Exists For One Complete Tax Type
 
-### 5.3 Form-fill preview exists for one tax type only
+Simplified wage shows the repeatable pattern:
 
-Simplified wage now shows the correct pattern:
+- official form name and period;
+- business identity and target employees;
+- totals and validation;
+- one-time PII input status;
+- generated-file and Hometax upload boundary.
 
-- form name,
-- period,
-- business identity,
-- target employees,
-- totals,
-- one-time PII input status,
-- file-generation boundary.
+Withholding has the preparation/validation panel but not the official binary
+layout or generated file. VAT, local income, business status and annual
+statements still require their own layout, mapping, UI-First Gate, generator
+and file verification.
 
-The same "filled form preview before download" must be repeated for withholding,
-VAT, local income tax, and business status report before those Path 1 files are
-considered beta-ready.
+### 5.3 File Verification Must Be Part Of Done
 
-## 6. Recommended Next Work
+Code generation alone is not enough. A tax type stays open until the generated
+artifact is checked for filename, record order/length, encoding, required
+codes, totals, tenant/period isolation, and representative Hometax/Witax
+conversion or upload validation.
 
-The next product work should be Path 1 completion, not Path 2 and not Path 3.
+## 6. Fixed Next Work
 
-1. **Slice 2d-3b/2d-3c — complete confirmed-ledger VAT provenance**
-   - The tenant/period-scoped read-only gate and filing-preparation display are complete in 2d-1.
-   - The same composite gate is enforced in both VAT package UI and API by 2d-2.
-   - Complete [Audit 42](./42_VAT_CONFIRMED_LEDGER_PROVENANCE_AUDIT.md) 2d-3b/2d-3c: store exact VAT facts and summary provenance, then rebuild and fingerprint confirmed filing-relevant rows before generation is unlocked.
-   - Do not apply this bookkeeping gate to payroll-only filing routes.
-2. **원천세 Path 1 complete**
-   - Finish official layout acquisition.
-   - Add filled-form preview for the withholding form.
-   - Enable file download only after validation passes.
-3. **Finish deferred reconciliation edges only when required**
-   - Year/custom period scope, exception edit/remove, and partial/many-to-one split/merge remain explicit follow-ups, not prerequisites for exact 1:1 Slice 2d consumption.
-4. **Apply the same filled-form preview pattern to each tax type**
-   - VAT, local income tax, business status report, and later annual statements.
+The authoritative sequence and completion lines are in
+[Path 1 Form Fill Roadmap](./36_PATH1_FORM_FILL_ROADMAP.md).
 
-## 7. Documentation Sync
+1. **Synchronize this audit, Roadmap 36, Completion Contract, Backlog and QA.**
+2. **Complete withholding Path 1.**
+   - W0 official binary layout acquisition.
+   - W1 Part B mapping and final Brief approval.
+   - W2 shared preview/generator model.
+   - W3 generate API and download UI.
+   - W4 deterministic, browser and Hometax conversion/upload verification.
+   - W5 docs closeout.
+3. **Complete VAT Path 1 A~G.**
+   - Reuse the completed Phase 2 gate and provenance source of truth.
+   - Acquire and map the official upload-file layout before generator code.
+4. **Repeat A~G in order for local-income special collection, business-status
+   report and annual payment statement.**
+5. **Run Path 1 beta after simplified wage and withholding both satisfy the
+   per-tax completion line.**
 
-This audit supersedes any wording that presents Path 1, Path 2, and Path 3 as
-equal current choices. For beta:
+Path 2, Path 3, direct-entry guidance and automatic submission do not interrupt
+this sequence.
+
+## 7. Completion Decisions
+
+| Scope | Done when |
+|:---|:---|
+| Reconciliation Phase 2 | Brief 41 §9 complete and VAT gate/provenance consumers implemented — **done** |
+| One tax type | Roadmap 36 §2.1 all conditions pass |
+| Path 1 beta | Simplified wage + withholding pass actual form/file verification and beta flow |
+| Planned Path 1 matrix | Withholding, VAT, local income, business status and annual statement each pass §2.1 |
+| Path 2 restart | Path 1 beta is stable and a new UI-First Gate is approved |
+
+## 8. Documentation Sync
+
+This audit supersedes wording that presents Path 1, Path 2, and Path 3 as equal
+current choices. For beta:
 
 - Path 1 is the product path.
 - Path 2 is after Path 1 beta.
@@ -160,3 +194,4 @@ Related:
 - [Open Backlog Completion Contracts](./22_OPEN_BACKLOG_COMPLETION_CONTRACTS.md)
 - [Reconciliation Ledger Phase 2 Pre-Code Brief](./41_RECONCILIATION_LEDGER_V2_PRE_CODE_BRIEF.md)
 - [VAT Confirmed-Ledger Provenance Audit](./42_VAT_CONFIRMED_LEDGER_PROVENANCE_AUDIT.md)
+- [Filing Support QA](../05_QA_Validation/07_FILING_SUPPORT_TEST_SCENARIOS.md)
