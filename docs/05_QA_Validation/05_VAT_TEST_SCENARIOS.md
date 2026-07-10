@@ -45,7 +45,7 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 | # | Given | When | Then | Result |
 |:---|:---|:---|:---|:---:|
 | S-20 | outputTax=32,000,000, inputDeductible=18,000,000 | summary 파생 | payableTax=14,000,000 | PASS·단위 |
-| S-21 | inputTax 원천 18,000,000 중 pending 후보 3건 | summary 파생 | pending은 예정 공제액에 포함하되 패키지 잠금 사유로 유지 | PASS·단위 |
+| S-21 | JC-011 기존 fixture의 inputTax 원천 18,000,000 중 pending 공제 검토 3건 | summary 파생 | pending은 예정 공제액에 포함하되 패키지 잠금 사유로 유지 | PASS·단위 |
 | S-22 | `isFinal=false` | Hero 렌더 | "예정 세액" 및 검토 확정 전 안내 표시 | Pending |
 | S-23 | 마감 2026-07-25, 오늘 2026-07-01 | Hero 렌더 | D-24 표시 | Pending |
 
@@ -82,7 +82,7 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 | # | Given | When | Then | Result |
 |:---|:---|:---|:---|:---:|
 | S-60 | 매출/매입 합계표 준비 | 렌더 | "준비됨" 상태칩 | PASS·단위 |
-| S-61 | 불공제 후보 3건 pending | 렌더 | 공제받지 못할 매입세액 명세서 "검토 대기" | PASS·단위 |
+| S-61 | JC-011 기존 fixture의 공제 검토 3건 pending | 렌더 | 공제받지 못할 매입세액 명세서 "검토 대기" | PASS·단위 |
 | S-62 | source/reconciliation/deduction/provenance 중 하나 이상 미완 | 패키지 카드 렌더 | 버튼 disabled + `aria-disabled=true` + 사유별 count/이동 경로 | PASS·구현 |
 | S-63 | composite package gate 미완 | 패키지 생성 API 호출 | 409, 패키지 미생성, 동일 reason/count/target route 반환 | PASS·단위/구현 |
 | S-64 | source/reconciliation/deduction은 ready, provenance 미확인 | 패키지 생성 클릭 | 생성 거부, 확정 원장 출처 검증 전 잠금 유지 | PASS·단위/구현 |
