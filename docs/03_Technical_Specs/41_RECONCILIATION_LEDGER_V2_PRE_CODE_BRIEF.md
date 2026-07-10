@@ -655,7 +655,7 @@ inactive search or settings controls must look disabled until implemented.
 - [x] Slice 2d-2 VAT package UI/API gate enforcement implemented — `lib/vat/package-gate.ts` combines source collection, reconciliation, VAT deduction, and confirmed-ledger provenance into one Zod-validated decision. The VAT screen lists the same reason codes/counts/routes returned by the POST API, and provenance remains explicitly unverified until 2d-3.
 - [x] Slice 2d-3a provenance audit and completion contract — current data cannot prove the snapshot; [Audit 42](./42_VAT_CONFIRMED_LEDGER_PROVENANCE_AUDIT.md) fixes the additive VAT fact/provenance fields and deterministic rebuild boundary.
 - [x] Slice 2d-3b additive VAT fact fields, summary provenance metadata, and source writers implemented — migration 0067 adds nullable classification VAT facts and summary fingerprint metadata; parser/sample/manual writers share `lib/vat/facts.ts`, exact arithmetic is required, bank rows receive no VAT facts, and no existing row is heuristically backfilled. Package provenance remains locked.
-- [ ] Slice 2d-3c deterministic rebuild, fingerprint verification, and package-gate unlock implemented.
+- [x] Slice 2d-3c deterministic rebuild, fingerprint verification, and package-gate unlock implemented — `lib/vat/provenance.ts` scopes current confirmed evidence rows and linked deduction reviews, rebuilds exact VAT totals without gross/11 inference, writes versioned fingerprint metadata, and makes the shared gate expose an explicit rebuild action only when all other package conditions are ready. The package POST re-verifies the current fingerprint before status mutation; unresolved sample/history rows remain locked.
 
 ## 11. Related Documents
 

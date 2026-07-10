@@ -86,13 +86,18 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 | S-62 | source/reconciliation/deduction/provenance 중 하나 이상 미완 | 패키지 카드 렌더 | 버튼 disabled + `aria-disabled=true` + 사유별 count/이동 경로 | PASS·구현 |
 | S-63 | composite package gate 미완 | 패키지 생성 API 호출 | 409, 패키지 미생성, 동일 reason/count/target route 반환 | PASS·단위/구현 |
 | S-64 | source/reconciliation/deduction은 ready, provenance 미확인 | 패키지 생성 클릭 | 생성 거부, 확정 원장 출처 검증 전 잠금 유지 | PASS·단위/구현 |
-| S-65 | source/reconciliation/deduction/provenance 모두 ready | 패키지 생성 클릭 | packageStatus 갱신 | Pending · Slice 2d-3 |
+| S-65 | source/reconciliation/deduction/provenance 모두 ready | 패키지 생성 클릭 | packageStatus 갱신 | PASS·단위/정적 · Slice 2d-3c |
 | S-66 | stored snapshot은 있으나 exact VAT facts/fingerprint 없음 | 패키지 생성 | snapshot presence만으로 잠금 해제하지 않음 | PASS·감사 |
-| S-67 | confirmed VAT facts에서 deterministic rebuild 완료 | package gate 검증 | current fingerprint가 일치할 때만 생성 허용 | Pending · Slice 2d-3c |
+| S-67 | confirmed VAT facts에서 deterministic rebuild 완료 | package gate 검증 | current fingerprint가 일치할 때만 생성 허용 | PASS·단위 · Slice 2d-3c |
 | S-68 | parser가 exact supply/tax/gross와 tax type을 읽음 | classification 저장 | 산술 일치 시 `derived` VAT fact + source row identity 저장 | PASS·단위 · Slice 2d-3b |
 | S-69 | exact basis가 빠진 evidence row | classification 저장 | 금액 추정 없이 `needs_review` 저장 | PASS·단위 · Slice 2d-3b |
 | S-70 | staff VAT fact가 산술 불일치 또는 원장 gross와 불일치 | row PATCH | 400 거부, 기존 fact 미변경 | PASS·단위 · Slice 2d-3b |
 | S-71 | migration 0067 이후 summary provenance metadata가 null | package gate | 2d-3c rebuild 전 잠금 유지 | PASS·설계 · Slice 2d-3b |
+| S-74 | 과세·영세율·면세 매출과 매입 exact VAT facts | deterministic rebuild | 공급가액·매출/매입세액·공제세액·납부세액을 exact 값으로 재현 | PASS·단위 · Slice 2d-3c |
+| S-75 | suggested/미해결/inconsistent fact 또는 unlinked/out-of-scope/pending deduction review | rebuild | 409용 issue로 차단, summary 미변경 | PASS·단위 · Slice 2d-3c |
+| S-76 | 같은 confirmed inputs가 다른 순서로 로드됨 | fingerprint 계산 | 같은 fingerprint 생성 | PASS·단위 · Slice 2d-3c |
+| S-77 | rebuild 뒤 source fact 또는 공제 결정 변경 | package gate 검증 | stored fingerprint 불일치로 다시 잠금 | PASS·단위 · Slice 2d-3c |
+| S-78 | 선행 gate는 ready이고 exact inputs는 유효하나 snapshot이 stale | VAT 패키지 카드 | `확정 원장 다시 계산`을 명시적으로 노출; 자동 재계산 없음 | PASS·단위/정적 · Slice 2d-3c |
 
 ### 2.8 Preview 계약·책임 경계
 
@@ -115,8 +120,8 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 
 ## 3. 자동화 계획
 
-- **단위 테스트 완료** (`lib/vat/summary.test.ts`, `lib/vat/package-gate.test.ts`, `lib/validations/vat.test.ts`): S-03, S-12~13, S-20~21, S-30~32, S-40~42, S-50~52, S-60~64.
-- **정적 검증 완료** (`vat-workspace.test.ts`): Preview 구조(S-01), 라우트(S-02), reviews 미import(S-70), 책임 경계 문구(S-71~72), mutation tenant guard(S-53), composite package guard(S-63~64).
+- **단위 테스트 완료** (`lib/vat/summary.test.ts`, `lib/vat/package-gate.test.ts`, `lib/vat/provenance.test.ts`, `lib/validations/vat.test.ts`): S-03, S-12~13, S-20~21, S-30~32, S-40~42, S-50~52, S-60~67, S-74~78.
+- **정적 검증 완료** (`vat-workspace.test.ts`): Preview 구조(S-01), 라우트(S-02), reviews 미import(S-70), 책임 경계 문구(S-71~72), mutation tenant guard(S-53), composite package guard(S-63~65), explicit rebuild route/action(S-78).
 - **브라우저 수동 검증 완료**: 승인 Preview와 실제 `/dashboard/vat?period=2026-H1` 캡처 비교. 숫자/상태/잠금 버튼/인라인 안분 UI 확인.
 - **후속 E2E**: JC-014에서 실제 Blob·AI 파싱·정규화 저장은 통과했다. 실제 전표 생성부터 VAT summary 생성까지의 도메인 E2E는 별도 회계 시드 준비 후 검증한다.
 

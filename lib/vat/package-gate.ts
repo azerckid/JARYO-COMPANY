@@ -6,6 +6,10 @@ import {
 } from '@/lib/bookkeeping-review/reconciliation-path1-gate'
 import type { SourceCollectionCompleteness } from '@/lib/source-collection/summary'
 import { loadSourceCollectionSummary } from '@/lib/source-collection/summary'
+import {
+  loadVatConfirmedLedgerProvenanceState,
+  type VatProvenanceState,
+} from './provenance'
 import type { VatPackagePreview } from './summary'
 
 const VAT_ROUTE = '/dashboard/vat' as const
@@ -17,6 +21,7 @@ export const vatPackageGateReasonCodeSchema = z.enum([
   'source_collection_normalization_pending',
   'reconciliation_incomplete',
   'vat_deduction_incomplete',
+  'confirmed_ledger_provenance_rebuild_required',
   'confirmed_ledger_provenance_unverified',
 ])
 
@@ -47,8 +52,11 @@ export const vatPackageGateSchema = z.object({
     pendingCount: z.number().int().nonnegative(),
   }),
   provenance: z.object({
-    status: z.enum(['verified', 'unverified']),
+    status: z.enum(['verified', 'rebuild_required', 'blocked']),
     isReady: z.boolean(),
+    canRebuild: z.boolean(),
+    issueCount: z.number().int().nonnegative(),
+    message: z.string().min(1),
   }),
   reasons: z.array(vatPackageGateReasonSchema),
 })
@@ -65,7 +73,7 @@ type BuildVatPackageGateParams = {
   >
   reconciliationGate: Pick<ReconciliationPath1Gate, 'isReady' | 'blockerCount' | 'targetRoute'>
   pendingDeductionCount: number
-  provenanceVerified: boolean
+  provenanceState: VatProvenanceState
 }
 
 function periodRoute(route: string, periodKey: string) {
@@ -124,11 +132,18 @@ export function buildVatPackageGate(params: BuildVatPackageGateParams): VatPacka
       targetRoute: periodRoute(VAT_ROUTE, params.periodKey),
     })
   }
-  if (!params.provenanceVerified) {
+  if (params.provenanceState.status === 'rebuild_required') {
+    reasons.push({
+      code: 'confirmed_ledger_provenance_rebuild_required',
+      count: 1,
+      message: params.provenanceState.message,
+      targetRoute: periodRoute(VAT_ROUTE, params.periodKey),
+    })
+  } else if (!params.provenanceState.isReady) {
     reasons.push({
       code: 'confirmed_ledger_provenance_unverified',
-      count: 1,
-      message: '패키지 값의 확정 원장 출처 검증이 아직 완료되지 않았습니다.',
+      count: Math.max(1, params.provenanceState.issueCount),
+      message: params.provenanceState.message,
       targetRoute: periodRoute(VAT_ROUTE, params.periodKey),
     })
   }
@@ -137,7 +152,12 @@ export function buildVatPackageGate(params: BuildVatPackageGateParams): VatPacka
     && sourceReady
     && params.reconciliationGate.isReady
     && deductionReady
-    && params.provenanceVerified
+    && params.provenanceState.isReady
+  const canRebuildProvenance = params.hasSummary
+    && sourceReady
+    && params.reconciliationGate.isReady
+    && deductionReady
+    && params.provenanceState.canRebuild
 
   return vatPackageGateSchema.parse({
     periodKey: params.periodKey,
@@ -159,8 +179,8 @@ export function buildVatPackageGate(params: BuildVatPackageGateParams): VatPacka
       pendingCount: params.pendingDeductionCount,
     },
     provenance: {
-      status: params.provenanceVerified ? 'verified' : 'unverified',
-      isReady: params.provenanceVerified,
+      ...params.provenanceState,
+      canRebuild: canRebuildProvenance,
     },
     reasons,
   })
@@ -183,20 +203,23 @@ export function applyVatPackageGateToPreview(
 
 export async function loadVatPackageGate({
   tenantId,
+  clientId,
   periodKey,
   hasSummary,
   pendingDeductionCount,
   today,
 }: {
   tenantId: string
+  clientId: string
   periodKey: string
   hasSummary: boolean
   pendingDeductionCount: number
   today?: DateTime
 }): Promise<VatPackageGate> {
-  const [sourceSummary, reconciliationGate] = await Promise.all([
+  const [sourceSummary, reconciliationGate, provenanceState] = await Promise.all([
     loadSourceCollectionSummary({ tenantId, periodKey, today }),
     loadReconciliationPath1Gate({ tenantId, periodKey, today }),
+    loadVatConfirmedLedgerProvenanceState({ tenantId, clientId, periodKey }),
   ])
 
   return buildVatPackageGate({
@@ -205,8 +228,6 @@ export async function loadVatPackageGate({
     sourceCompleteness: sourceSummary.completeness,
     reconciliationGate,
     pendingDeductionCount,
-    // vat_period_summary is still a stored snapshot. Slice 2d-3 must prove
-    // confirmed-ledger provenance or replace it with a deterministic rebuild.
-    provenanceVerified: false,
+    provenanceState,
   })
 }

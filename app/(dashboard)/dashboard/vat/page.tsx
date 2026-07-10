@@ -29,6 +29,7 @@ export default async function VatPage({ searchParams }: PageProps) {
 
   const packageGate = await loadVatPackageGate({
     tenantId,
+    clientId: summary.businessEntity.id,
     periodKey: summary.period.key,
     hasSummary: summary.hasPeriodSummary,
     pendingDeductionCount: summary.taxSummary.pendingDeductionCount,

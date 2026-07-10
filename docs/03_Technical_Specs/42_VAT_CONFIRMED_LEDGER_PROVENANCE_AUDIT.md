@@ -1,6 +1,6 @@
 # VAT Confirmed-Ledger Provenance Audit
 > Created: 2026-07-10 09:55 KST
-> Last Updated: 2026-07-10 13:49 KST
+> Last Updated: 2026-07-10 14:28 KST
 
 ## 0. Purpose
 
@@ -11,12 +11,14 @@ filing-relevant evidence rows for the same tenant, business entity, and period.
 
 The package must remain locked when that proof cannot be reproduced.
 
-## 1. Audit Result
+## 1. Audit-Time Result
 
-The current model cannot prove `vat_period_summary` provenance and cannot yet
-perform a safe deterministic rebuild.
+At the start of Slice 2d-3, the model could not prove
+`vat_period_summary` provenance or perform a safe deterministic rebuild. The
+table below preserves the 2d-3a audit evidence that justified the additive
+2d-3b schema and the 2d-3c runtime producer.
 
-| Surface | Current fact | Consequence |
+| Surface | Audit-time fact | Consequence |
 |:---|:---|:---|
 | `vat_period_summary` | Runtime code reads and updates deduction/package state, but no runtime producer builds its tax values from confirmed ledger rows. First-run sample seed inserts the values directly. | Snapshot presence is not proof of origin. |
 | `bookkeeping_transaction_classification` | Has generic date, counterparty, gross amount, direction, account, status, and `evidenceJson`. It has no normalized VAT supply amount, tax amount, tax category, or sale/purchase treatment. | Output/input tax and taxable/zero-rated/exempt supply cannot be reproduced safely. |
@@ -130,6 +132,39 @@ and the existing staff row PATCH writer.
 The package gate therefore remains unconditionally provenance-locked after
 2d-3b. This is intentional, not a partial unlock.
 
+### 4.2 Slice 2d-3c Implementation Result
+
+`lib/vat/provenance.ts` is the single deterministic producer and verifier for
+the VAT snapshot.
+
+- The loader scopes every query by tenant, business entity, and VAT period,
+  resolves active `source_batch` sessions, and reuses the latest-completed-run
+  selector from the bookkeeping review read model.
+- The rebuild aggregates only filing evidence rows (`tax_invoice`, `card`, or
+  `receipt`) whose classification is `confirmed` and whose exact VAT fact is
+  `derived` or `confirmed`. A parser-derived fact is therefore usable only
+  after the transaction itself has been confirmed by the user.
+- Bank settlements and excluded/out-of-period rows are omitted. Missing dates,
+  unresolved or arithmetically inconsistent facts, unlinked/out-of-scope/
+  pending/unconfirmed/duplicate deduction reviews, and mismatched review
+  amounts block the rebuild.
+- Taxable, zero-rated, exempt, output-tax, input-tax, deductible input-tax, and
+  payable-tax values are rebuilt from exact facts. No gross/11 inference exists.
+- The SHA-256 fingerprint includes the versioned scope, sorted filing rows,
+  sorted valid deduction reviews, and rebuilt totals. One atomic summary update
+  writes all values and provenance metadata together and clears any stale
+  generated-package state.
+- The package gate now distinguishes `blocked`, `rebuild_required`, and
+  `verified`. The UI shows **확정 원장 다시 계산** only when all non-provenance
+  conditions are ready and the current inputs are rebuildable.
+- `POST /api/vat/periods/[periodKey]/rebuild` performs the explicit rebuild.
+  The package POST independently reloads the same deterministic inputs and
+  verifies the current fingerprint immediately before changing package status.
+
+Existing/sample rows without exact VAT facts or linked deduction reviews stay
+blocked. Slice 2d-3c does not manufacture a green sample state and does not
+backfill historical VAT amounts.
+
 No further 2d-3 sub-slice may be added without updating this contract first.
 Slice 2d-3 is complete only when both 2d-3b and 2d-3c are merged and the package
 gate no longer contains an unconditional provenance lock.
@@ -146,26 +181,26 @@ gate no longer contains an unconditional provenance lock.
 
 ## 6. Acceptance And QA Gates
 
-- [ ] Tenant A facts can never affect Tenant B rebuilds or fingerprints.
-- [ ] Only the selected business entity and `periodKey` are aggregated.
-- [ ] Bank/evidence pairs are counted once through the evidence row.
-- [ ] Suggested, needs-decision, excluded, and stale-run rows are rejected or omitted according to the contract.
-- [ ] Taxable, zero-rated, exempt, input-tax, and output-tax totals are reproduced from exact VAT facts.
-- [ ] Every deduction review is linked to a confirmed same-scope source row before it affects the package.
-- [ ] A source change after rebuild invalidates the stored fingerprint.
-- [ ] UI and POST API show the same provenance failure reason and remain non-mutating on `409`.
-- [ ] A verified rebuild is the only path that changes package provenance to ready.
+- [x] Tenant A facts can never affect Tenant B rebuilds or fingerprints.
+- [x] Only the selected business entity and `periodKey` are aggregated.
+- [x] Bank/evidence pairs are counted once through the evidence row.
+- [x] Suggested, needs-decision, excluded, and stale-run rows are rejected or omitted according to the contract.
+- [x] Taxable, zero-rated, exempt, input-tax, and output-tax totals are reproduced from exact VAT facts.
+- [x] Every deduction review is linked to a confirmed same-scope source row before it affects the package.
+- [x] A source change after rebuild invalidates the stored fingerprint.
+- [x] UI and POST API use the shared provenance gate and remain non-mutating on `409`.
+- [x] A verified rebuild is the only path that changes package provenance to ready.
 
 ## 7. Rubric Check
 
 | Criterion | Status | Evidence |
 |:---|:---:|:---|
-| Functionality | PASS·설계 | Unsafe unlock is prevented; deterministic inputs and failure states are fixed. |
-| Potential Impact | PASS·설계 | VAT package values become auditable from source evidence through filing output. |
+| Functionality | PASS·구현 | Unsafe unlock is prevented; deterministic rebuild and fingerprint verification are implemented. |
+| Potential Impact | PASS·구현 | VAT package values are reproducible from confirmed source evidence through filing output. |
 | Novelty | N/A | This is correctness infrastructure, not a novelty claim. |
-| UX | PASS·설계 | Existing blocker UI remains; users receive actionable provenance failures rather than a false ready state. |
-| Open-source | PASS·설계 | Rebuild and fingerprint contracts are isolated from UI/API consumers. |
-| Business Plan | PASS·설계 | Reliable Path 1 package preparation is a beta prerequisite. |
+| UX | PASS·구현 | Blocked inputs stay locked; rebuildable inputs expose one explicit recalculation action. |
+| Open-source | PASS·구현 | Rebuild and fingerprint contracts are isolated from UI/API consumers. |
+| Business Plan | PASS·구현 | Reliable Path 1 package preparation has a reproducible VAT source-of-truth gate. |
 
 ## 8. Related Documents
 

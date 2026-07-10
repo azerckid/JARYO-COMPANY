@@ -129,7 +129,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 
 - 신규 라이브러리 없음. 사용자 제공 Clobe 참고 화면은 dense source ledger UX의 참고일 뿐, SemuAgent 컴포넌트는 기존 card/table/chip/button 패턴으로 만든다.
 - 자료대조원장은 기존 기장검토 분류 큐를 대체하지 않고, Path 1 양식 생성 전 증빙 연결·계정확정·제외 검토를 한 화면에서 점검하는 하위 관문으로 구현한다.
-- 기본 흐름은 `ReconciliationNextActionQueue`에서 시작하고, 출처 탭은 보조 탐색으로 둔다. 일괄 수락은 같은 근거·같은 추천을 가진 안전한 그룹에만 노출한다.
+- 현재 기본 흐름은 PR #171 이후 table-first로 확정됐다. 기간/행동 필터 뒤 원장 행을 바로 보여주고, 일괄 수락은 같은 근거·같은 추천을 가진 안전한 계정 그룹에만 노출한다.
 - UI-first lite 단계에서는 모든 자료대조원장 컴포넌트가 `ReconciliationLedgerDisplayModel` fixture를 입력으로 받아 렌더링하고, 저장/연결/확정 버튼은 2b mutation 전까지 disabled 또는 준비 중 상태로 표시한다.
 
 ### 7.4 부가세 (UI Design 4.4)
@@ -141,12 +141,13 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 | Deduction Review Table | 커스텀 `VatDeductionReviewTable` | `table` + `badge` + 행 액션 `button` |
 | Deduction Action Controls | 커스텀 `VatDeductionActions` | `button` + `sonner` 피드백 |
 | Schedule Status List | 커스텀 `VatScheduleList` | `card` + 상태칩 |
+| Confirmed Ledger Rebuild | 커스텀 `VatProvenanceRebuildButton` | `button` + `RefreshCw` + `sonner`; exact inputs가 유효하고 snapshot만 stale일 때만 노출 |
 | Filing Package Preview | 커스텀 `VatPackagePreview` | `card` + disabled `button` wrapper |
 | Locked Action Wrapper | 커스텀 `LockedActionButton` | visible locknote + `aria-describedby`; 별도 tooltip 패키지 미도입 |
 | State(로딩/빈/오류) | 공용 재사용 | `skeleton` + `button` |
 
 - 신규 shadcn 없음. `progress`/`skeleton`과 기존 `card`/`badge`/`button`/`table` 재사용.
-- 패키지 생성 버튼은 공제 검토 완료 전 `disabled` + `aria-disabled="true"` + visible locknote를 사용한다. 브라우저별 `title` 툴팁에 의존하지 않는다.
+- 패키지 생성 버튼은 자료수집·자료대조·공제 검토·확정 원장 fingerprint 완료 전 `disabled` + `aria-disabled="true"` + visible locknote를 사용한다. 재계산 버튼은 자동 실행하지 않으며, exact inputs가 유효하고 snapshot만 stale인 조건에서만 표시한다. 브라우저별 `title` 툴팁에 의존하지 않는다.
 - 부가세 화면은 회사용 `/dashboard/vat`로 새로 구성하며, GIWA `/dashboard/reviews` 워크스페이스 컴포넌트를 import/render하지 않는다.
 - 자동 홈택스 제출·자동 납부 UI는 만들지 않는다. 신고 준비값 확인과 접수증 보관은 JC-013 신고지원에서 최종 연결한다.
 

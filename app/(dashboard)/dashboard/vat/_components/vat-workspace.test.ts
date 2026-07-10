@@ -5,6 +5,7 @@ const workspaceSource = readFileSync(new URL('./vat-workspace.tsx', import.meta.
 const actionsSource = readFileSync(new URL('./vat-actions.tsx', import.meta.url), 'utf8')
 const deductionRouteSource = readFileSync(new URL('../../../../api/vat/deduction-reviews/[reviewId]/route.ts', import.meta.url), 'utf8')
 const packageRouteSource = readFileSync(new URL('../../../../api/vat/periods/[periodKey]/package/route.ts', import.meta.url), 'utf8')
+const rebuildRouteSource = readFileSync(new URL('../../../../api/vat/periods/[periodKey]/rebuild/route.ts', import.meta.url), 'utf8')
 const sidebarSource = readFileSync(new URL('../../../_components/sidebar.tsx', import.meta.url), 'utf8')
 const companyHomeSummarySource = readFileSync(new URL('../../../../../lib/company-home/summary.ts', import.meta.url), 'utf8')
 
@@ -75,5 +76,10 @@ describe('VAT workspace static contract', () => {
     expect(packageRouteSource).toContain('reviewRows.length > 0')
     expect(packageRouteSource).toContain('inputTaxDeductibleKrw: periodSummary.inputTaxDeductibleKrw')
     expect(packageRouteSource).toContain("packageStatus: 'generated'")
+    expect(workspaceSource).toContain('VatProvenanceRebuildButton')
+    expect(actionsSource).toContain('/api/vat/periods/${periodKey}/rebuild')
+    expect(rebuildRouteSource).toContain('rebuildVatPeriodSummaryFromConfirmedLedger')
+    expect(rebuildRouteSource).toContain('packageGate.provenance.canRebuild')
+    expect(rebuildRouteSource).toContain("code: 'vat_provenance_rebuild_blocked'")
   })
 })

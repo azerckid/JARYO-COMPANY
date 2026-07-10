@@ -13,6 +13,22 @@ const readyReconciliation = {
   targetRoute: '/dashboard/bookkeeping/reconciliation-ledger' as const,
 }
 
+const blockedProvenance = {
+  status: 'blocked' as const,
+  isReady: false,
+  canRebuild: false,
+  issueCount: 1,
+  message: '확정 VAT fact를 확인해야 합니다.',
+}
+
+const verifiedProvenance = {
+  status: 'verified' as const,
+  isReady: true,
+  canRebuild: false,
+  issueCount: 0,
+  message: '현재 fingerprint가 일치합니다.',
+}
+
 function buildGate(overrides: Partial<Parameters<typeof buildVatPackageGate>[0]> = {}) {
   return buildVatPackageGate({
     periodKey: '2026-H1',
@@ -20,7 +36,7 @@ function buildGate(overrides: Partial<Parameters<typeof buildVatPackageGate>[0]>
     sourceCompleteness: readySource,
     reconciliationGate: readyReconciliation,
     pendingDeductionCount: 0,
-    provenanceVerified: false,
+    provenanceState: blockedProvenance,
     ...overrides,
   })
 }
@@ -75,7 +91,7 @@ describe('VAT package composite gate', () => {
   })
 
   it('allows generation only when every gate including provenance is ready', () => {
-    expect(buildGate({ provenanceVerified: true })).toMatchObject({
+    expect(buildGate({ provenanceState: verifiedProvenance })).toMatchObject({
       isReady: true,
       blockerCount: 0,
       reasons: [],
@@ -83,7 +99,7 @@ describe('VAT package composite gate', () => {
   })
 
   it('reports a missing VAT summary independently from the other gates', () => {
-    const gate = buildGate({ hasSummary: false, provenanceVerified: true })
+    const gate = buildGate({ hasSummary: false, provenanceState: verifiedProvenance })
 
     expect(gate).toMatchObject({
       isReady: false,
@@ -91,6 +107,25 @@ describe('VAT package composite gate', () => {
       summaryReady: false,
       reasons: [{ code: 'vat_summary_missing', count: 1 }],
     })
+  })
+
+  it('exposes an explicit rebuild action only when every non-provenance gate is ready', () => {
+    const rebuildState = {
+      status: 'rebuild_required' as const,
+      isReady: false,
+      canRebuild: true,
+      issueCount: 1,
+      message: '확정 원장 값으로 다시 계산해야 합니다.',
+    }
+    expect(buildGate({ provenanceState: rebuildState })).toMatchObject({
+      isReady: false,
+      provenance: { status: 'rebuild_required', canRebuild: true },
+      reasons: [{ code: 'confirmed_ledger_provenance_rebuild_required' }],
+    })
+    expect(buildGate({
+      provenanceState: rebuildState,
+      reconciliationGate: { ...readyReconciliation, isReady: false, blockerCount: 2 },
+    }).provenance.canRebuild).toBe(false)
   })
 
   it('keeps the package action disabled when the composite gate is blocked', () => {

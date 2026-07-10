@@ -126,11 +126,12 @@
 | Sales Grouping Cards | 과세 / 영세율 / 면세 그룹별 공급가액·매출세액 | 3카드, 그룹 태그(tax/zero/exempt) |
 | Deduction Review Table | 매입세액 공제 검토 | 공제 확정(ok) / 불공제 후보(danger) / 안분 필요(warn), 판정·사유·처리 |
 | Schedules List | 부속 명세(합계표·수취명세서·불공제명세서) 준비 상태 | 서식별 준비됨/검토 대기 상태칩 |
+| Confirmed Ledger Rebuild | 현재 확정 VAT fact로 summary와 fingerprint를 재계산 | 다른 gate가 모두 ready이고 snapshot만 stale일 때 파란 outline `확정 원장 다시 계산`; 처리 중 spinner |
 | Filing Package Preview | 신고 패키지(PDF) + 신고 준비값 확인 | 미리보기 파일 + **생성 버튼 잠금**(검토 완료 전) |
 | State Card | 로딩/빈/오류 표준 (공용) | 스켈레톤·빈안내(기장검토 먼저 확정)·오류+재시도 |
 
 - 사이드바 "부가세"에 공제 검토 대기 건수 카운트 배지(warn)를 노출한다.
-- **패키지 생성 잠금**: 불공제 후보 검토가 끝나기 전에는 `is-disabled` + `disabled` + `aria-disabled="true"` muted 버튼으로 잠금을 명시하고, 위에 사유(locknote)를 함께 노출한다.
+- **패키지 생성 잠금**: 자료수집·자료대조·불공제 후보·확정 원장 fingerprint 중 하나라도 미완이면 `is-disabled` + `disabled` + `aria-disabled="true"` muted 버튼으로 잠금을 명시하고, 위에 사유(locknote)를 함께 노출한다. exact 입력은 유효하지만 snapshot만 stale인 경우에만 별도 재계산 버튼을 제공한다.
   - 구현 노트: disabled 버튼의 `title` 툴팁은 브라우저별 표시가 일관되지 않으므로, React 구현 시 비활성 버튼을 래퍼(tooltip 컴포넌트)로 감싸 잠금 사유를 접근성 있게 노출한다.
 - **자동 홈택스 제출은 범위 밖**(패키지 생성 + 준비값 확인까지). 세액은 검토 완료 전 "예정"으로 표기한다.
 - 상태칩·State Card·Table 골격은 앞 화면들과 공통(DRY).

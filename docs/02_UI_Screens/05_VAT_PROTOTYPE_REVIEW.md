@@ -1,6 +1,6 @@
 # VAT Prototype Review
 > Created: 2026-07-01 20:50
-> Last Updated: 2026-07-01 20:50
+> Last Updated: 2026-07-10 14:28
 
 ## 1. HTML UI Preview
 - Preview: [부가세](./previews/03_vat.html)
@@ -16,7 +16,7 @@
 - 세액 요약(매출세액 − 매입세액 = 납부 예정세액)과 마감 D-day 확인.
 - 매출 구분(과세/영세율/면세) 확인.
 - 매입세액 공제 검토: 불공제 후보 확정/공제, 공통매입 안분 계산.
-- 부속 명세 준비 상태 확인 → 검토 완료 후 신고 패키지 생성.
+- 부속 명세 준비 상태 확인 → 자료수집·자료대조·공제 검토 완료 → stale snapshot이면 `확정 원장 다시 계산` → 현재 fingerprint 확인 후 신고 패키지 생성.
 
 ## 4. Screen States
 - Default: 세액 요약·매출 구분·공제 검토·부속 명세·패키지 미리보기가 채워진 화면.
@@ -28,7 +28,7 @@
 ## 5. Data Flow
 - Inputs: 기장검토 확정 전표(매출·매입), 증빙 유형, 공제/불공제 판정 근거.
 - Displayed data: 매출세액·매입세액·납부(예정)세액, 과세/영세율/면세 구분, 공제 검토 표(공급가액·세액·판정·사유), 부속 명세 준비 상태, 신고 패키지 미리보기.
-- Mutations / saved data: 공제/불공제 확정, 공통매입 안분 계산, 신고 패키지 생성. 검토 완료 전에는 세액이 "예정"이며 패키지 생성 잠금.
+- Mutations / saved data: 공제/불공제 확정, 공통매입 안분 계산, 명시적 확정 원장 재계산, 신고 패키지 생성. 검토 완료 전에는 세액이 "예정"이며 패키지 생성 잠금. 재계산은 exact VAT fact와 같은 scope의 공제 검토가 유효할 때만 노출되고 자동 실행되지 않는다.
 - External dependencies: 없음(내부 집계). 자동 홈택스 제출은 범위 밖(패키지 + 준비값 확인까지). 외부 세무사 검토 흐름은 v1 제외.
 
 ## 6. User Confirmation
@@ -41,6 +41,7 @@
 ## 7. Feedback & Improvements
 - (반영) 신고 패키지 생성 버튼을 승인 전 잠금 상태로 표현: `is-disabled` + `disabled` + `aria-disabled="true"`, muted 스타일, 잠김 라벨.
 - (구현 노트) disabled 버튼의 `title` 툴팁은 브라우저별로 표시가 일관되지 않는다. React 구현 시 비활성 버튼을 래퍼(예: span/tooltip 컴포넌트)로 감싸 잠금 사유를 접근성 있게 노출한다. → Component & Library Plan / JC-011 전제조건에 반영.
+- (Slice 2d-3c) 승인 Preview 이후 추가된 조건부 상태: 다른 package gate가 모두 준비됐으나 저장 snapshot fingerprint만 stale이면 패키지 카드에 `확정 원장 다시 계산`을 표시한다. unresolved fact/review 상태에서는 이 버튼도 숨기고 기존 blocker 사유만 표시한다.
 
 ## 8. Related Documents
 - **Concept_Design**: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md) - 제품 목적 및 사용자
