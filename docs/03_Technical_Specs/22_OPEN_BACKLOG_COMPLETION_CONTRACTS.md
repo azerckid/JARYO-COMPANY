@@ -1,6 +1,6 @@
 # Open Backlog Completion Contracts
 > Created: 2026-07-05 21:34
-> Last Updated: 2026-07-07 19:45 KST
+> Last Updated: 2026-07-10 15:27 KST
 
 ## 0. Purpose
 
@@ -148,14 +148,26 @@ Non-goals before done:
 
 Type: 공통 검증 + Path 1 plain files + Path 3 encrypted files (future).
 
-Current gate: **JC-030 v1** (Slices 1a–2a, 3) **complete** on main — plain·검증·홈택스 업로드 안내 실사용 가능. **Beta focus is Path 1 only.** Path 2 is after Path 1 beta; Path 3 is unknown until certification/conformance path is confirmed. **Slice 2b** (fcrypt·윈도우 microservice) is a **separate deferred track** per [NTS Crypto Spec §10](./31_JC030_NTS_CRYPTO_SPEC_ACQUISITION.md); Windows DLL execution + Hometax round-trip before code. **Open risk (2026-07-07):** the file-conversion path itself may require [software conformance certification](./32_JC030_SW_CONFORMANCE_CERTIFICATION_RESEARCH.md) that SemuAgent has not obtained — NTS inquiry pending. Hometax screen transcription guidance is explicitly excluded from Path 1 and from JC-030 follow-up scope.
+Current gate: **JC-030 epic is in progress.** The simplified-wage tax-type v1
+(Slices 1a–2a, 3) is implemented on main, but that does not complete JC-030 or
+Path 1 beta. Reconciliation Phase 2 and the VAT confirmed-ledger
+gate/provenance foundation are complete. The current tax-type track is
+**withholding**, which has a validation panel but is blocked before file
+generation by the missing official binary layout. The fixed order and
+completion lines are in [Path 1 Roadmap §§2–4](./36_PATH1_FORM_FILL_ROADMAP.md).
+
+**Beta focus is Path 1 only.** Path 2 is after Path 1 beta; Path 3 is unknown
+until certification/conformance is confirmed. **Slice 2b**
+(fcrypt·Windows microservice) remains a separate deferred track per
+[NTS Crypto Spec §10](./31_JC030_NTS_CRYPTO_SPEC_ACQUISITION.md). Hometax
+screen transcription guidance is explicitly excluded.
 
 **Filing path priority (2026-07-07):** JC-030 is focused on Path 1. Other paths are deferred:
 
 | Layer | Filing Path | Status |
 |---|---|---|
-| **Validation** | Path 1 & 2 공통 | Implemented (Slices 1a–2a·3) |
-| **Path 1** | 홈택스 업로드용 양식·파일 작성 | Implemented (plain SC·양식 채움 확인·upload guide UI) |
+| **Validation** | Path 1 & 2 공통 | Implemented for simplified wage; repeated per tax type |
+| **Path 1** | 홈택스 업로드용 양식·파일 작성 | In progress — simplified wage implemented, withholding next |
 | **Path 2** | 세무사무소 handoff ZIP | Deferred until Path 1 beta |
 | **Path 3** | 인증·암호화 업로드 파일 | Deferred (Slice 2b·적합성 검정) |
 
@@ -176,7 +188,9 @@ Remaining:
 
 #### Path 1 — 홈택스 업로드용 양식·파일 작성 지원
 
-Current state: plain SC download + Hometax conversion upload guide on main.
+Current state: simplified-wage plain download + form-fill preview + Hometax
+conversion upload guide are on main. Withholding has Slice 1a validation only;
+the other ordered tax types do not yet generate official upload files.
 
 Done means (Path 1, per tax type v1):
 
@@ -185,6 +199,19 @@ Done means (Path 1, per tax type v1):
 - Hometax upload guide is shown for the prepared artifact.
 - UI states plain-file limits until Path 3 certification exists.
 - User uploads the prepared form/file and submits directly; SemuAgent does not log in, copy-type values into Hometax, or submit.
+- The official layout source/version/applicability date is recorded and no
+  unresolved layout or field-mapping gaps remain in the approved v1 scope.
+- Preview values and generated records come from one shared read model.
+- File name, record order/length, encoding, required codes, totals,
+  tenant/business/period isolation, and non-persistence are tested.
+- A representative file passes Hometax/Witax conversion or upload validation;
+  implementation without this operational verification remains open.
+
+Path 1 beta means both simplified wage and withholding satisfy the per-tax
+completion line above. JC-030 Path 1 planned-matrix close means withholding,
+VAT, local-income special collection, business-status report, and annual
+payment statement each satisfy it. The implementation order is fixed in
+[Roadmap §4](./36_PATH1_FORM_FILL_ROADMAP.md).
 
 #### Path 3 — 인증 후 암호화 파일 (future)
 

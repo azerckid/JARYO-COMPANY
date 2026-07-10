@@ -1,13 +1,13 @@
 # JC-030 Slice 2b — 변환방식 전자신고 파일 암호화(NTS fcrypt) 입수
 > Created: 2026-07-07 01:45 KST
-> Last Updated: 2026-07-07 18:30 KST
+> Last Updated: 2026-07-10 15:27 KST
 
 ## 0. Flow Status
 
 ```text
 [Flow]
-현재: JC-030 Slice 2b — NTS 암호화 스펙 입수·아키텍처 게이트 정리
-Gate: 부분 통과 (v1 완결 · 2b 별도 트랙 보류 · Windows DLL 실행 검증 선행)
+현재: JC-030 Slice 2b — Path 3 별도 보류 트랙
+Gate: 부분 통과 (간이지급 plain 세목 구현 완료 · JC-030 epic 진행 중 · Windows DLL 실행 검증 선행)
 완료: 공식 입수 경로(홈택스 자료실 41·550) · fcrypt API 시그니처 · DLL 샘플(NTS nttSn=84076)
 다음: 홈택스 550번 첨부2·fcrypt_java.zip 수동 다운로드 → plain SC 파일 암호화 → 홈택스 형식검증
 필요 확인: 적합성 검정(JC-023) · Vercel 런타임에서 fcrypt 연동 방식
@@ -176,7 +176,7 @@ SemuAgent (Vercel, Next.js) — 변경 없음
 ```
 
 - SemuAgent **전체를 윈도우로 이전할 필요 없음** — 암호화만 외부 서비스.
-- microservice 구현은 **Slice 2b 별도 트랙**; JC-030 v1(plain·검증·홈택스 안내)과 **분리·보류**.
+- microservice 구현은 **Slice 2b 별도 트랙**; 간이지급 plain 세목 구현 및 진행 중인 JC-030 Path 1 세목 확대와 **분리·보류**.
 - 착수 순서: (1) 실제 Windows에서 DLL 호출·홈택스 라운드트립 검증 → (2) microservice 설계·비용 견적 → (3) `encrypt.ts`는 Vercel→microservice 클라이언트만.
 
 **트레이드오프:** Java(A)는 운영비 낮을 수 있으나 **미입수·미검증**. Windows VM(E)는 라이선스·VM 비용이 더 들 수 있으나 **이미 확보한 DLL**과 일치. 비용은 AWS/Azure 견적 후 결정 [미확인].
@@ -191,7 +191,7 @@ SemuAgent (Vercel, Next.js) — 변경 없음
 - [x] **plain fixture** 생성 — `generate-plain-sample.mjs` → `SC1234567890` 574 bytes (2026-07-07)
 - [ ] **라운드트립** — Windows 환경에서 plain `SC…` → `DSFC_EncryptFile` → 홈택스 형식검증 [미확인]
 - [ ] **적합성 검정** — 비인증 SW 파일 수용 여부 (JC-023 §2.5) [미확인]
-- [x] **아키텍처·트랙 분리** — JC-030 v1 완결(plain); 2b = 윈도우 microservice 별도 트랙·보류 (§5, §10)
+- [x] **아키텍처·트랙 분리** — 간이지급 plain 세목 구현 완료; JC-030 epic은 Path 1 세목 확대 진행 중; 2b = Windows microservice 별도 트랙·보류 (§5, §10)
 
 ## 7. Implementation Gate
 

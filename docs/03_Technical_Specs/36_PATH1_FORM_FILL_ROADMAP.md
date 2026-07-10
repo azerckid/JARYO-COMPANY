@@ -1,18 +1,22 @@
 # Path 1 — Hometax Form Fill Roadmap
 > Created: 2026-07-07 04:20 KST
-> Last Updated: 2026-07-07 19:45 KST
+> Last Updated: 2026-07-10 15:27 KST
 
 ## 0. Governing Principle
 
 SemuAgent의 **1순위 구현**은 Filing **Path 1** 이다.
 
-1. 홈택스·국세청이 제공하는 **공식 전자신고 양식·전산매체 규격**을 입수한다.
-2. SemuAgent가 이미 준비한 **신고 준비 데이터**를 양식 필드에 매핑·기입한다.
-3. 다운로드 전 사용자가 **양식에 채워질 값**을 화면에서 확인한다.
-4. **plain 전자신고 파일** + **사전검증** + **홈택스 변환제출 안내**를 제공한다.
-5. 최종 업로드·제출은 **사용자가 홈택스에서 직접** 한다 (JC-023 자동제출 전).
+1. 홈택스·국세청·위택스가 제공하는 **공식 전자신고 양식·전산매체 규격**을 입수한다.
+2. 자료수집과 자료대조원장을 통과한 **확정 신고 데이터**만 공식 필드에 매핑한다.
+3. 사용자가 다운로드 전에 **양식에 채워질 값**을 화면에서 확인한다.
+4. SemuAgent가 **plain 전자신고 파일**을 생성하고 형식·정합성을 사전검증한다.
+5. 사용자가 홈택스·위택스에 직접 접속해 파일을 업로드·검증·제출한다.
 
-Path 2 (JC-034 GIWA ZIP)와 Path 3 (인증·암호화)는 Path 1 Validation·세목 확대 **이후**에 이어간다.
+홈택스 화면에 값을 옮겨 적는 직접입력 가이드는 Path 1이 아니다. 자동제출,
+자격증명 저장, 세무대리도 포함하지 않는다.
+
+Path 2 (JC-034 GIWA ZIP)와 Path 3 (인증·암호화)는 Path 1 베타 이후에만
+재개한다.
 
 관련: [Product Baseline §3](../01_Concept_Design/01_PRODUCT_BASELINE.md) · [JC-030 Scope Gate](./19_EFILING_FILE_GENERATION_SCOPE_GATE.md)
 
@@ -20,92 +24,152 @@ Path 2 (JC-034 GIWA ZIP)와 Path 3 (인증·암호화)는 Path 1 Validation·세
 
 ```text
 [Flow]
-현재: Path 1 세목 확대 — 홈택스 업로드용 양식·파일 작성 지원이 최우선
-완료: 근로소득 간이지급명세서 — layout·mapping·Path 1 구현 (JC-030)
-다음: 원천세 — 바이너리 스펙 입수 → UI-First → 구현 1a ([Layout](./37_JC030_WITHHOLDING_EFILING_LAYOUT_ACQUISITION.md) Slice 0b 완료)
-보류: JC-034 Path 2 ZIP 구현 (문서만 완료, 코드 착수 대기)
-미래: Path 3 fcrypt·적합성 검정
+완료: 자료대조원장 Phase 2 — 확정 원장 gate, 부가세 package gate, VAT provenance/rebuild
+완료: 근로소득 간이지급명세서 — 양식 채움 확인, plain 파일, 검증, 업로드 안내
+현재: JC-030 Path 1 세목 확대 — 원천세 Slice 1b 선행 규격 확보
+다음: 원천세 공식 바이너리 레이아웃 입수 → 매핑/Brief 확정 → 파일 생성 → 실제 변환 검증
+이후: 부가세 → 지방소득세 특별징수 → 사업장현황신고 → 연말 지급명세서
+보류: Path 2 ZIP, Path 3 fcrypt·적합성 검정, JC-023 자동제출
 ```
 
-## 1. Repeatable Pipeline (세목 공통)
+**Phase 2 완료는 Path 1 완료가 아니다.** Phase 2는 신고 파일이 소비할 확정
+데이터와 gate를 완성한 작업이다. Path 1 완료는 아래 세목별 공식 파일 생성과
+실제 변환 검증까지 끝났을 때 판정한다.
 
-각 세목은 아래 순서를 따른다. **이전 세목이 Path 1까지 완료되기 전 다음 세목 구현 착수 금지** (layout 병렬 입수는 허용).
+## 1. Repeatable Tax-Type Pipeline
 
-| 단계 | 산출물 | 게이트 |
+각 세목은 아래 순서를 따른다. 공식 규격이 없는 상태에서 파일 포맷을 추정해
+코딩하지 않는다. 다음 세목의 공식 자료 조사는 병렬로 할 수 있지만, 구현은 현재
+세목의 완료선 또는 명시적 외부 차단 결정 이후에만 넘어간다.
+
+| 단계 | 산출물 | 통과 조건 |
 |:---|:---|:---|
-| **A. Layout Acquisition** | `3x_*_LAYOUT_ACQUISITION.md` — HWP/요령 URL, 정오표, 입수일 | 공식 출처 URL 확정 |
-| **B. Field Mapping** | `3x_*_FIELD_MAPPING.md` — record·필드·JC 데이터 소스 | A 승인 |
-| **C. Pre-Code Brief** | `3x_*_PRE_CODE_BRIEF.md` — Zod·API·UI·검증 | B 승인 |
-| **D. Implementation** | `lib/efiling-{tax-type}/` + 양식 채움 확인 패널 + API | C 승인 |
-| **E. Path 2 reuse** | JC-034 ZIP 해당 트랙 CSV (선택) | D Validation 안정 |
+| **A. Official Layout Acquisition** | 공식 URL·파일·버전·입수일·정오표·로컬 검증 기록 | 파일명, record 종류·순서·길이, 인코딩, 필수 코드와 최신 적용일이 확인됨 |
+| **B. Field Mapping** | 공식 필드 ↔ SemuAgent 확정 데이터 소스 매핑 | 미확정 필드가 0건이거나 해당 세목 v1에서 명시적으로 제외됨 |
+| **C. UI-First Gate** | 실제 양식에 채워질 값 Preview와 Prototype Review | 사용자가 화면 구조·문구·책임 경계를 승인함 |
+| **D. Pre-Code Contract** | Pre-Code Brief, Zod, API, Component/Library Plan, QA 시나리오 | 저장·PII·tenant·blocking·비목표가 고정되고 사용자 승인됨 |
+| **E. Implementation** | read model, 양식 채움 확인, generator, validation, download API/UI | Preview와 파일이 동일한 데이터 모델을 사용하고 blocker 우회가 불가능함 |
+| **F. File Verification** | byte/record/encoding fixtures, 브라우저 검증, 홈택스·위택스 변환 검증 기록 | 결정론적 파일 테스트와 실제 변환프로그램/업로드 검증이 통과함 |
+| **G. Closeout** | Backlog·Completion Contract·Audit·QA 동기화 | 문서와 main 코드 및 운영 상태가 일치함 |
 
-코드 모듈 패턴 (간이지급 참조):
+공통 구현 패턴은 완료된 `lib/efiling-simplified-wage/`를 재사용하되, 세목별
+공식 레이아웃은 서로 다르므로 record 포맷을 복사해 추정하지 않는다.
 
-- `lib/efiling-simplified-wage/` — build-records, validate, hometax-guide, panel-summary
+## 2. Completion Lines
 
-## 2. Tax Type Matrix
+### 2.1 Per-Tax-Type Done
 
-| 순서 | 세목 | 데이터 소스 (live) | 양식 입수 | Path 1 구현 | 비고 |
-|:---:|:---|:---|:---:|:---:|:---|
-| 1 | **근로소득 간이지급명세서** | JC-024, JC-015 | 완료 | **완료** | 반기; 2027~ 월 제출 전환 대비 |
-| 2 | **원천세 신고서** | JC-012, JC-013, JC-027 | **Slice 0b 완료** | 없음 | [37](./37_JC030_WITHHOLDING_EFILING_LAYOUT_ACQUISITION.md) · [38](./38_JC030_WITHHOLDING_EFILING_FIELD_MAPPING.md) |
-| 3 | **부가가치세** | JC-011, JC-013 | 미확정 | 없음 | 분기; 레이아웃 입수 경로 선행 조사 |
-| 4 | **지방소득세(원천 특별징수)** | JC-027 | 위택스 별도 | 없음 | 원천세 Path 1 후 또는 병렬 layout 조사 |
-| 5 | **사업장현황신고** | JC-028 | 미착수 | 없음 | 면세 개인; 공식 업로드 양식·파일 입수 전까지 Path 1 미착수 |
-| — | 연말 지급명세서(1175) | JC-024 year-end prep | 별도 요령 | 없음 | 간이지급과 레이아웃 분리 |
-| — | 종합소득세·법인세 | JC-025/026 | 후순위 | 없음 | 법무 게이트 |
+한 세목의 Path 1은 다음 조건을 **모두** 만족해야 완료다.
 
-**다음 착수 세목 (2026-07-07 확정):** **원천세 신고서** — 월 주기·급여 데이터 정합·JC-013 신고지원과 직결.
+- [ ] 제출 시점에 유효한 공식 양식·전자신고 규격의 출처, 버전, 적용일을 확인했다.
+- [ ] 모든 v1 필드를 SemuAgent 확정 데이터 또는 명시적 사용자 입력에 매핑했다.
+- [ ] 자료수집·자료대조·세목별 검토 gate를 통과하지 못하면 생성이 차단된다.
+- [ ] 다운로드 전에 사용자가 신고 양식, 기간, 사업자, 대상자, 합계를 확인한다.
+- [ ] Preview 값과 생성 파일이 동일한 read model에서 파생된다.
+- [ ] 생성 파일의 파일명, record 순서·길이, 인코딩, 필수 코드, 합계를 검증한다.
+- [ ] 다른 tenant·사업장·기간 데이터가 파일에 섞이지 않는다.
+- [ ] 파일은 서버에 영구 저장하지 않으며 자격증명을 수집하지 않는다.
+- [ ] 브라우저에서 생성·다운로드·오류 상태를 확인한다.
+- [ ] 홈택스·위택스 변환프로그램 또는 파일 업로드 검증에서 대표 fixture가 통과한다.
+- [ ] 사용자가 직접 업로드·제출한다는 경계와 plain-file 한계를 화면에 표시한다.
+- [ ] 테스트, QA, Backlog, Completion Contract가 실제 main 상태와 일치한다.
 
-부가세는 SemuAgent 핵심 세목이나 **전자신고 파일 레이아웃 공식 입수 경로가 미확정**이므로 원천세 다음 순위로 둔다.
+공식 규격을 입수하지 못했거나 실제 변환 검증이 불가능하면 그 세목은
+`blocked`이지 `done`이 아니다.
 
-## 3. Next Item — 원천세 신고서 (JC-030 확장)
+### 2.2 Path 1 Beta Done
 
-### 3.1 착수 전 작업 (코드 없음)
+Path 1 베타는 최소 다음 조건을 만족해야 한다.
 
-1. [x] `37_JC030_WITHHOLDING_EFILING_LAYOUT_ACQUISITION.md` — Slice 0a·0b (2026-07-07)
-2. [x] 참조 PDF 입수 (별지 제21호·NTS 작성요령) — 바이너리 HWP는 **미발견**
-3. [x] `38_JC030_WITHHOLDING_EFILING_FIELD_MAPPING.md` — A01↔JC-012/013 (Part A)
-4. [x] `39_JC030_WITHHOLDING_EFILING_PRE_CODE_BRIEF.md` — 초안
-5. [ ] 바이너리 레이아웃 (`전자신고 이용안내` / 변환프로그램)
-6. [x] UI-First Gate — filing-support 원천세 JC-030 패널 HTML ([05_filing_support.html](../02_UI_Screens/previews/05_filing_support.html))
-7. [x] Slice 1a — 서식 검증·JC-013 대조 패널 (다운로드 비활성)
+1. 근로소득 간이지급명세서와 원천세가 각각 §2.1을 통과한다.
+2. 두 세목 모두 대표 데이터로 양식 채움 확인 → 파일 다운로드 → 홈택스
+   변환/업로드 검증 흐름을 완료한다.
+3. beta 사용자가 실패 원인과 수정 위치를 화면에서 확인할 수 있다.
+4. 직접입력, 자동제출, Path 2, Path 3 없이 Path 1 한 경로로 검증한다.
 
-### 3.2 완료 정의 (Path 1)
+Path 1 베타가 끝난 뒤에만 Path 2 구현 재개 여부를 검토한다.
 
-- 사용자가 선택한 귀속월 원천세 데이터로 plain 전자신고 파일 생성
-- 다운로드 전 양식에 채워질 값(서식 필드·합계·대상자)을 확인
-- JC-030 Validation blocking 시 다운로드 차단
-- 홈택스 변환제출 단계 안내 (JC-013 가이드와 정합)
-- `국세청 검증 완료` 표시 금지 (Path 3 전)
+### 2.3 Planned Tax Matrix Done
 
-## 4. Relationship To Other Paths
+현재 계획된 Path 1 전체 완료는 원천세, 부가세, 지방소득세 특별징수,
+사업장현황신고, 연말 지급명세서가 각각 §2.1을 통과한 상태다. 종합소득세와
+법인세는 법무·범위 gate가 별도이므로 이 완료선에 포함하지 않는다.
 
-| Path | 이 로드맵과의 관계 |
-|:---|:---|
-| **Path 1** | 본 문서 — **최우선** |
-| **Path 2 (JC-034)** | 각 세목 Path 1 Validation 출력을 ZIP에 포함. **구현은 Path 1 세목 2개 이상 안정 후** |
-| **Path 3** | plain 파일 한계 대체. 인증·fcrypt 후 |
-| **JC-013** | 기존 신고지원은 준비값 확인·접수증 보관 역할로 유지; Path 1은 **업로드용 양식·파일 작성**을 담당 |
+## 3. Tax Type Matrix
 
-## 5. Documentation Sync Checklist
+| 순서 | 세목 | 확정 데이터·gate | A~D 준비 | E~F 파일 상태 | 판정 |
+|:---:|:---|:---|:---|:---|:---|
+| 0 | **근로소득 간이지급명세서** | JC-024·JC-015 | 완료 | plain 생성·Preview·검증 구현; 제출 직전 최신 공식본 재대조·운영 변환 증거 유지 | 구현 완료, beta 검증 대상 |
+| 1 | **원천세 신고서** | JC-012·JC-013 | 서식 매핑·UI·Slice 1a 완료, 바이너리 레이아웃 미입수 | 실제 파일 생성 없음 | **현재 작업** |
+| 2 | **부가가치세** | 자료대조 Phase 2·VAT deduction·provenance 완료 | 전자신고 파일 A~D 미착수 | 업로드 파일 생성 없음 | 원천세 다음 |
+| 3 | **지방소득세 특별징수** | JC-027 실제 확정값 | 위택스 공식 규격 A~D 미착수 | 업로드 파일 생성 없음 | 부가세 다음 |
+| 4 | **사업장현황신고** | JC-028 read-only 준비 화면 완료 | 공식 업로드 양식 A~D 미착수 | 업로드 파일 생성 없음 | 지방소득세 다음 |
+| 5 | **연말 지급명세서** | JC-024 연간 지급·기납부 원천세 준비 | 별도 레이아웃 A~D 미착수 | 업로드 파일 생성 없음 | 사업장현황신고 다음 |
+| — | 종합소득세·법인세 | JC-025·026 | 법무·범위 gate 미완료 | 미착수 | 본 로드맵 후순위 |
 
-Path 1 우선순위 반영 시 아래 문서가 일치해야 한다.
+부가세의 **자료 gate 완료**와 **홈택스 업로드 파일 완료**를 혼동하지 않는다.
+Phase 2는 전자이고, JC-030 부가세 Path 1은 후자다.
 
-- [x] [Product Baseline §Strategic](../01_Concept_Design/01_PRODUCT_BASELINE.md)
-- [x] [JC-030 Scope Gate](./19_EFILING_FILE_GENERATION_SCOPE_GATE.md)
-- [x] [Backlog JC-030 / JC-034](../04_Logic_Progress/00_BACKLOG.md)
-- [x] [Screen Flow §4g](../02_UI_Screens/00_SCREEN_FLOW.md)
-- [x] [UI Design §4.10](../02_UI_Screens/01_UI_DESIGN.md)
-- [x] [Filing Preparation Pre-Code Brief](./15_FILING_PREPARATION_PRE_CODE_BRIEF.md)
-- [x] [JC-034 Scope Gate](./34_JC034_GIWA_HANDOFF_PACKAGE_SCOPE_GATE.md) — 구현 보류 명시
+## 4. Fixed Execution Order
 
-## 6. Related Documents
+### 4.1 Current Track — Withholding
 
-- **Technical_Specs**: [Withholding Layout Acquisition](./37_JC030_WITHHOLDING_EFILING_LAYOUT_ACQUISITION.md) — Slice 0b
+| Step | Work | Completion line |
+|:---|:---|:---|
+| **W0** | 공식 바이너리 레이아웃 입수 | 파일명, record type/order/length, encoding, A01 offset, 적용일을 공식 근거로 기록 |
+| **W1** | Field Mapping Part B·Brief 확정 | 모든 A01 v1 필드와 validation이 record 위치에 매핑되고 사용자 승인 완료 |
+| **W2** | 동일 read model 기반 Preview·generator | 화면 값과 생성 record가 동일하고 payroll 미마감·needs-review·합계 불일치 시 차단 |
+| **W3** | generate API·download UI | tenant/client/월 scope, 서버 미보관, 정확한 content type/filename, 오류 표시 |
+| **W4** | 파일·브라우저·홈택스 검증 | 결정론 테스트, 전체 회귀, 브라우저 다운로드, 실제 변환/업로드 검증 기록 통과 |
+| **W5** | 문서 closeout | 원천세 §2.1 체크 완료, Backlog·QA·Audit 동기화 |
+
+**다음 코드 작업은 W0과 W1이 끝난 뒤의 W2다.** 바이너리 레이아웃을
+추정해 `build-records`를 먼저 작성하지 않는다.
+
+### 4.2 Following Tracks
+
+원천세 W5 이후 각 세목을 동일한 A~G 순서로 진행한다.
+
+1. **VAT A~G** — Phase 2 gate/provenance를 generator가 직접 소비한다.
+2. **Local Income A~G** — 위택스 특별징수 규격과 원천세 확정값을 사용한다.
+3. **Business Status A~G** — 면세 개인만 허용하고 비대상 사업자는 차단한다.
+4. **Annual Statement A~G** — 간이지급 파일 레이아웃을 재사용한다고 가정하지 않는다.
+
+각 세목의 A 단계에서 전용 Layout Acquisition 문서를 만들고, C 단계에서 신규
+HTML Preview를 승인받고, D 단계에서 전용 Pre-Code Brief와 QA를 만든다.
+
+## 5. Deferred Work
+
+다음은 이 구현 순서에 끼워 넣지 않는다.
+
+- Path 2 사무소 handoff ZIP (JC-034)
+- Path 3 fcrypt·적합성 검정
+- 홈택스·위택스 자동 로그인·자동 제출 (JC-023)
+- 홈택스 직접입력 안내
+- 원천세 A02~A80, 환급조정, 부표, 반기납부 확장
+- 종합소득세·법인세 자동 파일 생성
+- 자료대조원장의 연/사용자 지정 기간, partial/many-to-one 등 보류 기능
+
+보류 기능이 현재 세목의 정확한 파일 생성을 실제로 막는다는 증거가 생기면,
+먼저 이 계약을 갱신한 뒤 별도 slice로 추가한다.
+
+## 6. Documentation Sync Checklist
+
+- [x] [Path 1 E2E Readiness Audit](./40_PATH1_END_TO_END_FILING_READINESS_AUDIT.md) — Phase 2 완료와 남은 파일 작업 분리
+- [x] [Open Backlog Completion Contracts](./22_OPEN_BACKLOG_COMPLETION_CONTRACTS.md) — JC-030 epic/세목 완료선 분리
+- [x] [Backlog JC-030](../04_Logic_Progress/00_BACKLOG.md) — 원천세 W0~W5와 후속 순서
+- [x] [Filing Support QA](../05_QA_Validation/07_FILING_SUPPORT_TEST_SCENARIOS.md) — 실제 파일 생성 검증 시나리오
+- [x] [Withholding Pre-Code Brief](./39_JC030_WITHHOLDING_EFILING_PRE_CODE_BRIEF.md) — Slice 1b 완료선
+- [x] [Reconciliation Phase 2 Brief](./41_RECONCILIATION_LEDGER_V2_PRE_CODE_BRIEF.md) — §9 완료 상태 유지
+- [x] [VAT Provenance Audit](./42_VAT_CONFIRMED_LEDGER_PROVENANCE_AUDIT.md) — 데이터 gate 완료, 파일 생성 비목표 확인
+
+## 7. Related Documents
+
+- **Technical_Specs**: [Withholding Layout Acquisition](./37_JC030_WITHHOLDING_EFILING_LAYOUT_ACQUISITION.md)
 - **Technical_Specs**: [Withholding Field Mapping](./38_JC030_WITHHOLDING_EFILING_FIELD_MAPPING.md)
 - **Technical_Specs**: [Withholding Pre-Code Brief](./39_JC030_WITHHOLDING_EFILING_PRE_CODE_BRIEF.md)
-- **Technical_Specs**: [JC-030 Simplified Wage Layout Acquisition](./28_JC030_SIMPLIFIED_WAGE_EFILING_LAYOUT_ACQUISITION.md) — 완료된 1번 세목 참조
-- **Technical_Specs**: [JC-030 Pre-Code Brief](./30_JC030_EFILING_FILE_PRE_CODE_BRIEF.md)
+- **Technical_Specs**: [JC-030 Simplified Wage Layout Acquisition](./28_JC030_SIMPLIFIED_WAGE_EFILING_LAYOUT_ACQUISITION.md)
+- **Technical_Specs**: [JC-030 Simplified Wage Pre-Code Brief](./30_JC030_EFILING_FILE_PRE_CODE_BRIEF.md)
 - **Technical_Specs**: [JC-034 Pre-Code Brief](./35_JC034_GIWA_HANDOFF_PACKAGE_PRE_CODE_BRIEF.md) — Path 2, 구현 대기
 - **Logic_Progress**: [Backlog](../04_Logic_Progress/00_BACKLOG.md)
+- **QA_Validation**: [Filing Support Test Scenarios](../05_QA_Validation/07_FILING_SUPPORT_TEST_SCENARIOS.md)
