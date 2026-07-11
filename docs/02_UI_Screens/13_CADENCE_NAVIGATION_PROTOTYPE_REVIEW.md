@@ -68,7 +68,7 @@
 | [10_local_income_tax.html](./previews/10_local_income_tax.html) | 급여·지급 하위 지방소득세 |
 | [03_vat.html](./previews/03_vat.html) | 부가세 독립 작업공간 |
 | [08_filing_preparation.html](./previews/08_filing_preparation.html) | 연간신고 상위 작업공간 |
-| [11_business_status_report.html](./previews/11_business_status_report.html) | 면세 개인사업자 조건부 사업장현황신고 |
+| [11_business_status_report.html](./previews/11_business_status_report.html) | 면세 개인사업자 조건부 사업장현황신고 (연간신고 하위에 종합소득세와 함께 노출) |
 
 ## 6. 구현 경계
 
