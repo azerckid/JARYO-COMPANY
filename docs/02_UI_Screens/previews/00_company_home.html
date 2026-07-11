@@ -76,6 +76,12 @@
   .hero .deadline .d-label { font-size: 12px; color: var(--fg-muted); font-weight: 600; }
   .hero .deadline .d-date { font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
   .hero .deadline .d-left { display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--danger); background: var(--danger-soft); border: 1px solid #fecaca; padding: 3px 10px; border-radius: 999px; }
+  .upcoming { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: rgba(255,255,255,.45); }
+  .upcoming a { color: inherit; text-decoration: none; display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 12px 14px; border-right: 1px solid var(--border); }
+  .upcoming a:last-child { border-right: 0; }
+  .upcoming .when { font-size: 11px; color: var(--fg-subtle); font-weight: 700; }
+  .upcoming .name { font-size: 12.5px; font-weight: 650; }
+  .upcoming .state { grid-column: 2; margin-top: -4px; font-size: 11px; color: var(--fg-muted); }
 
   /* Section */
   .section-head { display: flex; align-items: baseline; gap: 10px; }
@@ -165,20 +171,21 @@
       <a href="02_bookkeeping_review.html" class="nav-item"><span class="ico">▤</span> 기장검토</a>
       <a href="12_reconciliation_ledger.html" class="nav-item sub"><span class="ico">›</span> 자료대조원장</a>
     </div>
-    <a href="03_vat.html" class="nav-item"><span class="ico">％</span> 부가세</a>
-    <a href="04_payroll.html" class="nav-item"><span class="ico">₩</span> 급여</a>
-    <a href="05_filing_support.html" class="nav-item"><span class="ico">↧</span> 신고지원</a>
     <div class="nav-group">
-      <a href="08_filing_preparation.html" class="nav-item"><span class="ico">◷</span> 신고 준비</a>
+      <a href="04_payroll.html" class="nav-item"><span class="ico">₩</span> 급여·지급</a>
+      <a href="06_employee_directory.html" class="nav-item sub"><span class="ico">›</span> 직원 명부</a>
+      <a href="05_filing_support.html" class="nav-item sub"><span class="ico">›</span> 원천세</a>
       <a href="09_payment_year_end.html" class="nav-item sub"><span class="ico">›</span> 지급명세서·연말정산</a>
       <a href="10_local_income_tax.html" class="nav-item sub"><span class="ico">›</span> 지방소득세</a>
-      <a href="11_business_status_report.html" class="nav-item sub"><span class="ico">›</span> 사업장현황신고</a>
+    </div>
+    <a href="03_vat.html" class="nav-item"><span class="ico">％</span> 부가세</a>
+    <div class="nav-group">
+      <a href="08_filing_preparation.html" class="nav-item"><span class="ico">◷</span> 연간신고</a>
+      <a href="08_filing_preparation.html#corporate-tax" class="nav-item sub"><span class="ico">›</span> 법인세</a>
     </div>
     <div class="nav-label">관리</div>
     <div class="nav-item"><span class="ico">⚙</span> 설정</div>
-    <a href="06_employee_directory.html" class="nav-item"><span class="ico">◍</span> 직원 명부</a>
     <a href="07_internal_reminder.html" class="nav-item"><span class="ico">✉</span> 리마인드</a>
-
     <div class="spacer"></div>
     <div class="user">
       <div class="av">김</div>
@@ -214,6 +221,16 @@
           <div class="d-date">2026-07-25</div>
           <div class="d-left">D-24</div>
         </div>
+      </div>
+
+      <div class="section-head">
+        <h2>다가오는 신고</h2>
+        <span class="hint">가장 가까운 일정만 표시</span>
+      </div>
+      <div class="upcoming">
+        <a href="05_filing_support.html"><span class="when">7/10</span><span class="name">6월 원천세</span><span class="state">급여 확인 1건</span></a>
+        <a href="03_vat.html"><span class="when">7/25</span><span class="name">부가세 1기 확정</span><span class="state">판단 5건</span></a>
+        <a href="08_filing_preparation.html"><span class="when">2027/3</span><span class="name">2026 법인세</span><span class="state">연간 결산 전</span></a>
       </div>
 
       <!-- Next actions / blockers before filing -->
