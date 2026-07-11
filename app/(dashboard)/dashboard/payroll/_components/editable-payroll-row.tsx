@@ -70,6 +70,7 @@ export function EditablePayrollRow({ row }: { readonly row: PayrollRegisterRow }
           }}
         />
       </td>
+      <MoneyTd value={row.mealAllowanceKrw} />
       <MoneyTd value={row.allowanceKrw} />
       <MoneyTd value={grossPayKrw} strong />
       <WithholdingBreakdownCell
