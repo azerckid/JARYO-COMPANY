@@ -17,7 +17,7 @@ import {
 } from '@/lib/validations/vat-tax-treatment'
 import { parsedVatFactSchema } from './facts'
 import { withVatTaxTreatmentRecommendationFingerprint } from './tax-treatment-fingerprint'
-import { enhanceVatTaxTreatmentRowsWithSingleAi } from './tax-treatment-ai'
+import { enhanceVatTaxTreatmentRowsWithAi } from './tax-treatment-ai'
 import {
   applyPriorConfirmedVatPattern,
   type VatTaxTreatmentPatternRow,
@@ -453,7 +453,7 @@ export async function loadVatTaxTreatmentDisplayRows(params: {
     deductionReviews,
   })
   const recommendedRows = params.includeAi
-    ? await enhanceVatTaxTreatmentRowsWithSingleAi({ rows })
+    ? await enhanceVatTaxTreatmentRowsWithAi({ rows })
     : rows
   return applyVatTaxTreatmentAuditStates({ rows: recommendedRows, auditRows })
 }
