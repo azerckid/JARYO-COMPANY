@@ -9,6 +9,7 @@ import type {
   PayrollWorkspaceSummary,
 } from '@/lib/payroll-workspace/summary'
 import { cn } from '@/lib/utils'
+import { EditablePayrollRow } from './editable-payroll-row'
 import { PayrollCloseButton } from './payroll-actions'
 import { WithholdingBreakdownCell } from './withholding-breakdown-cell'
 
@@ -168,14 +169,32 @@ function IssueAlert({ summary }: PayrollWorkspaceProps) {
 
 function PayrollRegisterSection({ summary }: PayrollWorkspaceProps) {
   const totals = summary.summary
+  const hasFreelancer = summary.registerRows.some((row) => row.jobType === '프리랜서')
+  const hasDailyWorker = summary.registerRows.some((row) => row.jobType === '일용직')
 
   return (
     <section id="payroll-register" className="grid gap-3">
       <SectionHeader
         title="급여대장"
         description="직원별 지급·공제·실지급 내역"
-        action={<Link href="/dashboard/payroll" className="text-[12.5px] font-semibold text-[#2563eb]">엑셀 내보내기 →</Link>}
+        action={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="rounded-lg border border-company-border-strong bg-company-surface px-3 py-1.5 text-[12.5px] font-semibold text-foreground hover:bg-company-nav-hover"
+            >
+              직원 추가
+            </button>
+            <Link href="/dashboard/payroll" className="text-[12.5px] font-semibold text-[#2563eb]">엑셀 내보내기 →</Link>
+          </div>
+        }
       />
+      {(hasFreelancer || hasDailyWorker) && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11.5px] text-company-fg-muted">
+          {hasFreelancer && <EmploymentTypeLegend swatchClass="bg-[#eef3ff]" label="프리랜서(외주) · 사업소득 3.3%" />}
+          {hasDailyWorker && <EmploymentTypeLegend swatchClass="bg-[#e9f6ee]" label="일용직 · 일용근로소득" />}
+        </div>
+      )}
       <div className={panelClass}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] border-collapse">
@@ -193,7 +212,7 @@ function PayrollRegisterSection({ summary }: PayrollWorkspaceProps) {
             </thead>
             <tbody>
               {summary.registerRows.length > 0 ? summary.registerRows.map((row) => (
-                <PayrollRegisterTableRow key={row.id} row={row} />
+                <EditablePayrollRow key={row.id} row={row} />
               )) : (
                 <tr>
                   <td colSpan={8} className="px-4 py-10 text-center text-[13px] text-company-fg-muted">
@@ -242,40 +261,12 @@ function PayrollRegisterSection({ summary }: PayrollWorkspaceProps) {
   )
 }
 
-function PayrollRegisterTableRow({ row }: { readonly row: PayrollRegisterRow }) {
+function EmploymentTypeLegend({ swatchClass, label }: { readonly swatchClass: string; readonly label: string }) {
   return (
-    <tr
-      id={`payroll-line-${row.id}`}
-      className={cn(
-        'border-b border-company-border last:border-b-0 hover:bg-[#fafafa]',
-        row.status === 'needs_review' && 'bg-[#fffdf5] hover:bg-[#fff9e8]',
-      )}
-    >
-      <TableCell>
-        <p className="font-semibold text-foreground">
-          {row.displayName}
-          {row.issueLabel ? (
-            <span className="ml-1.5 rounded-[5px] border border-[#fde68a] bg-[#fffbeb] px-1.5 py-0.5 text-[10.5px] font-bold text-[#d97706]">
-              확인 필요
-            </span>
-          ) : null}
-        </p>
-        <p className="mt-0.5 text-[11px] text-company-fg-subtle">
-          {[row.department, row.jobTitle ?? row.jobType].filter(Boolean).join(' · ') || row.employeeCode || '직원 정보'}
-        </p>
-      </TableCell>
-      <MoneyCell value={row.baseSalaryKrw} />
-      <MoneyCell value={row.allowanceKrw} />
-      <MoneyCell value={row.grossPayKrw} strong />
-      <WithholdingBreakdownCell
-        incomeTaxKrw={row.incomeTaxKrw}
-        localIncomeTaxKrw={row.localIncomeTaxKrw}
-        withholdingTaxKrw={row.withholdingTaxKrw}
-      />
-      <MoneyCell value={row.socialInsuranceKrw} danger />
-      <MoneyCell value={row.deductionTotalKrw} danger strong />
-      <MoneyCell value={row.netPayKrw} strong />
-    </tr>
+    <span className="flex items-center gap-1.5">
+      <span className={cn('inline-block size-3 rounded-[3px] border border-company-border', swatchClass)} aria-hidden />
+      {label}
+    </span>
   )
 }
 
@@ -417,34 +408,6 @@ function TableHead({ children, className }: { readonly children: ReactNode; read
     <th className={cn('px-3.5 py-2.5 text-left text-[11px] font-semibold tracking-[0.02em] text-company-fg-subtle uppercase', className)}>
       {children}
     </th>
-  )
-}
-
-function TableCell({ children, className }: { readonly children: ReactNode; readonly className?: string }) {
-  return (
-    <td className={cn('px-3.5 py-2.5 text-left text-[12.5px] whitespace-nowrap', className)}>
-      {children}
-    </td>
-  )
-}
-
-function MoneyCell({
-  value,
-  danger = false,
-  strong = false,
-}: {
-  readonly value: number
-  readonly danger?: boolean
-  readonly strong?: boolean
-}) {
-  return (
-    <TableCell className={cn(
-      'text-right tabular-nums',
-      danger && 'text-[#dc2626]',
-      strong && 'font-bold text-foreground',
-    )}>
-      {formatCurrency(value)}
-    </TableCell>
   )
 }
 
