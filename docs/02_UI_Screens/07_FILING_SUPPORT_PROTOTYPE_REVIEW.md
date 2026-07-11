@@ -1,21 +1,19 @@
-# Filing Support Prototype Review
+# Withholding Tax / Former Filing Support Prototype Review
 > Created: 2026-07-01 22:10
 > Last Updated: 2026-07-11 KST
 
 ## 1. HTML UI Preview
-- Preview: [신고지원](./previews/05_filing_support.html)
-- 확인 방식: 브라우저에서 HTML 파일 직접 열람. 사이드바 "신고지원" 또는 각 신고 항목의 "…열기"로 진입.
-- 확인 목적: 신고 항목·패키지·준비값 확인·접수증 보관·사후 체크리스트의 화면 구조, 동선, 책임 경계
+- Preview: [급여·지급 > 원천세](./previews/05_filing_support.html)
+- 확인 방식: 브라우저에서 HTML 파일 직접 열람. 사이드바 `급여·지급 > 원천세`로 진입.
+- 확인 목적: 원천세 준비값·Path 1b 항목=값·접수증 보관의 화면 구조와 책임 경계
 
 ## 2. Prototype Link/Screenshot
 - 정적 HTML Preview 파일 1종. 부가세·급여 화면과 연동/상호 링크.
 
 ## 3. Key User Flows
-- 부가세·급여·4대보험 산출물 → 신고 항목으로 집결.
-- 신고 항목별 준비값과 패키지 상태 확인(부가세는 자료대조·공제검토·provenance 완료 전 잠금).
-- 공식 비암호화 업로드 양식이 확인된 세목만 파일 생성 → 회사가 홈택스에서 직접 업로드·제출.
+- 확정 급여 산출물 → 원천세 준비값으로 집계.
+- A01 인원·총지급액·소득세·지방소득세를 확인하고 Path 1b 항목=값 화면으로 이동.
 - 제출 후 받은 접수증 업로드·보관.
-- 사후 체크리스트(납부·접수증 보관)로 마무리.
 
 ## 4. Screen States
 - Default: 신고 항목·준비값 확인·접수증·체크리스트가 채워진 화면.
@@ -25,10 +23,10 @@
 - Permission denied / unavailable: tenant 미소속·미인증 시 접근 차단(구현 단계에서 확정).
 
 ## 5. Data Flow
-- Inputs: 부가세 확정 패키지, 급여 지급명세서, 4대보험 자료, 사용자 업로드 접수증.
-- Displayed data: 신고 항목 상태(준비됨/대기/확인 필요), 신고 준비값 확인 값, 접수증 보관 목록, 사후 체크리스트.
-- Mutations / saved data: 패키지 생성, 접수증 업로드·보관, 체크리스트 상태 갱신.
-- Internal dependencies: 부가세(JC-011)·급여(JC-012) 산출물(선행 화면의 내부 데이터).
+- Inputs: 확정 급여·지급내역, 사용자 업로드 접수증.
+- Displayed data: 원천세 귀속월·인원·총지급액·소득세·지방소득세, 접수증 보관 목록.
+- Mutations / saved data: 접수증 업로드·보관.
+- Internal dependencies: 급여(JC-012) 산출물.
 - External dependencies: Path 1a 파일 지원 세목은 홈택스·국세청의 공식 비암호화 업로드 양식과 직접 수용 경로가 필요하다. 양식이 없는 세목은 Path 1b(직접입력 정리) 대상으로 두며, **1b 값 정리 화면은 아직 구현하지 않았다**(현재 앱은 준비값·검증 패널만 표시). **자동 홈택스 제출·자동 납부는 제공하지 않음** — 실제 제출/납부는 회사가 직접 수행.
 
 ## 6. 책임 경계 (명시)
@@ -38,6 +36,9 @@
 
 ### 6.1 Current Contract Caveat (2026-07-11)
 
+- 2026-07-11 cadence IA 결정으로 `신고지원` 상위 메뉴는 폐기한다. 이 Preview는
+  `급여·지급 > 원천세` 화면으로 재배치하며, 기존 부가세·4대보험 혼합 카드는 각
+  도메인 화면으로 이동한다.
 - 원천징수이행상황신고서는 공식 경로가 직접작성 또는 비밀번호 기반 회계프로그램
   변환파일로 확인되어 공식 비암호화 업로드 양식이 없으므로 **Path 1b(직접입력 정리)
   대상으로 결정**했다. 목표는 확정 A01 집계를 `항목 = 값`으로 보여주는 것이고 파일
@@ -62,6 +63,7 @@
 ## 9. Related Documents
 - **Concept_Design**: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md) - 제품 목적, MVP 비범위(자동 제출 제외)
 - **UI_Screens**: [Screen Flow](./00_SCREEN_FLOW.md) - 사용자 흐름 (4f. 신고지원)
+- **UI_Screens**: [Cadence Navigation Prototype Review](./13_CADENCE_NAVIGATION_PROTOTYPE_REVIEW.md) - 역할 재배치 결정
 - **UI_Screens**: [UI Design](./01_UI_DESIGN.md) - 디자인 시스템 및 컴포넌트
 - **UI_Screens**: [VAT Prototype Review](./05_VAT_PROTOTYPE_REVIEW.md) - 연동 화면(부가세)
 - **UI_Screens**: [Payroll Prototype Review](./06_PAYROLL_PROTOTYPE_REVIEW.md) - 연동 화면(급여)

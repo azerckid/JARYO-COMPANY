@@ -39,9 +39,10 @@
 └───────────┴─────────────────────────────────────┘
 ```
 
-- Sidebar: 브랜드 → "회사 홈"(활성) → 운영 흐름(자료수집·기장검토·부가세·급여·신고지원·신고 준비) → 관리(설정) → 사용자.
+- Sidebar: 브랜드 → 회사 홈 → 자료수집 → 기장검토(자료대조원장) → 급여·지급(직원 명부·원천세·지급명세서·연말정산·지방소득세) → 부가세 → 연간신고(사업자 유형별) → 관리(설정·리마인드) → 사용자.
   - 기장검토 하위에는 Path 1 첫 관문인 **자료대조원장**을 둔다.
-  - 신고 준비 하위에는 세목별 신고 마무리 화면(지급명세서·연말정산, 지방소득세, 사업장현황신고)을 둔다.
+  - 연간신고는 법인에 법인세, 일반 개인에 종합소득세, 면세 개인에 종합소득세·사업장현황신고만 노출한다.
+  - `신고지원`·`신고 준비`는 상위 메뉴로 노출하지 않는다.
   아직 미구현 화면은 "다음" 배지로 표기.
 - Topbar: 회계기간·신고구분 선택 pill을 우측 정렬. 컨텍스트 전환의 단일 지점.
 
@@ -146,7 +147,7 @@
 - **자동 홈택스 제출은 범위 밖**이다. 부가세 공식 비암호화 업로드 파일은 Stage A 외부 확인 전 미제공이며, 세액은 사용자 판단 완료 전 "예정"으로 표기한다.
 - 상태칩·State Card·Table 골격은 앞 화면들과 공통(DRY).
 
-### 4.5 급여 (04_payroll.html)
+### 4.5 급여·지급 (04_payroll.html)
 
 | 컴포넌트 | 역할 | 상태 |
 |:---|:---|:---|
@@ -162,36 +163,33 @@
 - **4대보험 고지액 규칙**: 건강보험 EDI/사회보험 고지내역을 업로드 또는 수동 입력으로 반영한다. 고지액이 있으면 계산 추정값보다 우선하고, 미매칭/차이는 확인 필요로 표시한다. 자동 로그인·공동인증서 저장·자동 제출은 만들지 않는다.
 - **마감 잠금**: 확인 필요(오류/누락) 직원이 있으면 마감 버튼을 `is-disabled`+`disabled`+`aria-disabled="true"` muted로 잠그고 사유를 병기한다. React 구현 시 disabled 버튼을 래퍼(tooltip)로 감싼다(부가세 패키지 생성 버튼과 동일 규칙).
 - **개인정보**: 급여·주민정보 등 민감정보 표시. 접근 권한·마스킹·감사로그는 구현 단계에서 확정.
-- 원천징수 지급명세서 등은 신고지원 화면으로 전달한다.
+- 원천세·지급명세서·연말정산·지방소득세·직원 명부를 같은 사이드바 그룹에서 이동한다.
 - 상태칩·State Card·Table 골격은 앞 화면들과 공통(DRY).
 
-### 4.6 신고지원 (05_filing_support.html)
+### 4.6 원천세 (05_filing_support.html)
 
 | 컴포넌트 | 역할 | 상태 |
 |:---|:---|:---|
 | Responsibility Banner | 자동 제출·납부 없음(책임 경계) 상단 고지 | accent 배너, 하단 안내와 반복 |
-| Filing Item Card | 신고 항목별(부가세/원천세/4대보험) 패키지 상태 + CTA | 준비됨(ok)/패키지 대기(warn)/확인 필요, 부가세 패키지는 검토 전 잠금 |
-| Filing Preparation Values | 신고 준비값·양식 파일 준비 상태 확인 | 단계 리스트(done/대기) + 확정 값 강조 + JC-030 파일 패널 링크 |
+| Withholding Period Summary | 귀속월·지급 인원·총지급액·소득세·지방소득세 | 확인 필요/준비됨 상태 |
+| Path 1b Values | 확정 A01 신고값 정리 | `항목 = 값` 한 줄 목록 + 복사 상태 |
 | Receipts Storage | 제출 접수증 업로드·보관 | 접수증 목록 + 빈 항목(제출 후 업로드 대기) |
 | Post-filing Checklist | 납부·보관 사후 확인 | 체크박스(완료 취소선) |
 | State Card | 로딩/빈/오류 표준 (공용) | 스켈레톤·빈안내(부가세·급여 먼저 확정)·오류+재시도 |
 
 - **책임 경계 규칙**: 자동 홈택스 제출·자동 납부·자격증명 서버 저장은 제공하지 않는다. 배너·항목·하단 안내에 반복 노출한다.
-- 신고 항목은 부가세(JC-011)·급여(JC-012) 산출물과 연동한다. 부가세 패키지는 공제 검토 완료 전 잠금(부가세 화면 규칙과 동일).
+- 급여(JC-012)의 확정 산출물만 읽는다. 부가세 내용은 부가세 화면에서 처리한다.
 - 상태칩·State Card·Table 골격은 앞 화면들과 공통(DRY).
 
 ### 4.7 화면 간 내비게이션
 
 - 사이드바 항목·브랜드·breadcrumb를 모두 `<a>`로 처리(`a { color: inherit; text-decoration: none }`).
-- 회사 홈 → 자료수집/기장검토/부가세: 사이드바 + 해당 Action Row "…열기". 급여·신고지원은 사이드바로 진입.
-- 운영 흐름 화면(자료수집·기장검토·부가세·급여·신고지원) → 회사 홈: 사이드바 "회사 홈" + 브랜드 + 상단 breadcrumb.
-- 신고지원 항목의 "부가세 열기 / 급여 열기"로 선행 화면과 직접 연동.
-- 운영 흐름 6개 화면 전체가 사이드바로 상호 이동 가능하다.
-- 직원 명부는 사이드바 "관리" 그룹의 설정 아래 항목으로 진입하며, 6개 워크스페이스 프리뷰와 상호 이동한다.
+- 회사 홈에는 가장 가까운 일정 2~3건만 보여주는 `다가오는 신고` 스트립을 두고, 각 항목은 급여·지급/부가세/연간신고로 이동한다.
+- 급여·지급 부모는 04에서 `active`, 05·06·09·10에서는 `active-parent`이며 선택된 하위 항목만 `active`다.
+- 직원 명부는 관리가 아니라 급여·지급 하위 기준정보다.
 - 리마인드는 사이드바 "관리" 그룹의 직원 명부 아래 항목으로 진입하며, 전 화면과 상호 이동한다.
-- 신고 준비는 사이드바 "운영 흐름" 그룹의 신고지원 아래 항목으로 진입하며, 공통 기반(자료수집·기장검토)과 병렬 신고 트랙의 입력·산출·handoff 상태를 보여준다(JC-029).
-- 신고 준비 허브(08)에서는 사이드바 부모 **「신고 준비」** 가 `active`이고, 하위 검토 화면(09·10·11)에서는 부모는 `active-parent`(연한 강조), 해당 자식 항목이 `active`이다.
-- 신고 준비 하위 사이드바(들여쓰기 `›`): **지급명세서·연말정산**(09), **지방소득세**(10), **사업장현황신고**(11). 원천세·부가세 등 다른 신고 트랙은 급여·부가세·신고지원으로 연결하며 하위 메뉴에 넣지 않는다.
+- 연간신고(08)는 사업자 유형에 맞는 세목만 렌더링한다. 사업장현황신고(11)는 면세 개인사업자에서만 하위 항목으로 보인다.
+- 부가세는 독립 상위 메뉴이며 급여·지급이나 연간신고에 중복 배치하지 않는다.
 - 구현된 화면은 사이드바 "다음" 배지를 제거한다.
 
 ### 4.8 직원 명부 (06_employee_directory.html)
@@ -215,7 +213,7 @@
 |:---|:---|:---|
 | Internal-only Banner | 회사 내부 업무 알림 책임 경계 고지 | accent 배너, 고객사 메일·자동 제출/납부 없음 반복 |
 | Stats Row | 활성 규칙·리마인드 대상(확인 필요)·발송 실패 카운트 | 대상 카드는 warn 강조 |
-| Rule List | 업무 영역별(자료수집/기장검토/부가세/급여/신고지원) 규칙 | 트리거 태그(마감 D-7/D-3/D-1·일일 요약·수동), 활성 토글, 테스트 발송 |
+| Rule List | 업무 영역별(자료수집/기장검토/급여·지급/부가세/연간신고) 규칙 | 트리거 태그(마감 D-7/D-3/D-1·일일 요약·수동), 활성 토글, 테스트 발송 |
 | Recipient Preview | 담당자 본인·내부 staff 수신자 | 본인/staff 칩, 알림 꺼짐 대상은 제외 표시 |
 | Send Log Table | 최근 발송 로그 | 상태칩(발송됨/실패/스킵), 실패 사유·중복 방지(idempotency) |
 | State Card | 로딩/빈/오류 + provider missing 표준 | 스켈레톤·빈안내(첫 규칙)·오류+재시도·발송 설정 안내 |
@@ -225,29 +223,26 @@
 - 신고 준비 일정(마감 D-day)·확인 필요 상태를 담당자 본인에게 리마인드하는 자가 알림이 v1 핵심 흐름이다.
 - 상태칩·State Card·Table 골격은 앞 화면들과 공통(DRY).
 
-### 4.10 신고 준비 (08_filing_preparation.html)
+### 4.10 연간신고 (08_filing_preparation.html)
 
 | 컴포넌트 | 역할 | 상태 |
 |:---|:---|:---|
-| Filing Preparation Hero | 신고서에 넣을 확정 데이터 준비율·확인 필요·Path 1 준비 상태 | 진행률 + blocker 카운트 |
+| Annual Filing Hero | 사업자 유형·귀속연도·연간 세목 준비율·확인 필요 | 진행률 + blocker 카운트 |
 | **Path 1 Completion Flow** | 1a: 홈택스 업로드용 양식·파일 작성·양식 채움 확인·업로드 안내 / 1b: 항목=값 직접입력 정리 | 베타 중심 경로 |
 | **Path Boundary Notice** | Path 2(사무소 ZIP)는 Path 1 베타 이후, 암호화 Path 3은 범위 밖임을 안내 | 책임 경계 |
-| Next Action List | 신고 전 blocker와 해당 워크스페이스 CTA | danger/warn/ok dot + 라우팅 |
-| Common Foundation Cards | 자료수집 -> 기장검토 공통 기반의 입력·산출 상태 | 누락/검토대기/원장 준비 상태칩 |
-| Track Cards | 원천세·부가세·지급명세서/연말정산·지방소득세·사업장현황신고 병렬 트랙 | 입력/산출/Path 1a 양식·파일 또는 1b 직접입력 정리 상태 |
-| Schedule Strip | 다가오는 마감·D-day | 일정은 보조 정보, 중심 프레임 아님 |
+| Annual Filing Cards | 법인세/종합소득세/사업장현황신고 중 해당 세목만 표시 | 준비 상태·blocker·Path 1 상태 |
 | Responsibility Boundary | Path 1 책임 경계·자동제출 제외·1b는 값 정리 표시까지(단계별 위치 안내 아님) | accent 안내 박스 |
 | State Card | 로딩/빈/오류/권한 없음 표준 | 스켈레톤·빈안내·오류+재시도 |
 
 - 화면의 중심 질문은 "홈택스·위택스에 넣을 확정 데이터가 준비됐는가"이며, **실행 우선순위는 Path 1**이다 — 공식 양식이 있으면 1a(양식·파일 작성), 없으면 1b(항목=값 직접입력 정리) ([Path 1 Roadmap](../03_Technical_Specs/36_PATH1_FORM_FILL_ROADMAP.md)).
 - 홈택스 메뉴·입력칸 위치를 단계별로 안내하는 가이드는 제공하지 않는다. 1b는 확정값을 항목=값으로 정리해 보여주는 데까지다.
-- 세무 일정은 하단 보조 섹션으로만 둔다.
+- 세무 일정 요약은 회사 홈의 `다가오는 신고`로 이동하며 연간신고 화면에서는 해당 연도의 마감만 표시한다.
 - 자동제출·신규 산출 엔진·신규 DB는 JC-029 Preview 범위 밖이다.
 - 상태칩·State Card·Table 골격은 앞 화면들과 공통(DRY).
 
 ### 4.11 지급명세서·연말정산 (09_payment_year_end.html, JC-024)
 
-신고 준비 허브(4.10)의 "지급명세서/연말정산" 트랙 "열기"로 진입하는 전용 검토 화면. 급여·직원 명부 데이터를 반기/연 단위로 집계한 **read-only** 화면이다.
+`급여·지급 > 지급명세서·연말정산`으로 진입하는 전용 검토 화면. 급여·직원 명부 데이터를 반기/연 단위로 집계한 **read-only** 화면이다.
 
 | 컴포넌트 | 역할 | 상태 |
 |:---|:---|:---|
@@ -265,26 +260,26 @@
 
 ### 4.12 지방소득세 (10_local_income_tax.html, JC-027)
 
-신고 준비 허브(4.10)의 "지방소득세" 트랙 "검토 화면"으로 진입하는 전용 화면. 허브의 마지막 roadmap 트랙을 live로 채운다. 급여에 이미 기록된 `localIncomeTaxKrw`(원천세 특별징수분)를 집계한 **read-only** 화면이다.
+`급여·지급 > 지방소득세`로 진입하는 전용 화면. 급여에 이미 기록된 `localIncomeTaxKrw`(원천세 특별징수분)를 집계한 **read-only** 화면이다.
 
 | 컴포넌트 | 역할 | 상태 |
 |:---|:---|:---|
 | Prep Hero | 대상 인원·확인 필요·지방소득세 합계 요약, "근사치 재계산 아님" 명시 | 진행률 + 카운트 |
 | Next Action List | 급여 미확정 blocker + 급여 CTA | danger dot + 라우팅 |
 | 지방소득세 Table | 직원별 지급총액·소득세(국세)·지방소득세(특별징수)·상태 + 합계 행 | 준비완료/급여 미확정 상태칩 |
-| Consistency Banner | 신고지원(JC-013)과 동일한 실제값임을 명시 | plan 톤 안내 박스 |
+| Consistency Banner | 급여·지급 하위 원천세와 동일한 실제값임을 명시 | plan 톤 안내 박스 |
 | Responsibility Boundary | 종합소득세·법인세분 지방소득세·위택스 제출 제외 | accent 안내 박스 |
 | State Card | 로딩/빈/오류/권한 없음 표준 | 스켈레톤·빈안내·오류+재시도 |
 
 - v1은 **원천세 특별징수분만**. 종합소득세분·법인세분 지방소득세는 JC-025/026 이후.
 - 화면 언어는 "귀속기간·원천세 신고 주기 기준"으로, 월 단위를 못박지 않는다(반기납부 특례 고려).
 - 소득세(국세)와 지방소득세(특별징수)를 컬럼으로 명확히 분리해 "원천징수세액"으로 뭉뚱그리지 않는다.
-- 신고지원(JC-013)의 `splitWithholdingTax` 근사치를 이 화면과 같은 실제값으로 교체(정합성 수정, 구현 시 함께 진행).
+- 기존 JC-013의 `splitWithholdingTax` 근사치는 이 화면과 같은 실제값으로 교체됐다. 새 IA에서도 원천세·지방소득세가 같은 소스를 사용한다.
 - 단일 스크롤·직원 중심 표. mutation 없음. 상태칩·State Card·Table 골격은 공통(DRY).
 
 ### 4.13 사업장현황신고 (11_business_status_report.html, JC-028)
 
-신고 준비 허브(4.10)의 "사업장현황신고" 트랙 "검토 화면"으로 진입하는 전용 화면. 면세 개인사업자가 부가세 신고 대신 홈택스 사업장현황신고에 넣을 수입금액·자료 상태를 확인하는 **read-only** 화면이다.
+`연간신고 > 사업장현황신고`로 진입하는 전용 화면. 면세 개인사업자가 부가세 신고 대신 홈택스 사업장현황신고에 넣을 수입금액·자료 상태를 확인하는 **read-only** 화면이다.
 
 | 컴포넌트 | 역할 | 상태 |
 |:---|:---|:---|
@@ -340,15 +335,15 @@
 2. "패키지 생성" — 단, 검토 완료 전에는 잠금(비활성)
 3. "전체 매입 보기" 등 상세 이동
 
-**급여**
+**급여·지급**
 1. 확인 필요 직원 "해당 직원 열기" (마감 전 처리)
 2. "급여 마감·확정" — 단, 확인 필요 처리 전에는 잠금(비활성)
 3. 급여명세서/지급명세서 "미리보기", "엑셀 내보내기"
 
-**신고지원**
-1. 신고 항목 "패키지 열기"(준비됨) / "부가세·급여 열기"(선행 화면 연동)
-2. 신고 준비값 확인 및 JC-030 양식·파일 생성 패널로 이동
-3. 접수증 업로드, 사후 체크리스트 체크
+**원천세**
+1. 확인 필요 급여가 있으면 급여로 이동
+2. 확정 A01 항목=값 확인
+3. 제출 후 접수증 업로드
 
 **First-run Sample**
 1. 전역 banner의 "샘플 데이터 삭제하고 실제 사용 시작"
@@ -361,11 +356,11 @@
 - Preview (자료수집): [01_source_collection.html](./previews/01_source_collection.html)
 - Preview (기장검토): [02_bookkeeping_review.html](./previews/02_bookkeeping_review.html)
 - Preview (부가세): [03_vat.html](./previews/03_vat.html)
-- Preview (급여): [04_payroll.html](./previews/04_payroll.html)
-- Preview (신고지원): [05_filing_support.html](./previews/05_filing_support.html)
+- Preview (급여·지급): [04_payroll.html](./previews/04_payroll.html)
+- Preview (원천세): [05_filing_support.html](./previews/05_filing_support.html)
 - Preview (직원 명부): [06_employee_directory.html](./previews/06_employee_directory.html)
 - Preview (리마인드): [07_internal_reminder.html](./previews/07_internal_reminder.html)
-- Preview (신고 준비): [08_filing_preparation.html](./previews/08_filing_preparation.html)
+- Preview (연간신고): [08_filing_preparation.html](./previews/08_filing_preparation.html)
 - Preview (지급명세서·연말정산): [09_payment_year_end.html](./previews/09_payment_year_end.html)
 - Preview (지방소득세): [10_local_income_tax.html](./previews/10_local_income_tax.html)
 - Preview (사업장현황신고): [11_business_status_report.html](./previews/11_business_status_report.html)
@@ -380,9 +375,10 @@
 - **UI_Screens**: [Bookkeeping Review Prototype Review](./04_BOOKKEEPING_REVIEW_PROTOTYPE_REVIEW.md) - 기장검토 확인 결과
 - **UI_Screens**: [VAT Prototype Review](./05_VAT_PROTOTYPE_REVIEW.md) - 부가세 확인 결과
 - **UI_Screens**: [Payroll Prototype Review](./06_PAYROLL_PROTOTYPE_REVIEW.md) - 급여 확인 결과
-- **UI_Screens**: [Filing Support Prototype Review](./07_FILING_SUPPORT_PROTOTYPE_REVIEW.md) - 신고지원 확인 결과
+- **UI_Screens**: [Withholding Tax Prototype Review](./07_FILING_SUPPORT_PROTOTYPE_REVIEW.md) - 원천세 재배치 기록
 - **UI_Screens**: [Employee Directory Prototype Review](./08_EMPLOYEE_DIRECTORY_PROTOTYPE_REVIEW.md) - 직원 명부 확인 결과
 - **UI_Screens**: [Internal Reminder Prototype Review](./09_INTERNAL_REMINDER_PROTOTYPE_REVIEW.md) - 리마인드 확인 결과
+- **UI_Screens**: [Cadence Navigation Prototype Review](./13_CADENCE_NAVIGATION_PROTOTYPE_REVIEW.md) - cadence 기반 사이드바 계약
 - **UI_Screens**: [HTML Preview 폴더](./previews/) - 브라우저 확인용 프로토타입
 - **Technical_Specs**: [Payroll Pre-Code Brief](../03_Technical_Specs/08_PAYROLL_PRE_CODE_BRIEF.md) - 급여 구현 전 데이터·mutation 계약
 - **Technical_Specs**: [Employee Directory Pre-Code Brief](../03_Technical_Specs/10_EMPLOYEE_DIRECTORY_PRE_CODE_BRIEF.md) - 직원 명부 구현 전 데이터·mutation 계약

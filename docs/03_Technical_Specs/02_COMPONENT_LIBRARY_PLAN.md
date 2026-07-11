@@ -13,8 +13,9 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 - 기장검토 — [02_bookkeeping_review.html](../02_UI_Screens/previews/02_bookkeeping_review.html)
 - 자료대조원장 — [12_reconciliation_ledger.html](../02_UI_Screens/previews/12_reconciliation_ledger.html)
 - 부가세 — [03_vat.html](../02_UI_Screens/previews/03_vat.html)
-- 급여 — [04_payroll.html](../02_UI_Screens/previews/04_payroll.html)
-- 신고지원 — [05_filing_support.html](../02_UI_Screens/previews/05_filing_support.html)
+- 급여·지급 — [04_payroll.html](../02_UI_Screens/previews/04_payroll.html)
+- 원천세 — [05_filing_support.html](../02_UI_Screens/previews/05_filing_support.html)
+- 연간신고 — [08_filing_preparation.html](../02_UI_Screens/previews/08_filing_preparation.html)
 
 원칙: **JARYO-GIWA 자산 최대 재사용 + 최소 신규 도입(YAGNI/KISS/DRY)**. 이미 설치된
 것을 우선 쓰고, 없을 때만 shadcn 표준 컴포넌트를 추가한다. 새 npm 패키지는 대상 화면
@@ -53,7 +54,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 
 | 컴포넌트 | 경로 | 재사용 조건 |
 |:---|:---|:---|
-| Sidebar | `app/(dashboard)/_components/sidebar.tsx` | 네비 항목을 회사용(홈·자료수집·기장검토/자료대조원장·부가세·급여·신고지원·설정)으로 정리. "고객 요청/회계사" 문구 제거(JC-004 연계) |
+| Sidebar | `app/(dashboard)/_components/sidebar.tsx` | 홈·자료수집·기장검토/자료대조원장·급여/지급·부가세·연간신고·설정/리마인드로 정리. 사업자 유형에 따라 연간 세목을 조건부 렌더링 |
 | Sidebar nav link | `app/(dashboard)/_components/sidebar-nav-link.tsx` | 활성 상태·라우팅 그대로 사용 |
 | Sign-out button | `app/(dashboard)/_components/sidebar-sign-out-button.tsx` | 사용자 영역에 재사용 |
 | shadcn `table` | `components/ui/table.tsx` | 최근 제출·영수증(홈), 수집 상태(자료수집) |
@@ -72,6 +73,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 | 사이드바 | 재사용 | GIWA sidebar + nav-link |
 | 기간 선택 pill(Topbar) | 커스텀 `PeriodSelector` | shadcn `dropdown-menu` 또는 `select` |
 | 회계기간 Hero | 커스텀 `PeriodStatusHero` | `card` + `progress` |
+| 다가오는 신고 | 커스텀 `UpcomingFilingStrip` | 최근 마감 2~3건, D-day, blocker, 세목 route |
 | Action Row(다음 할 일) | 커스텀 `ActionRow`/`ActionList` | `card` + `button` + 상태 dot(커스텀) |
 | Status Card | 커스텀 `WorkspaceStatusCard` | `card` + `badge`, 클릭 라우팅 |
 | Recent Table | 커스텀 `RecentSubmissionsTable` | `table` + `badge` |
@@ -158,9 +160,9 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 - JC-035는 별도 요약 카드를 추가하지 않고 기존 공제 검토 표를 AI 판단 작업표로 확장한다. source·근거·필요 증빙·사용자 확정을 같은 행에서 읽게 한다.
 - 검토 자료 마감 버튼은 자료수집·자료대조·사용자 세무판단·확정 원장 fingerprint 완료 전 `disabled` + `aria-disabled="true"` + visible locknote를 사용한다. 재계산 버튼은 자동 실행하지 않으며, exact inputs가 유효하고 snapshot만 stale인 조건에서만 표시한다. 브라우저별 `title` 툴팁에 의존하지 않는다.
 - 부가세 화면은 회사용 `/dashboard/vat`로 새로 구성하며, GIWA `/dashboard/reviews` 워크스페이스 컴포넌트를 import/render하지 않는다.
-- 자동 홈택스 제출·자동 납부 UI는 만들지 않는다. AI 추천은 사용자 확정 전 기존 VAT mutation을 호출하지 않는다. 신고 준비값 확인과 접수증 보관은 JC-013 신고지원에서 최종 연결한다.
+- 자동 홈택스 제출·자동 납부 UI는 만들지 않는다. AI 추천은 사용자 확정 전 기존 VAT mutation을 호출하지 않는다. 부가세 준비값은 부가세 화면에서 끝까지 확인한다.
 
-### 7.5 급여 (UI Design 4.5)
+### 7.5 급여·지급 (UI Design 4.5)
 
 | 화면 컴포넌트 | 구현 방식 | 기반 |
 |:---|:---|:---|
@@ -179,23 +181,35 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 - 급여 마감 버튼은 확인 필요 직원이 있으면 `disabled` + `aria-disabled="true"` + visible locknote를 사용한다. 브라우저별 `title` 툴팁에 의존하지 않는다.
 - 개인정보(주민등록번호·계좌·전화번호·storage key)는 화면에 노출하지 않고, 권한이 부족하면 직원명/급여액을 마스킹한다.
 
-### 7.6 신고지원 (UI Design 4.6)
+### 7.6 원천세 (UI Design 4.6)
 
 | 화면 컴포넌트 | 구현 방식 | 기반 |
 |:---|:---|:---|
 | Responsibility Banner | 커스텀 `FilingResponsibilityBanner` | `card` 계열 컨테이너 + 상태 아이콘 |
-| Filing Item Card/List | 커스텀 `FilingItemList` / `FilingItemCard` | `card` + `badge` + `button` |
-| Filing Package Actions | 커스텀 `FilingPackageActions` | `button` + 공용 `LockedActionButton` |
-| Filing Preparation Values | 커스텀 `FilingPreparationValues` | 단계 리스트 + 확인 CTA |
+| Withholding Period Summary | 커스텀 `WithholdingPeriodSummary` | `card` + `badge` |
+| Path 1b Value List | 커스텀 `DirectEntryValueList` | `항목 = 값` list + copy action |
 | Receipt Storage | 커스텀 `FilingReceiptList` / `ReceiptUploadButton` | 파일 입력 + `button` + `badge` |
 | Post-filing Checklist | 커스텀 `FilingChecklist` | checkbox/버튼형 토글 + 상태 텍스트 |
 | State(로딩/빈/오류) | 공용 재사용 | `skeleton` + `button` |
 
 - 신규 shadcn 없음. 기존 `card`/`badge`/`button`/`input`/`skeleton` 재사용.
-- 신고지원 화면은 회사용 `/dashboard/filing-support`로 구성하며, 회사 홈 신고지원 카드는 전용 route로 연결한다.
-- 부가세(JC-011)의 `vat_period_summary` package 상태와 급여(JC-012)의 `payroll_period_summary` 문서 상태를 내부 의존성으로 읽는다.
+- 기존 `/dashboard/filing-support`의 원천세 값은 급여·지급 하위 원천세 route로 이동한다. redirect/alias 정책 확정 전 기존 URL은 삭제하지 않는다.
+- 원천세 화면은 급여(JC-012)의 `payroll_period_summary`만 내부 의존성으로 읽는다. 부가세는 부가세 화면에서 처리한다.
 - 자동 홈택스 제출·자동 납부·홈택스/EDI 자격증명 저장 UI는 만들지 않는다. 책임 경계 배너와 하단 안내에서 사용자가 직접 제출/납부함을 명시한다.
 - 접수증은 private storage에 저장하고 화면에는 안전한 파일명·제출일·보관 상태만 표시한다. `storageKey`/Blob URL은 렌더하지 않는다.
+
+### 7.6a Cadence Navigation / 연간신고
+
+| 화면 컴포넌트 | 구현 방식 | 기반 |
+|:---|:---|:---|
+| Cadence Nav Group | `SidebarCadenceGroup` | 기존 sidebar nav-link + parent/child active |
+| Conditional Annual Filing Nav | `AnnualFilingNavItems` | tenant 사업자 유형에서 법인세/종합소득세/사업장현황신고 파생 |
+| Annual Filing Workspace | `AnnualFilingWorkspace` | 해당 세목 카드 + Path 1 상태 + blocker |
+
+- `신고지원`·`신고 준비` 상위 메뉴는 제거하되 기존 URL은 redirect 또는 alias 정책 확정 전 삭제하지 않는다.
+- 직원 명부·원천세·지급명세서·연말정산·지방소득세는 급여·지급 부모의 active 상태를 공유한다.
+- 사업장현황신고는 면세 개인사업자에서만 렌더링한다. 법인 샘플에서는 법인세만 보인다.
+- 상세 IA 계약은 [Cadence Navigation Prototype Review](../02_UI_Screens/13_CADENCE_NAVIGATION_PROTOTYPE_REVIEW.md)를 따른다.
 
 ### 7.7 First-run Sample Data (UI Design 4.10)
 
@@ -240,7 +254,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 - 회사 홈: **읽기 전용** — Server Component에서 데이터 페치, 클라이언트 상태 최소.
 - 자료수집: 업로드/정규화 **mutation 발생** — 업로드 진행·오류는 로컬 컴포넌트 상태 + `sonner` 토스트. 목록 갱신은 서버 재검증.
 - 급여: 직원 line 수정·고지액 import/match·명세서 생성·마감 **mutation 발생** — 로컬 입력 상태 + `sonner` 토스트, 성공 후 서버 재검증.
-- 신고지원: 접수증 업로드/삭제·체크리스트 토글 **mutation 발생** — 성공 후 서버 재검증. 홈택스 직접입력용 준비값 복사는 제공하지 않음.
+- 원천세: 접수증 업로드/삭제·체크리스트 토글 **mutation 발생** — 성공 후 서버 재검증. Path 1b 값 복사는 JC-030 후속.
 - 기간 컨텍스트는 URL 파라미터로 관리(전역 스토어 미도입).
 
 ## 10. 미결/후속
@@ -251,7 +265,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 - 부가세 Pre-Code Brief: [07_VAT_PRE_CODE_BRIEF.md](./07_VAT_PRE_CODE_BRIEF.md) (JC-011 구현·머지 완료).
 - 부가세 AI 판단(JC-035): [45_VAT_AI_TAX_TREATMENT_RULE_MATRIX.md](./45_VAT_AI_TAX_TREATMENT_RULE_MATRIX.md) · [46_VAT_AI_TAX_TREATMENT_PRE_CODE_BRIEF.md](./46_VAT_AI_TAX_TREATMENT_PRE_CODE_BRIEF.md) (VAI-0~6b 구현·머지 완료, `done`).
 - 급여 Pre-Code Brief: [08_PAYROLL_PRE_CODE_BRIEF.md](./08_PAYROLL_PRE_CODE_BRIEF.md) (JC-012 구현·머지 완료).
-- 신고지원 Pre-Code Brief: [09_FILING_SUPPORT_PRE_CODE_BRIEF.md](./09_FILING_SUPPORT_PRE_CODE_BRIEF.md) (JC-013 게이트 완료, 구현 PR에서 물리 migration·workspace 적용).
+- 기존 Filing Support Pre-Code Brief: [09_FILING_SUPPORT_PRE_CODE_BRIEF.md](./09_FILING_SUPPORT_PRE_CODE_BRIEF.md) (JC-013 이력, 원천세 재배치 시 기존 저장 계약 재사용).
 - First-run Sample Data Pre-Code Brief: [12_FIRST_RUN_SAMPLE_DATA_PRE_CODE_BRIEF.md](./12_FIRST_RUN_SAMPLE_DATA_PRE_CODE_BRIEF.md) (JC-019 게이트 완료 후 구현 PR에서 migration·seed/delete API 적용).
 - Business Status Report Pre-Code Brief: [23_BUSINESS_STATUS_REPORT_PRE_CODE_BRIEF.md](./23_BUSINESS_STATUS_REPORT_PRE_CODE_BRIEF.md) (JC-028 UI-First Gate 승인 후 구현 계약).
 
