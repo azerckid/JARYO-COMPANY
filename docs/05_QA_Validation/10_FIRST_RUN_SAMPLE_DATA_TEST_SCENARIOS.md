@@ -1,6 +1,6 @@
 # First-run Sample Data Test Scenarios
 > Created: 2026-07-04 00:20
-> Last Updated: 2026-07-04 01:43
+> Last Updated: 2026-07-12 03:50
 
 ## 1. Scope
 
@@ -26,9 +26,9 @@
 | S-11 | Data Contract | 자료수집 sample을 조회한다. | 자료 23/24, 카드 1건 미수집, 영수증 정규화 대기 3, 파싱 오류 1이 표시된다. | PASS · unit |
 | S-12 | Data Contract | 기장검토 sample을 조회한다. | 324/342 확정, 검토 대기 18, 신뢰도 낮음 5가 표시된다. | PASS · unit |
 | S-13 | Data Contract | 부가세 sample을 조회한다. | 매출세액 32,000,000 - 매입세액 18,000,000 = 납부 예정 14,000,000으로 표시된다. | PASS · unit |
-| S-14 | Data Contract | 급여 sample을 조회한다. | 지급 42,600,000, 공제 5,840,000, 실지급 36,760,000, 확인 필요 1이 표시된다. | PASS · unit |
+| S-14 | Data Contract | 급여 sample을 조회한다. | 대상 11명(정규직 6·프리랜서 2·일용직 3), 지급 34,500,000, 공제 3,694,470, 실지급 30,805,530, 확인 필요 1이 표시된다. | PASS · unit |
 | S-15 | Data Contract | 신고지원 sample을 조회한다. | 부가세 패키지 잠금, 원천세 준비됨, 4대보험 확인 필요, 접수증 대기가 표시된다. | PASS · unit |
-| S-16 | Data Contract | 직원 명부 sample을 조회한다. | 전체 14명, 재직 12, 퇴사 2, 급여 대상 11, 4대보험 확인 필요 1이 표시된다. | PASS · unit |
+| S-16 | Data Contract | 직원 명부 sample을 조회한다. | 전체 11명, 재직 11, 퇴사 0, 급여 대상 11, 4대보험 확인 필요 1이 표시된다. | PASS · unit |
 | S-17 | Data Contract | 리마인드 sample을 조회한다. | 활성 규칙 3, 대상 2, 실패 1과 provider missing 상태 예시가 표시된다. | PASS · unit |
 | S-20 | Labeling | sample active 상태에서 각 dashboard 화면을 연다. | 전역 banner 또는 badge가 샘플 데이터임을 명확히 표시한다. | PASS · unit |
 | S-21 | Labeling | sample banner의 삭제 CTA를 확인한다. | "샘플 데이터 삭제하고 실제 사용 시작" CTA가 표시된다. | PASS · unit |
