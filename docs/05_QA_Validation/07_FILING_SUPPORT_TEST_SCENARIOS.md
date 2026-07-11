@@ -113,12 +113,12 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 
 이 시나리오는 [Path 1 Roadmap §2.1](../03_Technical_Specs/36_PATH1_FORM_FILL_ROADMAP.md)의
 세목별 **Path 1a(양식·파일)** 완료선을 검증한다. 원천세는 공식 조사 결과 공식 비암호화
-업로드 양식이 없어 **Path 1b(직접입력 정리)로 제공**하며 1a W1~W5를 시작하지 않는다.
-부가세도 Path 1b로 제공하고, Stage A 공개 자료 감사에서는 현재 회계프로그램 파일변환
-메뉴와 일부 첨부서류 도구를 확인했지만 최신 비암호화 수용은 미확인이라 Stage A는 1a
-승격용 선택 조사다. Stage A가 양식을 확인한 세목만 S-91~S-99를 전용 fixture로 반복하며,
-1a가 없는 세목은 아래 §2.11의 Path 1b 값 정리 시나리오로 검증한다. 어떤 세목도
-`blocked`로 두지 않는다.
+업로드 양식이 없어 **Path 1b(직접입력 정리) 대상으로 결정**됐고(1b 값 정리 화면은 아직
+미구현) 1a W1~W5를 시작하지 않는다. 부가세도 Path 1b 대상이며(화면 미구현), Stage A
+공개 자료 감사에서는 현재 회계프로그램 파일변환 메뉴와 일부 첨부서류 도구를 확인했지만
+최신 비암호화 수용은 미확인이라 Stage A는 1a 승격용 선택 조사다. Stage A가 양식을 확인한
+세목만 S-91~S-99를 전용 fixture로 반복하며, 1a가 없는 세목은 아래 §2.11의 Path 1b 값 정리
+시나리오로 검증한다(모두 Pending). 어떤 세목도 `blocked`로 두지 않는다.
 
 | # | Given | When | Then | Result |
 |:---|:---|:---|:---|:---:|
@@ -135,9 +135,9 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 
 ### 2.11 Path 1b Direct-Entry Value Summary (Pending)
 
-공식 비암호화 업로드 양식이 없는 세목(원천세·부가세 등)은 Path 1b로 제공한다.
-1b는 확정값을 `항목 = 값`으로 정리해 보여주는 데까지이며, 파일 generator·업로드
-검증(S-90~S-98)을 만들지 않는다.
+공식 비암호화 업로드 양식이 없는 세목(원천세·부가세 등)은 Path 1b 대상으로 결정됐다.
+**1b 값 정리 화면은 아직 구현하지 않았다**(아래 시나리오는 전부 Pending). 1b는 확정값을
+`항목 = 값`으로 정리해 보여주는 데까지이며, 파일 generator·업로드 검증(S-90~S-98)을 만들지 않는다.
 
 | # | Given | When | Then | Result |
 |:---|:---|:---|:---|:---:|
@@ -153,7 +153,7 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 - **API 구현 완료**: receipt metadata upload/delete, checklist toggle, tenant/staff guard(S-40~43, S-50~53). 실제 Blob 저장 환경은 JC-014에서 검증 완료.
 - **브라우저 수동 검증 완료**: `/dashboard/filing-support?period=2026-H1` 로그인 렌더와 승인 Preview 구조를 확인.
 - **후속 E2E**: JC-014에서 실제 Blob·AI 파싱·정규화 저장은 통과했다. 실제 홈택스/EDI 접수증 파일 포맷별 업로드는 별도 fixture 확보 후 검증한다.
-- **Path 1a 파일 후속**: 원천세는 직접작성 또는 비밀번호 기반 회계프로그램 변환파일만 확인되어 공식 비암호화 업로드 양식이 없으므로 Path 1b(직접입력 정리)로 제공한다. 부가세도 Path 1b로 제공하며, Stage A 공개 자료 감사는 완료했지만 현재 메뉴는 회계프로그램 파일변환이고 공식 Excel 도구는 일부 첨부서류 전용이다. 로그인 화면 또는 126으로 최신 비암호화 수용 여부를 확인하는 것은 1a 승격용 선택 조사다. Stage A가 양식을 확인한 정확한 파일 범위에만 S-91~S-99를 적용하며, S-98 전에는 어떤 세목도 Path 1a `done`으로 표시하지 않는다. 1a가 없는 세목은 §2.11 Path 1b 시나리오(S-1B0~S-1B3)로 검증한다. 어떤 세목도 `blocked`로 두지 않는다.
+- **Path 1a 파일 후속**: 원천세는 직접작성 또는 비밀번호 기반 회계프로그램 변환파일만 확인되어 공식 비암호화 업로드 양식이 없으므로 Path 1b(직접입력 정리) 대상으로 결정됐다(1b 값 정리 화면 미구현). 부가세도 Path 1b 대상이며(화면 미구현), Stage A 공개 자료 감사는 완료했지만 현재 메뉴는 회계프로그램 파일변환이고 공식 Excel 도구는 일부 첨부서류 전용이다. 로그인 화면 또는 126으로 최신 비암호화 수용 여부를 확인하는 것은 1a 승격용 선택 조사다. Stage A가 양식을 확인한 정확한 파일 범위에만 S-91~S-99를 적용하며, S-98 전에는 어떤 세목도 Path 1a `done`으로 표시하지 않는다. 1a가 없는 세목은 §2.11 Path 1b 시나리오(S-1B0~S-1B3, 전부 Pending)로 검증한다. 어떤 세목도 `blocked`로 두지 않는다.
 
 ## 4. Related Documents
 
