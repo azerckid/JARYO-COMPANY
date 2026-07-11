@@ -48,7 +48,7 @@ export function WithholdingBreakdownCell({
             출처: 급여자료 확정값(세액표 기준 산정). 지방소득세는 지방세로 별도 신고합니다.
           </p>
           <p className="mt-1 text-[11px] leading-relaxed text-company-fg-subtle">
-            부양가족 공제 효과는 이미 소득세에 반영되어 있고, 최종금액은 연말정산에서 확정됩니다.
+            부양가족 공제 최종금액은 연말정산에서 확정됩니다.
           </p>
         </PopoverContent>
       </Popover>
