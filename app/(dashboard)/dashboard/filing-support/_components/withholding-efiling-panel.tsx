@@ -33,6 +33,9 @@ export function WithholdingEfilingPanel({ efiling }: { readonly efiling: Withhol
       <div className="border-b border-company-border bg-[#f8fafc] px-[18px] py-3.5">
         <p className="text-[11px] font-semibold text-company-fg-subtle">홈택스 이동 경로</p>
         <p className="mt-1 text-[13px] font-semibold text-foreground">{HOMETAX_WITHHOLDING_PATH}</p>
+        <p className="mt-1 text-[11px] text-company-fg-subtle">
+          2026년 7월 홈택스 화면 기준이며, 메뉴명은 홈택스 개편에 따라 달라질 수 있습니다.
+        </p>
       </div>
 
       <div className="overflow-x-auto border-b border-company-border px-[18px] py-4">
