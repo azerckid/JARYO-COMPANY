@@ -824,7 +824,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [ ] 동작하지 않는 control·미래 기능 placeholder가 없다.
   - [ ] 삭제 후 기존 사용자 mutation·gate·세액 계산이 유지된다.
   - [ ] desktop/mobile visual QA와 문서 정합을 통과한다.
-- Document Sync Check (2026-07-12): Brief 48, Backlog JC-038, Prototype Review의 재검토 상태, VAT QA S-115~S-120을 추가했다. 정확한 삭제 목록과 Preview 변경은 다음 프로젝트 오너 논의 전까지 Pending이며 코드 변경 없음.
+- Document Sync Check (2026-07-12): Brief 48, Backlog JC-038, Prototype Review의 재검토 상태, VAT QA S-115~S-125를 추가했다. 정확한 삭제 목록과 Preview 변경은 다음 프로젝트 오너 논의 전까지 Pending이며 코드 변경 없음.
 
 ### JC-034 · GIWA handoff 패키지 — Filing Path 2 (ZIP Export v1)
 
