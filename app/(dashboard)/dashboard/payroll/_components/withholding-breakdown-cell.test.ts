@@ -13,7 +13,7 @@ describe('withholding breakdown cell static contract (JC-012)', () => {
   })
 
   it('shows the honest income-tax + local-income-tax breakdown with a confirmed-value source', () => {
-    for (const token of ['원천세 구성', '소득세', '지방소득세', '합계', '급여자료 확정값', '업로드 자료', '위택스']) {
+    for (const token of ['원천세 구성', '소득세', '지방소득세', '합계', '급여자료 확정값', '업로드 자료', '지방세로 별도 신고']) {
       expect(cellSource).toContain(token)
     }
   })
@@ -23,7 +23,6 @@ describe('withholding breakdown cell static contract (JC-012)', () => {
       expect(cellSource).not.toContain(misleading)
     }
     expect(cellSource).toContain('세액표 기준 산정')
-    expect(cellSource).toContain('이 앱이 다시 계산하지 않으며')
     expect(cellSource).toContain('연말정산에서 확정')
   })
 
