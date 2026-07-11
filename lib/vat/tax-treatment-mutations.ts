@@ -16,7 +16,7 @@ import {
 } from '@/lib/validations/vat-tax-treatment'
 import { manualVatFactInputSchema } from './facts'
 import { finalDecisionForVatRecommendation } from './tax-treatment-actions'
-import { enhanceVatTaxTreatmentRowsWithSingleAi } from './tax-treatment-ai'
+import { enhanceVatTaxTreatmentRowsWithAi } from './tax-treatment-ai'
 import { loadVatTaxTreatmentDisplayRows } from './tax-treatment-summary'
 import {
   hashVatTaxTreatmentUndoToken,
@@ -157,9 +157,8 @@ async function defaultRecommendationLoader(params: Parameters<RecommendationLoad
   })
   const base = rows.find((row) => row.rowId === params.rowId) ?? null
   if (!base || base.recommendationFingerprint === params.expectedFingerprint) return base
-  if (base.recommendation !== 'needs_review') return base
 
-  const [enhanced] = await enhanceVatTaxTreatmentRowsWithSingleAi({ rows: [base] })
+  const [enhanced] = await enhanceVatTaxTreatmentRowsWithAi({ rows: [base] })
   return enhanced ?? base
 }
 

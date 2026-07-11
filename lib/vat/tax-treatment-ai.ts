@@ -18,6 +18,7 @@ export const VAT_TAX_TREATMENT_AI_PROMPT_VERSION = 'vat-tax-treatment-v1'
 export const VAT_TAX_TREATMENT_AI_BATCH_SIZE = 12
 export const VAT_TAX_TREATMENT_AI_TIMEOUT_MS = 8_000
 export const VAT_TAX_TREATMENT_CLAUDE_MODEL = 'claude-sonnet-4-6'
+export const VAT_TAX_TREATMENT_HIGH_AMOUNT_KRW = 10_000_000
 
 const VAT_TAX_TREATMENT_SYSTEM_PROMPT = [
   'You return strict JSON for Korean VAT tax-treatment review assistance.',
@@ -73,7 +74,7 @@ function parseAiResponse(rawOutput: string): VatTaxTreatmentAiProviderResult {
 export function buildVatTaxTreatmentAiPrompt(rows: VatTaxTreatmentDisplayRow[]) {
   return [
     '다음은 회사가 직접 부가가치세 신고를 준비하기 위해 검토 중인 거래입니다.',
-    '공식 규칙과 이전 확정 패턴만으로 결론을 내리지 못한 행에 한해 판단을 보강하세요.',
+    '공식 규칙과 이전 확정 패턴을 대체하지 말고, 애매하거나 고위험이라 교차검토가 필요한 행의 판단만 보강하세요.',
     '',
     '중요 규칙:',
     '- 최종 확정이나 세무대리를 하지 말고 사용자가 확인할 가능성과 근거만 반환하세요.',
@@ -121,6 +122,12 @@ export function resolveConfiguredVatTaxTreatmentProvider(
   environment: Record<string, string | undefined> = process.env,
 ): AiProvider | null {
   return getActiveAiProviderOrder().find((provider) => configuredProvider(provider, environment)) ?? null
+}
+
+export function resolveConfiguredVatTaxTreatmentProviders(
+  environment: Record<string, string | undefined> = process.env,
+): AiProvider[] {
+  return getActiveAiProviderOrder().filter((provider) => configuredProvider(provider, environment))
 }
 
 async function runWithGemini(prompt: string): Promise<VatTaxTreatmentAiProviderResult> {
@@ -241,6 +248,229 @@ function withAiStatus(
   }))
 }
 
+function withManualConsensusFallback(
+  row: VatTaxTreatmentDisplayRow,
+  aiRuntimeStatus: 'manual_fallback' | 'deferred',
+) {
+  const missingFacts = Array.from(new Set([
+    ...row.missingFacts,
+    aiRuntimeStatus === 'deferred'
+      ? '고위험 AI 검토 대기'
+      : 'AI 판단 불일치 또는 provider 응답 실패',
+  ])).slice(0, 12)
+
+  return vatTaxTreatmentDisplayRowSchema.parse(withVatTaxTreatmentRecommendationFingerprint({
+    ...row,
+    recommendation: 'needs_review',
+    source: row.source === 'ai_single' || row.source === 'ai_consensus'
+      ? 'deterministic_rule'
+      : row.source,
+    confidence: 'low',
+    basisLabel: aiRuntimeStatus === 'deferred'
+      ? '고위험 AI 검토 순서를 기다리고 있어 사용자가 직접 확인해야 합니다.'
+      : '여러 AI가 같은 판단에 도달하지 못해 사용자가 직접 확인해야 합니다.',
+    ruleReference: null,
+    missingFacts,
+    hometaxAction: row.direction === 'purchase' ? 'review_deduction' : 'review_sales_tax_type',
+    aiTrace: null,
+    aiRuntimeStatus,
+  }))
+}
+
+export function isHighRiskVatTaxTreatmentRow(row: VatTaxTreatmentDisplayRow) {
+  if (row.finalDecision || row.userActionStatus !== 'pending') return false
+  if (row.source === 'ai_consensus') return false
+  if (row.aiRuntimeStatus === 'manual_fallback' || row.aiRuntimeStatus === 'deferred') return false
+
+  return row.recommendation === 'likely_zero_rated'
+    || row.recommendation === 'likely_exempt'
+    || row.currentVatFact.taxType === 'zero_rated'
+    || row.currentVatFact.taxType === 'exempt'
+    || row.currentVatFact.grossAmountKrw >= VAT_TAX_TREATMENT_HIGH_AMOUNT_KRW
+    || row.confidence === 'low'
+}
+
+type ProviderBatchResult = {
+  provider: AiProvider
+  result: VatTaxTreatmentAiProviderResult
+}
+
+type ProviderCandidate = {
+  provider: AiProvider
+  modelName: string
+  candidate: VatTaxTreatmentAiCandidate
+}
+
+function candidateSignature(candidate: VatTaxTreatmentAiCandidate) {
+  return `${candidate.recommendation}|${candidate.hometaxAction}`
+}
+
+function providerCandidateAt(params: {
+  entry: ProviderBatchResult
+  index: number
+  row: VatTaxTreatmentDisplayRow
+}): ProviderCandidate | null {
+  if (!params.entry.result.ok) return null
+  const candidate = params.entry.result.data.candidates.find((item) => item.index === params.index)
+  if (!candidate || !isCompatibleCandidate(params.row, candidate)) return null
+  if (
+    params.row.source === 'deterministic_rule'
+    && params.row.confidence === 'high'
+    && params.row.recommendation !== 'needs_review'
+    && candidate.recommendation !== params.row.recommendation
+  ) {
+    return null
+  }
+  return {
+    provider: params.entry.provider,
+    modelName: params.entry.result.modelName,
+    candidate,
+  }
+}
+
+function agreeingCandidates(candidates: ProviderCandidate[]) {
+  const groups = new Map<string, ProviderCandidate[]>()
+  for (const candidate of candidates) {
+    const signature = candidateSignature(candidate.candidate)
+    groups.set(signature, [...(groups.get(signature) ?? []), candidate])
+  }
+  return [...groups.values()].find((group) => group.length >= 2) ?? null
+}
+
+function providerLabel(provider: AiProvider) {
+  if (provider === 'gemini') return 'Gemini'
+  if (provider === 'openai') return 'OpenAI'
+  return 'Claude'
+}
+
+function applyConsensus(
+  row: VatTaxTreatmentDisplayRow,
+  candidates: ProviderCandidate[],
+) {
+  const first = candidates[0]!
+  const providers = candidates.map((candidate) => candidate.provider)
+  const basisPrefix = `${providers.map(providerLabel).join('·')} 합의`
+  const missingFacts = Array.from(new Set(
+    candidates.flatMap((candidate) => candidate.candidate.missingFacts.map(redactPromptValue)),
+  )).slice(0, 12)
+  const modelName = candidates
+    .map((candidate) => `${candidate.provider}:${candidate.modelName}`)
+    .join(' + ')
+    .slice(0, 100)
+
+  return vatTaxTreatmentDisplayRowSchema.parse(withVatTaxTreatmentRecommendationFingerprint({
+    ...row,
+    recommendation: first.candidate.recommendation,
+    source: 'ai_consensus',
+    confidence: candidates.every((candidate) => candidate.candidate.confidence === 'medium')
+      ? 'medium'
+      : 'low',
+    basisLabel: `${basisPrefix}: ${redactPromptValue(first.candidate.basisLabel)}`.slice(0, 500),
+    ruleReference: null,
+    missingFacts,
+    hometaxAction: first.candidate.hometaxAction,
+    aiTrace: {
+      provider: providers.includes('claude') ? 'claude' : providers[0]!,
+      modelName,
+      promptVersion: VAT_TAX_TREATMENT_AI_PROMPT_VERSION,
+      consensusProviders: providers,
+    },
+    aiRuntimeStatus: 'completed',
+  }))
+}
+
+async function runProviderBatch(params: {
+  provider: AiProvider
+  prompt: string
+  runner: VatTaxTreatmentAiRunner
+  timeoutMs: number
+}): Promise<ProviderBatchResult> {
+  try {
+    return {
+      provider: params.provider,
+      result: await runWithTimeout(
+        params.runner({ provider: params.provider, prompt: params.prompt }),
+        params.timeoutMs,
+      ),
+    }
+  } catch {
+    return { provider: params.provider, result: { ok: false, error: 'VAT AI timeout' } }
+  }
+}
+
+export async function enhanceHighRiskVatTaxTreatmentRowsWithConsensus(params: {
+  rows: VatTaxTreatmentDisplayRow[]
+  providers?: AiProvider[]
+  runner?: VatTaxTreatmentAiRunner
+  timeoutMs?: number
+  batchSize?: number
+}): Promise<VatTaxTreatmentDisplayRow[]> {
+  const eligibleRows = params.rows.filter(isHighRiskVatTaxTreatmentRow)
+  if (eligibleRows.length === 0) return params.rows
+
+  const batchSize = Math.max(1, Math.min(
+    params.batchSize ?? VAT_TAX_TREATMENT_AI_BATCH_SIZE,
+    VAT_TAX_TREATMENT_AI_BATCH_SIZE,
+  ))
+  const selectedRows = eligibleRows.slice(0, batchSize)
+  const selectedIds = new Set(selectedRows.map((row) => row.rowId))
+  const deferredIds = new Set(eligibleRows.slice(batchSize).map((row) => row.rowId))
+  const providers = Array.from(new Set(
+    params.providers ?? resolveConfiguredVatTaxTreatmentProviders(),
+  ))
+  const primaryProviders = providers.filter((provider) => provider === 'gemini' || provider === 'openai')
+  const runner = params.runner ?? defaultVatTaxTreatmentAiRunner
+  const timeoutMs = params.timeoutMs ?? VAT_TAX_TREATMENT_AI_TIMEOUT_MS
+
+  if (primaryProviders.length === 0) {
+    return params.rows.map((row) => {
+      if (selectedIds.has(row.rowId)) return withManualConsensusFallback(row, 'manual_fallback')
+      if (deferredIds.has(row.rowId)) return withManualConsensusFallback(row, 'deferred')
+      return row
+    })
+  }
+
+  const prompt = buildVatTaxTreatmentAiPrompt(selectedRows)
+  const primaryResults = await Promise.all(primaryProviders.map((provider) => runProviderBatch({
+    provider,
+    prompt,
+    runner,
+    timeoutMs,
+  })))
+  const needsClaude = selectedRows.some((row, index) => {
+    const candidates = primaryResults
+      .map((entry) => providerCandidateAt({ entry, index, row }))
+      .filter((candidate): candidate is ProviderCandidate => candidate !== null)
+    return agreeingCandidates(candidates) === null
+  })
+  const claudeResult = needsClaude && providers.includes('claude')
+    ? await runProviderBatch({ provider: 'claude', prompt, runner, timeoutMs })
+    : null
+
+  return params.rows.map((row) => {
+    if (deferredIds.has(row.rowId)) return withManualConsensusFallback(row, 'deferred')
+    const index = selectedRows.findIndex((selected) => selected.rowId === row.rowId)
+    if (index === -1) return row
+
+    const primaryCandidates = primaryResults
+      .map((entry) => providerCandidateAt({ entry, index, row }))
+      .filter((candidate): candidate is ProviderCandidate => candidate !== null)
+    const primaryAgreement = agreeingCandidates(primaryCandidates)
+    if (primaryAgreement) return applyConsensus(row, primaryAgreement)
+
+    const claudeCandidate = claudeResult
+      ? providerCandidateAt({ entry: claudeResult, index, row })
+      : null
+    const finalAgreement = agreeingCandidates([
+      ...primaryCandidates,
+      ...(claudeCandidate ? [claudeCandidate] : []),
+    ])
+    return finalAgreement
+      ? applyConsensus(row, finalAgreement)
+      : withManualConsensusFallback(row, 'manual_fallback')
+  })
+}
+
 export async function enhanceVatTaxTreatmentRowsWithSingleAi(params: {
   rows: VatTaxTreatmentDisplayRow[]
   provider?: AiProvider | null
@@ -318,5 +548,37 @@ export async function enhanceVatTaxTreatmentRowsWithSingleAi(params: {
       },
       aiRuntimeStatus: 'completed',
     }))
+  })
+}
+
+export async function enhanceVatTaxTreatmentRowsWithAi(params: {
+  rows: VatTaxTreatmentDisplayRow[]
+  singleProvider?: AiProvider | null
+  consensusProviders?: AiProvider[]
+  runner?: VatTaxTreatmentAiRunner
+  timeoutMs?: number
+  batchSize?: number
+}): Promise<VatTaxTreatmentDisplayRow[]> {
+  const consensusRows = await enhanceHighRiskVatTaxTreatmentRowsWithConsensus({
+    rows: params.rows,
+    providers: params.consensusProviders,
+    runner: params.runner,
+    timeoutMs: params.timeoutMs,
+    batchSize: params.batchSize,
+  })
+  const singleRows = await enhanceVatTaxTreatmentRowsWithSingleAi({
+    rows: consensusRows,
+    provider: params.singleProvider,
+    runner: params.runner,
+    timeoutMs: params.timeoutMs,
+    batchSize: params.batchSize,
+  })
+
+  return enhanceHighRiskVatTaxTreatmentRowsWithConsensus({
+    rows: singleRows,
+    providers: params.consensusProviders,
+    runner: params.runner,
+    timeoutMs: params.timeoutMs,
+    batchSize: params.batchSize,
   })
 }

@@ -29,8 +29,9 @@ AI는 매입의 공제/불공제/안분과 매출의 과세/영세율/면세 가
 - VAI-3a 완료: Zod·deterministic rule·이전 확정 패턴·read-only 화면
 - VAI-3b 완료: single-provider AI·timeout/fallback·PII/소비자 격리
 - VAI-4a 완료: additive audit schema·사용자 확정 transaction, migration 0068 dev/prod 적용
-- 현재: VAI-4b 적용/다르게/보류/전문가 확인 UI·최근 작업 undo 구현 완료, 오너 브라우저 확인·migration 0069 prod 적용 대기
-- 다음: VAI-4b 승인 뒤 VAI-5 고위험 multi-provider consensus
+- VAI-4b 완료: 적용/다르게/보류/전문가 확인 UI·최근 작업 undo, migration 0069 dev/prod 적용
+- 현재: VAI-5 고위험 multi-provider consensus·Claude 중재·비차단 fallback 구현 완료
+- 다음: VAI-5 오너 확인 뒤 VAI-6 확정 결과 gate 소비·closeout
 
 ## 0.1 Current Status
 
@@ -107,6 +108,10 @@ AI는 매입의 공제/불공제/안분과 매출의 과세/영세율/면세 가
 
 단계 1·2의 근거가 충분하면 LLM을 호출하지 않는다. 단계 3·4의 결과도 추천일 뿐이며,
 사용자 확정 전에는 VAT fact·공제 결정·package gate를 바꾸지 않는다.
+
+VAI-5의 고액 운영 기준은 **거래 합계액 1천만원 이상**이다. 이는 세법상 고액 기준이나
+공제·과세 판정 기준이 아니라, 여러 AI가 같은 결론에 도달하는지 한 번 더 확인하기 위한
+제품 내부 escalation 기준이다.
 
 ## 4. Display Contract
 
@@ -186,13 +191,13 @@ JC-035는 다음을 **모두** 만족할 때만 `done`이다.
 
 - [x] VAI-1 HTML Preview가 프로젝트 오너에게 승인됐다.
 - [x] 공제/불공제/안분/과세/영세율/면세 공식 규칙 매트릭스의 출처·버전·적용일이 고정됐다.
-- [ ] 규칙·패턴·AI·consensus·수동 판단의 source와 근거가 화면에 구분된다.
-- [ ] 영세율·면세는 필수 증빙이 없으면 사용자 확정과 downstream gate가 차단된다.
+- [x] 규칙·패턴·AI·consensus·수동 판단의 source와 근거가 화면에 구분된다.
+- [x] 영세율·면세는 필수 증빙이 없으면 사용자 확정과 downstream gate가 차단된다.
 - [x] AI가 판단하지 못하거나 timeout/error가 나도 화면과 수동 검토가 계속 동작한다.
-- [ ] 사용자 확인 없이 VAT fact·공제 decision·세액·package gate가 변경되지 않는다.
-- [ ] 같은 tenant·사업장·기간만 사용하고, 이전 확정 패턴도 같은 범위로 격리된다.
+- [x] 사용자 확인 없이 VAT fact·공제 decision·세액·package gate가 변경되지 않는다.
+- [x] 같은 tenant·사업장·기간만 사용하고, 이전 확정 패턴도 같은 범위로 격리된다.
 - [x] 규칙 버전, 추천, 사용자 최종 결정, 확정자, 확정시각의 감사 추적이 가능하다.
-- [ ] 대표 fixture로 deterministic/pattern/single-AI/consensus/fallback/수동 확정을 검증한다.
+- [x] 대표 fixture로 deterministic/pattern/single-AI/consensus/fallback/수동 확정을 검증한다.
 - [ ] 브라우저 E2E, tsc, 전체 테스트, lint, whitespace가 통과한다.
 - [ ] Backlog·Screen Flow·UI Design·Prototype Review·QA가 main 코드와 일치한다.
 

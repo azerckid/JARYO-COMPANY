@@ -308,8 +308,8 @@ VAI-6에서 아래 항목 중 하나라도 있으면 VAT rebuild/package gate를
 | VAI-3a | **구현 완료** — Zod + deterministic rules + pattern + read model | 실제 VAT 화면이 validated read model 소비, fixture에서 근거·홈택스 행동 검증, DB 쓰기 0 |
 | VAI-3b | **구현 완료** — 필요한 행만 single AI + timeout/fallback | 실제 화면에서 AI/수동 상태 표시, DB 쓰기 0 |
 | VAI-4a | **구현 완료** — additive audit schema + migration + API transaction | 사용자 확정 저장·tenant guard·rollback 테스트 |
-| VAI-4b | **구현 완료·오너 브라우저 확인 대기** — 적용/다르게/보류/전문가 확인 UI + 최근 작업 undo | dev DB 서비스 E2E·감사 이력 확인, migration 0069 prod 적용 대기 |
-| VAI-5 | 고위험 consensus + Claude 중재 | 불일치·실패 비차단 |
+| VAI-4b | **구현 완료** — 적용/다르게/보류/전문가 확인 UI + 최근 작업 undo | dev DB 서비스 E2E·감사 이력 확인, migration 0069 dev/prod 적용 |
+| VAI-5 | **구현 완료** — 고위험 consensus + Claude 중재 | 불일치·실패 비차단, 화면·저장 재검증 공통 파이프라인 |
 | VAI-6 | rebuild/package gate 소비 + closeout | 확정값만 세액 반영, 문서·QA 동기화 |
 
 각 행은 별도 PR과 프로젝트 오너 확인을 거친다. 여러 작업 단위를 한 PR에 합치지 않는다.
@@ -369,8 +369,21 @@ VAI-6에서 아래 항목 중 하나라도 있으면 VAT rebuild/package gate를
 - [x] 보류·전문가 확인 상태를 recommendation fingerprint가 같은 경우에만 read model에 반영
 - [x] 승인 Preview의 영세율·불공제·안분·공제·면세 대표 5행을 exact VAT fact 샘플로 추가
 - [x] migration `0069` dev 적용 및 적용/보류→undo 서비스 E2E 후 원상복구 확인
-- [ ] migration `0069` prod 적용 — PR 머지 전 운영 게이트
-- [ ] 프로젝트 오너가 `/dashboard/vat?period=2026-H1`에서 VAI-4b 액션과 되돌리기를 확인
+- [x] migration `0069` dev/prod 적용
+- [x] 프로젝트 오너 승인 뒤 VAI-5 착수
+
+### 11.5 VAI-5 Implementation Result
+
+- [x] 영세율·면세, 합계액 1천만원 이상, 낮은 신뢰도 행만 multi-provider 검토 대상으로 제한
+- [x] 1천만원 기준을 세법상 판정 기준이 아닌 제품 내부 재검토 기준으로 명시
+- [x] Gemini·OpenAI를 병렬 호출하고 같은 추천·홈택스 행동에 합의하면 Claude를 호출하지 않음
+- [x] 1차 판단 불일치 또는 한 provider 실패 시에만 Claude 중재
+- [x] 두 provider의 같은 판단이 없으면 해당 행만 `needs_review/manual_fallback`으로 전환
+- [x] 높은 확신의 공식 규칙과 다른 AI 결론은 규칙을 덮어쓰지 않고 `needs_review`로 전환
+- [x] provider별 8초 timeout, 요청당 최대 12행, 재시도·무한 loading·DB 자동 쓰기 없음
+- [x] 화면 read model과 사용자 확정 시 recommendation fingerprint 재검증이 같은 AI 파이프라인 사용
+- [x] 합의 결과도 `finalDecision: null`을 유지하며 사용자 확인 없이 canonical VAT fact·공제 decision을 변경하지 않음
+- [x] 합의·Claude 중재·provider 장애·완전 불일치·단일 AI 유지·공통 파이프라인 회귀 테스트 추가
 
 ## 12. Related Documents
 
