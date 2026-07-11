@@ -18,11 +18,13 @@ describe('withholding breakdown cell static contract (JC-012)', () => {
     }
   })
 
-  it('never claims the amount was recomputed from the withholding tax table', () => {
+  it('honestly cites the tax-table basis without claiming this app recomputed the amount', () => {
     for (const misleading of ['세액표 기준 산출', '세액표로 계산', '세액표 재계산한 값입니다', '자동 계산됨']) {
       expect(cellSource).not.toContain(misleading)
     }
-    expect(cellSource).toContain('간이세액표로 재계산한 값이 아닙니다')
+    expect(cellSource).toContain('세액표 기준 산정')
+    expect(cellSource).toContain('이 앱이 다시 계산하지 않으며')
+    expect(cellSource).toContain('연말정산에서 확정')
   })
 
   it('is wired into the payroll register in place of the plain money cell', () => {
