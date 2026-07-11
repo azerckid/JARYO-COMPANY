@@ -46,21 +46,6 @@ describe('buildWithholdingEfilingSummary', () => {
     expect(summary.payrollLabel).toBe('2026년 6월 귀속')
   })
 
-  it('marks the missing official upload form as a confirmed 1b decision, not a pending gap', () => {
-    const summary = buildWithholdingEfilingSummary({
-      panelInput: panelInput(),
-      business: {
-        businessRegistrationNumber: '1234567890',
-        businessName: 'Sample Co',
-        representativeName: 'Kim Rep',
-        maskedBusinessRegistrationNumber: null,
-      },
-    })
-
-    expect(summary.formatChecks.some((c) => c.id === 'layout' && c.tone === 'ok')).toBe(true)
-    expect(summary.formatChecks.some((c) => c.tone === 'warn')).toBe(false)
-  })
-
   it('marks blocking when payroll is not closed', () => {
     const summary = buildWithholdingEfilingSummary({
       panelInput: panelInput({ closeStatus: 'open' }),

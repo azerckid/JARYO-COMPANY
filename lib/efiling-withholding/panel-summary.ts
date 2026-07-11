@@ -6,12 +6,6 @@ import { validateWithholdingPanel } from './validate-panel'
 
 export type EfilingPanelTone = FilingTone
 
-export type EfilingFormatCheck = {
-  id: string
-  label: string
-  tone: EfilingPanelTone | 'muted'
-}
-
 export type EfilingValidationDisplayItem = {
   id: string
   tone: EfilingPanelTone
@@ -29,7 +23,6 @@ export type WithholdingEfilingSummary = {
     attentionCount: number
     totalLines: number
   }
-  formatChecks: EfilingFormatCheck[]
   validationItems: EfilingValidationDisplayItem[]
   hasBlockingDataIssues: boolean
   businessRegistrationMasked: string | null
@@ -94,26 +87,6 @@ export function buildWithholdingEfilingSummary(params: {
 
   const attentionCount = panelInput.lines.filter((line) => line.status === 'needs_review').length
 
-  const formatChecks: EfilingFormatCheck[] = [
-    { id: 'target', label: '대상 세목: 원천징수이행상황신고서 (매월 · A01 간이세액)', tone: 'ok' },
-    {
-      id: 'period',
-      label: `귀속연월: ${formatPayrollPeriodLabel(panelInput.payrollPeriodKey)} · 신고구분 매월`,
-      tone: 'ok',
-    },
-    { id: 'mapping', label: '서식 필드 매핑 Part A 확정 (별지 제21호 A01)', tone: 'ok' },
-    {
-      id: 'layout',
-      label: '공식 비암호화 업로드 양식 없음 — 직접입력 정리(1b)로 제공',
-      tone: 'ok',
-    },
-    {
-      id: 'conformance',
-      label: '적합성 검정 대상 아님(직접입력 정리) — 「국세청 검증 완료」 표시 금지',
-      tone: 'muted',
-    },
-  ]
-
   return {
     payrollPeriodKey: panelInput.payrollPeriodKey,
     payrollLabel: formatPayrollPeriodLabel(panelInput.payrollPeriodKey),
@@ -127,7 +100,6 @@ export function buildWithholdingEfilingSummary(params: {
       attentionCount,
       totalLines: panelInput.lines.length,
     },
-    formatChecks,
     validationItems,
     hasBlockingDataIssues: hasBlockingIssues(dataIssues),
     businessRegistrationMasked: business.maskedBusinessRegistrationNumber,
