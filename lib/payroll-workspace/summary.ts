@@ -1,6 +1,9 @@
 import { and, asc, desc, eq } from 'drizzle-orm'
 import { DateTime } from 'luxon'
 import { client, payrollEmployeeLine, payrollPeriodSummary, tenant } from '@/lib/db/schema'
+import { detectPayrollInsuranceConsistencyIssues, type PayrollConsistencyIssue } from './consistency'
+
+export type { PayrollConsistencyIssue } from './consistency'
 
 export type PayrollTone = 'ok' | 'warn' | 'danger' | 'muted' | 'info'
 export type PayrollCloseStatus = 'open' | 'blocked' | 'closed'
@@ -99,6 +102,7 @@ export type PayrollWorkspaceSummary = {
   deductionBreakdown: PayrollDeductionBreakdownItem[]
   documents: PayrollDocumentPreview[]
   closeAction: PayrollCloseAction
+  consistencyIssues: PayrollConsistencyIssue[]
 }
 
 type PayrollPeriodSummaryInput = {
@@ -445,6 +449,7 @@ export async function loadPayrollWorkspaceSummary({
       deductionBreakdown: buildPayrollDeductionBreakdown([]),
       documents: buildPayrollDocuments(EMPTY_PERIOD_SUMMARY),
       closeAction: buildPayrollCloseAction(summaryTotals),
+      consistencyIssues: [],
     }
   }
 
@@ -514,6 +519,7 @@ export async function loadPayrollWorkspaceSummary({
       deductionBreakdown: buildPayrollDeductionBreakdown([]),
       documents: buildPayrollDocuments(EMPTY_PERIOD_SUMMARY),
       closeAction: buildPayrollCloseAction(summaryTotals),
+      consistencyIssues: [],
     }
   }
 
@@ -564,6 +570,7 @@ export async function loadPayrollWorkspaceSummary({
     deductionBreakdown: buildPayrollDeductionBreakdown(registerRows),
     documents: buildPayrollDocuments(periodSummaryRow),
     closeAction: buildPayrollCloseAction(summaryTotals),
+    consistencyIssues: detectPayrollInsuranceConsistencyIssues(registerRows),
   }
 }
 

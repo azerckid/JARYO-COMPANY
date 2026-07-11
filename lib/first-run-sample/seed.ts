@@ -434,7 +434,10 @@ function buildSamplePayrollLines(params: SeedParams, periodSummaryId: string) {
 
 function buildSampleEmployees(params: SeedParams) {
   return FIRST_RUN_SAMPLE_EMPLOYEES.map((spec, index): typeof employeeProfile.$inferInsert => {
-    const insuranceApplies = spec.employmentType === '정규직'
+    // 정규직은 4대보험 전부, 일용직은 고용보험(+산재) 대상이므로 둘 다 '가입'으로 본다.
+    // 프리랜서(사업소득)만 근로자 4대보험 비적용('해당 없음'). 급여의 4대보험 부과와
+    // 직원명부 표기가 어긋나지 않도록 맞춘다(일용직 명부 '해당 없음' ↔ 급여 고용보험 부정합 해소).
+    const insuranceApplies = spec.employmentType === '정규직' || spec.employmentType === '일용직'
     return {
       id: firstRunSampleId(params.tenantId, `employee_${String(index + 1).padStart(2, '0')}`),
       tenantId: params.tenantId,
