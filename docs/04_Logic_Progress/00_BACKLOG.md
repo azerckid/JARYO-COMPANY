@@ -50,6 +50,7 @@
 | JC-038 | todo | 부가세 화면 단순화·예외 중심 재구성 | 현재 VAT workspace·Preview·JC-035 기능 | **UI 정리 사전 계약.** 홈택스 미리채움과 deterministic rule로 명확한 정상 건은 건수·합계로 접고, 영세율·면세·불공제·안분·누락·취소·중복·불일치처럼 사용자가 처리할 예외만 기본 작업대에 노출한다. 같은 판단·상태·차단 이유와 Preview 전용 요소를 제거·통합하며, 실제 삭제 전 프로젝트 오너가 단순화 Preview를 승인한다. [Simplification Brief](../03_Technical_Specs/48_VAT_SCREEN_SIMPLIFICATION_AND_DEDUPLICATION_BRIEF.md) |
 | JC-039 | todo | 부가세 AI 근거 탐색·명확 판단 계약 | JC-035 Rule Matrix·exact VAT fact·연결 증빙·이전 확정·AI orchestration | AI가 `확인 필요`·`담당자 판단 필요`로 결론을 회피하지 않도록 판단과 workflow를 분리한다. 정해진 자료와 공식 규칙을 먼저 찾아 실제 근거 reference와 잠정 결론·홈택스 행동을 제시하고, 특례 근거가 없으면 해당 없음과 보수적 기본 방향을 적용한다. 담당자 이관은 필수 사실 부재·근거 충돌·공식 규칙 공백/합의 실패에만 허용한다. [Pre-Code Brief](../03_Technical_Specs/50_VAT_AI_EVIDENCE_BACKED_DECISIVE_JUDGMENT_BRIEF.md) |
 | JC-040 | todo | 간이세액표 소득세 실시간 재계산 연결 (엔진 → 급여 편집 경로) | `lib/payroll/simplified-tax-table.ts`, `lib/payroll-workspace/recalculate.ts`, `lib/payroll-workspace/summary.ts`, 급여 편집 API | **우선순위: 중 · 저위험. JC-012 후속.** 현재 `lookupSimplifiedIncomeTax`(별표2 조회)는 첫 가입 샘플 시드 생성 시점(`lib/first-run-sample/seed.ts`)에서만 정규직 소득세를 산출하고, 런타임 재계산(`recalculatePayrollPeriodSummary`)은 저장된 `incomeTaxKrw`를 합산만 한다. 사용자가 급여대장에서 기본급·수당·공제대상가족수(`dependent_count`)를 직접 입력·수정하면 정규직 소득세를 간이세액표로 자동 재조회해 반영하도록 연결한다. 프리랜서(3.3%)·일용직(일용 산식)은 각 산식 유지하고, 고용형태별 분기(guard)로 정규직 경로만 격리한다. 조회 범위 밖 급여 구간 처리(반올림·상·하한·보간 여부)와 수동 override 허용 정책을 착수 전 확정한다. 세무조정·연말정산 확정 계산은 범위 밖. 상세: [49_SIMPLIFIED_TAX_TABLE_LOOKUP](../03_Technical_Specs/49_SIMPLIFIED_TAX_TABLE_LOOKUP.md). |
+| JC-041 | todo | 절세 가능성 탐지·정리 (부가세 매입 재분류부터) | JC-039 evidence resolver·Rule Matrix, `lib/vat/tax-treatment-ai.ts`, 기장 계정과목 분류 | **JC-039 확장.** 기장 단계에서 잘못 분류돼 불필요하게 세금을 더 내고 있는 거래를 찾아 정리해서 보여준다. 1차 대상: 접대비로 분류됐지만 실제로는 복리후생비·회의비(내부 직원 대상)라 매입세액 공제가 가능한 거래 — 같은 "식대" 지출도 참석자가 전부 내부 직원이면 공제 가능하지만 지금은 분류만으로 자동 불공제 처리된다. JC-039의 근거 우선 원칙을 그대로 따른다: 참석자·목적 등 재분류를 뒷받침하는 명확한 근거가 있을 때만 제안하고, 근거 없으면 원래 분류(불공제)를 유지한다 — 부당공제 가산세 리스크 때문에 "혹시 몰라서" 제안하지 않는다. 부가세 매입 재분류는 1차 범위이며, 다른 세목의 절세 가능성 탐지로 확장할지는 후속 논의. [Pre-Code Brief](../03_Technical_Specs/51_VAT_INPUT_TAX_RECLASSIFICATION_SAVINGS_BRIEF.md) |
 | JC-031 | todo | 레거시 GIWA upload/email 서브시스템 은퇴 (에픽) | `uploadSession`·`outbound_email`(각각 100여·수십 개 파일에 광범위하게 얽힘, 검색 범위·시점에 따라 변동) 스키마·도메인, sessions·`/upload/[token]` 포털·emails·request-events·mail-console | **에픽 · 의도적 보류(paused, 2026-07-06).** Slice 4-2c micro(`request_email_cc` DROP)까지 완료. **에픽은 미완료** — 4-3~4-5·잔여 `upload_session` 컬럼·테이블 은퇴 남음. 재개 시 [Completion Contract §3 Paused](../03_Technical_Specs/22_OPEN_BACKLOG_COMPLETION_CONTRACTS.md) 참조. 제품 backlog 우선 가능. |
 | JC-032 | done | 사업자 유형 전용 필드 (신고 준비 dimming 실데이터 연결) | `client.taxEntityType`, `/api/settings/business-entity`, 회사 설정 화면, `lib/filing-preparation/summary.ts` | **우선순위: 높음(JC-029 dimming 완성) · 저위험.** JC-029 신고 준비 허브의 사업자 유형별 흐림 규칙을 실데이터에 연결한다. `client`(사업장)에 `tax_entity_type`(개인/법인/면세, nullable) 컬럼 추가(migration 0059), 회사 설정 화면에서 선택·저장(TENANT_ADMIN), 신고 준비 read model이 이 값을 직접 사용(기존 billing-profile 휴리스틱 제거). 미지정(null)이면 흐림 없음. [Filing Preparation Hub Pre-Code Brief §4](../03_Technical_Specs/15_FILING_PREPARATION_PRE_CODE_BRIEF.md) 참조. |
 
@@ -865,6 +866,37 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [ ] tenant·사업장·기간 격리와 PII 최소화를 유지한다.
   - [ ] 대표 fixture와 브라우저 E2E에서 결론·근거·홈택스 행동·이관 질문을 검증한다.
 - Document Sync Check (2026-07-12): 신규 Brief 50, Backlog JC-039, VAT QA S-126~S-135, JC-035/Rule Matrix/VAI-2/화면 단순화 문서의 current-vs-target 경계를 동기화했다. 코드·DB·Preview 변경은 없으며 구현 상태는 `todo`다.
+
+### JC-041 · 절세 가능성 탐지·정리 (부가세 매입 재분류부터)
+
+- Status: `todo` (Pre-Code Brief 작성 완료 — UI-First Gate·오너 Preview 승인 착수 전 대기)
+- Related Concept Docs: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md) - 회사 직접 신고 보조, AI 추천과 사용자 최종 책임의 경계.
+- Related UI Docs: N/A - 아직 화면 설계 전. VUI-1 계열 Preview([VAT Preview](../02_UI_Screens/previews/03_vat.html)) 논의 중 파생된 아이디어.
+- Related Technical Docs: [JC-041 Reclassification Savings Pre-Code Brief](../03_Technical_Specs/51_VAT_INPUT_TAX_RECLASSIFICATION_SAVINGS_BRIEF.md) · [JC-039 Evidence-Backed Decisive Judgment Brief](../03_Technical_Specs/50_VAT_AI_EVIDENCE_BACKED_DECISIVE_JUDGMENT_BRIEF.md) - 근거 우선 원칙을 그대로 재사용. [Rule Matrix](../03_Technical_Specs/45_VAT_AI_TAX_TREATMENT_RULE_MATRIX.md) - 공제/불공제 8개 법정 사유.
+- Related QA Docs: N/A - VAI-9a 착수 시 작성.
+- Origin: 2026-07-12 VUI-1b Preview 리뷰 세션 중 프로젝트 오너 제안. "확인 필요 거래"에 왜 이미 확정된 불공제 판단이 남아있는지 검토하다가, "재분류하면 공제받을 수 있는 거래를 찾아주는 게 오히려 더 가치 있다"는 방향으로 전환.
+- Current Gap:
+  - 지금 AI 판단(JC-035/039)은 "이 거래가 무슨 세목으로 분류되는가"만 다루고, "지금 분류가 실제 거래 성격과 맞는가"는 다루지 않는다.
+  - 접대비로 분류된 거래는 그대로 불공제 처리될 뿐, 참석자가 전부 내부 직원이라 복리후생비·회의비(공제 가능)일 수 있다는 가능성은 검토되지 않는다.
+  - 기장(계정과목 분류) 단계의 실수가 부가세 신고까지 그대로 이어져 사업자가 불필요하게 세금을 더 낼 수 있다.
+- Scope (1차, 상세는 Brief 51 참조):
+  - 법정 불공제 사유 8개 중 **④ 접대비(기업업무추진비) 관련만** 1차로 다룬다. 재분류 후보는 복리후생비·회의비.
+  - JC-039 evidence resolver를 재사용해 참석자·적요·과거 확정 이력에서 재분류를 뒷받침하는 근거를 찾는다(Brief 51 §4.1 positive / §4.2 negative evidence).
+  - 근거가 명확할 때만 "재분류 제안"을 하고, 반드시 구체적 절세 금액을 함께 표시한다. 근거 없으면 원래 분류(불공제)를 그대로 유지한다 — 부당공제 가산세 리스크 회피가 최우선.
+  - 제안은 사용자가 명시적으로 확정해야 canonical 값에 반영되며, "유지" 선택 시 같은 패턴에 재질문하지 않는다.
+- Out of Scope (1차):
+  - 접대비 외 다른 법정 불공제 사유(③⑤⑥⑦⑧)의 재분류 탐지는 후속 논의.
+  - 부가세 외 다른 세목(소득세·법인세 등)의 절세 가능성 탐지는 후속 논의.
+  - 재분류 자동 확정·기장 데이터 자동 수정은 하지 않는다(사용자 최종 확인 필수).
+  - AI가 없는 근거를 만들어 재분류를 유도하는 것은 금지(JC-039 §2 "No Evidence Means No Special Treatment"와 동일 원칙).
+- Fixed Order (Brief 51 §9): **VAI-9a 완료(2026-07-12)** → **VAI-9b 완료(2026-07-12)** → VAI-9c 절세 금액 계산·데이터 계약 → VAI-9d UI-First Gate·Preview 승인 → VAI-9e 확정 흐름·오탐 중심 E2E.
+- Implementation Preconditions:
+  - [x] 프로젝트 오너가 방향("절세 가능성이 있는 것을 정리해서 보여주는 것이 좋겠다")을 확인했다.
+  - [x] Pre-Code Brief 작성 완료(근거 요건, 재분류 후보 판정 기준, 데이터 계약 초안, UI 방향 — Brief 51).
+  - [ ] 재분류 오탐(false positive)의 세무 리스크를 프로젝트 오너와 재검토한다.
+  - [ ] UI-First Gate: 재분류 제안을 어느 화면에 어떻게 보여줄지 Preview로 먼저 확인한다(VAI-9d).
+- Acceptance Criteria: Brief 51 §10 참조(근거 없이 제안 금지, 절세 금액 필수 표시, 재질문 방지, canonical 값 사용자 확정 전 불변 등).
+- Document Sync Check (2026-07-12): Backlog JC-041, 신규 Brief 51을 동기화했다. **VAI-9a 구현 완료**: `lib/vat/reclassification-evidence.ts`(순수 판정 함수, Brief 51 §4.1/4.2 그대로 코드 조건화) + `lib/vat/reclassification-evidence.test.ts`(양성 5건·음성 7건 fixture, 부정 근거 우선 원칙과 판단 불가 케이스 포함) 신규 추가. **VAI-9b 구현 완료**: `lib/vat/reclassification-evidence-resolver.ts` 신규 추가 — `vat_deduction_review`에서 접대비 사유(reason 키워드 매칭)로 걸린 불공제 후보만 1차 범위로 조회, `employee_profile`에서 활성 직원 표시 이름 대조 목록 로드, 적요의 "참석자: 이름, 이름" 명시 패턴만 신뢰하는 보수적 파서(`extractAttendeeNames`, 애매하면 null=정보 없음), 같은 거래처의 과거(현재 기간 제외) `vat_deduction_review` decision 이력으로 재분류/유지 패턴을 판단(신규 스키마 없이 기존 감사 테이블 재사용) — 이 신호들을 VAI-9a 판정 함수에 그대로 전달한다. 신규 파서 단위 테스트(`reclassification-evidence-resolver.test.ts`) 6건 추가, DB 조회 래퍼 자체는 이 저장소 관례상(다른 lib/vat/*.ts와 동일) 단위 테스트 대상 아님 — dev 서비스 E2E는 VAI-9e 범위. tsc/lint 0 errors, vitest 전체 245 files/1703 tests 통과. 아직 UI·데이터 계약 스키마·사용자 확정 흐름에는 연결하지 않았다(VAI-9c/9d/9e 범위) — DB·runtime 화면에는 영향 없음(read-only, decision을 바꾸지 않음).
 
 ### JC-034 · GIWA handoff 패키지 — Filing Path 2 (ZIP Export v1)
 
