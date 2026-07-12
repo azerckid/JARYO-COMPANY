@@ -25,8 +25,10 @@ import {
   type VatTaxTreatmentDisplayRow,
 } from '@/lib/validations/vat-tax-treatment'
 import { withVatTaxTreatmentRecommendationFingerprint } from './tax-treatment-fingerprint'
+import { executeVatTaxTreatmentAiRows } from './tax-treatment-ai-execution'
 import {
   applyReusableVatTaxTreatmentAiResults,
+  applyVatTaxTreatmentAiWorkflowStates,
   applyStoredVatTaxTreatmentAiResults as applyStoredVatTaxTreatmentAiResultsFromStore,
   completeVatTaxTreatmentAiResult as completeVatTaxTreatmentAiResultInStore,
   reserveVatTaxTreatmentAiResult as reserveVatTaxTreatmentAiResultInStore,
@@ -188,7 +190,10 @@ function readResult(params: {
     payloadVersion: VAT_TAX_TREATMENT_AI_RESULT_PAYLOAD_VERSION,
     resultPayloadJson: payload(params.result),
     resultFingerprint: params.result.recommendationFingerprint,
+    startedAt: '2026-07-12T09:59:50.000+09:00',
+    completedAt: '2026-07-12T10:00:00.000+09:00',
     nextRetryAt: params.nextRetryAt ?? null,
+    leaseExpiresAt: null,
     updatedAt: '2026-07-12T10:00:00.000+09:00',
   }
 }
@@ -299,7 +304,84 @@ describe('VAI-7b reusable VAT AI result', () => {
   })
 })
 
+describe('VAI-7c workflow state derivation', () => {
+  it('derives idle, checking, ready, manual fallback, and stale without provider calls', () => {
+    const base = displayRow({
+      recommendation: 'needs_review',
+      confidence: 'low',
+      basisLabel: '업무 목적을 추가로 확인해야 합니다.',
+    })
+    const at = DateTime.fromISO('2026-07-12T10:05:00.000+09:00')
+    expect(applyVatTaxTreatmentAiWorkflowStates({ rows: [base], resultRows: [], nowAt: at })[0].aiWorkflow)
+      .toMatchObject({ status: 'idle', canEvaluate: true })
+
+    const ready = readResult({ base, result: aiRow(base) })
+    expect(applyVatTaxTreatmentAiWorkflowStates({ rows: [base], resultRows: [ready], nowAt: at })[0].aiWorkflow)
+      .toMatchObject({ status: 'ready', canEvaluate: true })
+
+    const checking: VatTaxTreatmentAiResultReadRow = {
+      ...ready,
+      status: 'running',
+      resultPayloadJson: null,
+      resultFingerprint: null,
+      completedAt: null,
+      leaseExpiresAt: '2026-07-12T10:07:00.000+09:00',
+    }
+    expect(applyVatTaxTreatmentAiWorkflowStates({ rows: [base], resultRows: [checking], nowAt: at })[0].aiWorkflow)
+      .toMatchObject({ status: 'checking' })
+
+    const fallback = readResult({
+      base,
+      result: fallbackRow(base),
+      status: 'manual_fallback',
+      nextRetryAt: '2026-07-12T10:15:00.000+09:00',
+    })
+    expect(applyVatTaxTreatmentAiWorkflowStates({ rows: [base], resultRows: [fallback], nowAt: at })[0].aiWorkflow)
+      .toMatchObject({ status: 'manual_fallback' })
+
+    expect(applyVatTaxTreatmentAiWorkflowStates({
+      rows: [base],
+      resultRows: [{ ...ready, inputFingerprint: 'f'.repeat(64) }],
+      nowAt: at,
+    })[0].aiWorkflow).toMatchObject({ status: 'stale' })
+  })
+
+  it('does not expose workflow actions for a user-confirmed row', () => {
+    const confirmed = displayRow({
+      finalDecision: 'deductible',
+      confirmedByStaffId: 'staff-1',
+      confirmedAt: '2026-07-12T09:00:00.000+09:00',
+      userActionStatus: 'confirmed',
+    })
+    expect(applyVatTaxTreatmentAiWorkflowStates({ rows: [confirmed], resultRows: [] })[0].aiWorkflow)
+      .toEqual({
+        rowId: ROW,
+        status: 'idle',
+        canEvaluate: false,
+        completedAt: null,
+        nextRetryAt: null,
+      })
+  })
+})
+
 describe('VAI-7b execution reservation and persistence', () => {
+  it('executes an idle row through reserve, run, and safe completion', async () => {
+    const base = displayRow({
+      recommendation: 'needs_review',
+      confidence: 'low',
+      basisLabel: '업무 목적을 추가로 확인해야 합니다.',
+    })
+    const [row] = applyVatTaxTreatmentAiWorkflowStates({ rows: [base], resultRows: [] })
+    const result = await executeVatTaxTreatmentAiRows({
+      rows: [row],
+      action: { action: 'evaluate_missing' },
+      database: testDb,
+    })
+    expect(result).toEqual({ attemptedCount: 1, completedCount: 1 })
+    const [stored] = await testDb.select().from(vatTaxTreatmentAiResult)
+    expect(stored).toMatchObject({ status: 'manual_fallback', attemptCount: 1 })
+  })
+
   it('allows only one concurrent reservation and reuses the completed result', async () => {
     const base = displayRow()
     const at = DateTime.fromISO('2026-07-12T10:00:00.000+09:00')
@@ -401,6 +483,30 @@ describe('VAI-7b execution reservation and persistence', () => {
     const retries = await Promise.all([
       reserveVatTaxTreatmentAiResult({ row: base, nowAt: at.plus({ minutes: 16 }) }),
       reserveVatTaxTreatmentAiResult({ row: base, nowAt: at.plus({ minutes: 16 }) }),
+    ])
+    expect(retries.filter((item) => item.shouldRun)).toHaveLength(1)
+  })
+
+  it('lets an explicit recheck bypass fallback backoff while keeping one lease', async () => {
+    const base = displayRow({ recommendation: 'needs_review', confidence: 'low' })
+    const at = DateTime.fromISO('2026-07-12T10:00:00.000+09:00')
+    const reserved = await reserveVatTaxTreatmentAiResult({ row: base, nowAt: at })
+    await startVatTaxTreatmentAiResult({
+      resultId: reserved.resultId!,
+      executionToken: reserved.executionToken!,
+      nowAt: at,
+    })
+    await completeVatTaxTreatmentAiResult({
+      resultId: reserved.resultId!,
+      executionToken: reserved.executionToken!,
+      inputFingerprint: base.recommendationFingerprint,
+      result: fallbackRow(base),
+      nowAt: at.plus({ seconds: 10 }),
+    })
+
+    const retries = await Promise.all([
+      reserveVatTaxTreatmentAiResult({ row: base, force: true, nowAt: at.plus({ minutes: 1 }) }),
+      reserveVatTaxTreatmentAiResult({ row: base, force: true, nowAt: at.plus({ minutes: 1 }) }),
     ])
     expect(retries.filter((item) => item.shouldRun)).toHaveLength(1)
   })
