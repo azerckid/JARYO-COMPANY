@@ -30,6 +30,10 @@ import {
   VatProvenanceRebuildButton,
 } from './vat-actions'
 import { VatTaxTreatmentActions } from './vat-tax-treatment-actions'
+import {
+  VatTaxTreatmentAiWorkflowProvider,
+  VatTaxTreatmentAiWorkflowStatus,
+} from './vat-tax-treatment-ai-workflow'
 import { VatTaxTreatmentEvidenceAction } from './vat-tax-treatment-evidence-action'
 
 const panelClass = 'overflow-hidden rounded-xl border border-company-border bg-company-surface shadow-company-card'
@@ -73,7 +77,7 @@ export function VatWorkspace({ summary, packageGate, initialProviderCallCount }:
       <div className="flex w-full max-w-[1200px] flex-col gap-5 px-7 pt-6 pb-12">
         <TaxSummaryHero summary={summary} />
         <SalesGroupsSection groups={summary.salesGroups} />
-        <TaxTreatmentSection rows={summary.taxTreatmentRows} />
+        <TaxTreatmentSection periodKey={summary.period.key} rows={summary.taxTreatmentRows} />
         <DeductionReviewSection reviews={summary.deductionReviews} />
         <div className="grid gap-4 lg:grid-cols-2">
           <SchedulesSection schedules={summary.schedules} />
@@ -90,14 +94,26 @@ export function VatWorkspace({ summary, packageGate, initialProviderCallCount }:
   )
 }
 
-function TaxTreatmentSection({ rows }: { readonly rows: VatTaxTreatmentDisplayRow[] }) {
+function TaxTreatmentSection({
+  periodKey,
+  rows,
+}: {
+  readonly periodKey: string
+  readonly rows: VatTaxTreatmentDisplayRow[]
+}) {
+  const workflowStates = rows.flatMap((row) => row.aiWorkflow ? [row.aiWorkflow] : [])
   return (
     <section className="grid gap-3">
       <SectionHeader
         title="AI 부가세 판단"
         description="공식 규칙과 같은 사업장 이전 확정 패턴을 먼저 적용합니다"
       />
-      <div className={panelClass}>
+      <VatTaxTreatmentAiWorkflowProvider
+        key={workflowStates.map((state) => `${state.rowId}:${state.status}:${state.completedAt ?? ''}`).join('|')}
+        periodKey={periodKey}
+        initialStates={workflowStates}
+      >
+        <div className={panelClass}>
         <div className="border-b border-company-border bg-[#fafafa] px-4 py-2.5 text-xs text-company-fg-muted">
           홈택스 자료를 가져온 값이 아니라 <b className="text-foreground">자동채움 예상</b>을 기준으로 확인할 항목을 표시합니다.
           최종 판단과 저장은 다음 단계에서 사용자가 직접 확정합니다.
@@ -136,24 +152,19 @@ function TaxTreatmentSection({ rows }: { readonly rows: VatTaxTreatmentDisplayRo
                       <span className="text-[11.5px] font-semibold text-company-fg-muted">
                         {row.finalDecision
                           ? '사용자 확정'
-                          : taxTreatmentSourceLabel(row.source, row.aiRuntimeStatus)}
+                          : taxTreatmentSourceLabel(row.source)}
                       </span>
                     </div>
                     <p className="mt-1 text-[11px] text-company-fg-subtle">
                       신뢰도 {taxTreatmentConfidenceLabel(row.confidence)} · {row.ruleVersion}
                     </p>
+                    <VatTaxTreatmentAiWorkflowStatus
+                      rowId={row.rowId}
+                      recommendationFingerprint={row.recommendationFingerprint}
+                    />
                   </TableCell>
                   <TableCell className="min-w-[330px] max-w-[430px]">
                     <p className="text-[12.5px] font-medium text-foreground">{row.basisLabel}</p>
-                    {row.aiRuntimeStatus === 'manual_fallback' ? (
-                      <p className="mt-1 rounded-md border border-[#fde68a] bg-[#fffbeb] px-2 py-1 text-[11.5px] font-medium text-[#92400e]">
-                        AI 판단을 불러오지 못했습니다. 수동 검토를 계속할 수 있습니다.
-                      </p>
-                    ) : row.aiRuntimeStatus === 'deferred' ? (
-                      <p className="mt-1 rounded-md border border-company-border bg-company-nav-hover px-2 py-1 text-[11.5px] font-medium text-company-fg-muted">
-                        AI 보강 대상이 많아 이 행은 수동 확인으로 남겼습니다.
-                      </p>
-                    ) : null}
                     {row.ruleReference ? (
                       <p className="mt-0.5 text-[11.5px] text-company-fg-subtle">{row.ruleReference}</p>
                     ) : null}
@@ -186,7 +197,8 @@ function TaxTreatmentSection({ rows }: { readonly rows: VatTaxTreatmentDisplayRo
             </tbody>
           </table>
         </div>
-      </div>
+        </div>
+      </VatTaxTreatmentAiWorkflowProvider>
     </section>
   )
 }
@@ -619,11 +631,7 @@ function taxTreatmentRecommendationTone(value: VatTaxTreatmentDisplayRow['recomm
   return 'warn'
 }
 
-function taxTreatmentSourceLabel(
-  value: VatTaxTreatmentDisplayRow['source'],
-  aiRuntimeStatus: VatTaxTreatmentDisplayRow['aiRuntimeStatus'],
-) {
-  if (aiRuntimeStatus === 'manual_fallback' || aiRuntimeStatus === 'deferred') return '수동 확인'
+function taxTreatmentSourceLabel(value: VatTaxTreatmentDisplayRow['source']) {
   if (value === 'deterministic_rule') return '공식 규칙'
   if (value === 'prior_confirmed_pattern') return '이전 확정 패턴'
   if (value === 'ai_consensus') return 'AI 합의'

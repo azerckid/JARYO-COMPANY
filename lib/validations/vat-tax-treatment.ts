@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { vatPeriodKeySchema } from './vat'
+import { vatTaxTreatmentAiWorkflowStateSchema } from './vat-tax-treatment-ai-workflow'
 
 export const VAT_TAX_TREATMENT_RULE_VERSION = 'vat-kr-2026.07-v1' as const
 
@@ -171,6 +172,7 @@ export const vatTaxTreatmentDisplayRowSchema = vatTaxTreatmentRecommendationSche
   accountLabel: z.string().min(1).max(120).nullable(),
   userActionStatus: vatTaxTreatmentUserActionStatusSchema.default('pending'),
   userActionReason: z.string().max(500).nullable().default(null),
+  aiWorkflow: vatTaxTreatmentAiWorkflowStateSchema.optional(),
 })).superRefine((value, context) => {
   if (value.userActionStatus === 'confirmed' && !value.finalDecision) {
     context.addIssue({

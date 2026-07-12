@@ -13,13 +13,17 @@ import {
   vatTaxTreatmentDisplayRowSchema,
   type VatTaxTreatmentDisplayRow,
 } from '@/lib/validations/vat-tax-treatment'
+import { isHighRiskVatTaxTreatmentRow } from './tax-treatment-ai-eligibility'
 import { withVatTaxTreatmentRecommendationFingerprint } from './tax-treatment-fingerprint'
 
 export { VAT_TAX_TREATMENT_AI_PROMPT_VERSION }
+export {
+  isHighRiskVatTaxTreatmentRow,
+  VAT_TAX_TREATMENT_HIGH_AMOUNT_KRW,
+} from './tax-treatment-ai-eligibility'
 export const VAT_TAX_TREATMENT_AI_BATCH_SIZE = 12
 export const VAT_TAX_TREATMENT_AI_TIMEOUT_MS = 8_000
 export const VAT_TAX_TREATMENT_CLAUDE_MODEL = 'claude-sonnet-4-6'
-export const VAT_TAX_TREATMENT_HIGH_AMOUNT_KRW = 10_000_000
 
 const VAT_TAX_TREATMENT_SYSTEM_PROMPT = [
   'You return strict JSON for Korean VAT tax-treatment review assistance.',
@@ -278,17 +282,8 @@ function withManualConsensusFallback(
   }))
 }
 
-export function isHighRiskVatTaxTreatmentRow(row: VatTaxTreatmentDisplayRow) {
-  if (row.finalDecision || row.userActionStatus !== 'pending') return false
-  if (row.source === 'ai_consensus') return false
-  if (row.aiRuntimeStatus === 'manual_fallback' || row.aiRuntimeStatus === 'deferred') return false
-
-  return row.recommendation === 'likely_zero_rated'
-    || row.recommendation === 'likely_exempt'
-    || row.currentVatFact.taxType === 'zero_rated'
-    || row.currentVatFact.taxType === 'exempt'
-    || row.currentVatFact.grossAmountKrw >= VAT_TAX_TREATMENT_HIGH_AMOUNT_KRW
-    || row.confidence === 'low'
+export function withVatTaxTreatmentAiManualFallback(row: VatTaxTreatmentDisplayRow) {
+  return withManualConsensusFallback(row, 'manual_fallback')
 }
 
 type ProviderBatchResult = {

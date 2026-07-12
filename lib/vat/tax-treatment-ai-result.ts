@@ -23,9 +23,14 @@ import {
   vatTaxTreatmentAiResultPayloadSchema,
 } from '@/lib/validations/vat-tax-treatment-ai-result'
 import {
+  vatTaxTreatmentAiWorkflowStateSchema,
+  type VatTaxTreatmentAiWorkflowState,
+} from '@/lib/validations/vat-tax-treatment-ai-workflow'
+import {
   vatTaxTreatmentDisplayRowSchema,
   type VatTaxTreatmentDisplayRow,
 } from '@/lib/validations/vat-tax-treatment'
+import { shouldEvaluateVatTaxTreatmentRowWithAi } from './tax-treatment-ai-eligibility'
 import { withVatTaxTreatmentRecommendationFingerprint } from './tax-treatment-fingerprint'
 
 export const VAT_TAX_TREATMENT_AI_LEASE_MINUTES = 2
@@ -51,7 +56,10 @@ export type VatTaxTreatmentAiResultReadRow = Pick<
   | 'payloadVersion'
   | 'resultPayloadJson'
   | 'resultFingerprint'
+  | 'startedAt'
+  | 'completedAt'
   | 'nextRetryAt'
+  | 'leaseExpiresAt'
   | 'updatedAt'
 >
 
@@ -117,6 +125,92 @@ function payloadMatchesStatus(
   return false
 }
 
+function parseStoredResult(
+  row: VatTaxTreatmentDisplayRow,
+  candidate: VatTaxTreatmentAiResultReadRow,
+) {
+  const payload = parsePayload(candidate)
+  if (!payload || !payloadMatchesStatus(candidate.status, payload)) return null
+  const merged = vatTaxTreatmentDisplayRowSchema.safeParse(
+    withVatTaxTreatmentRecommendationFingerprint({ ...row, ...payload }),
+  )
+  if (!merged.success || merged.data.recommendationFingerprint !== candidate.resultFingerprint) {
+    return null
+  }
+  return merged.data
+}
+
+function matchesCurrentInput(
+  row: VatTaxTreatmentDisplayRow,
+  candidate: VatTaxTreatmentAiResultReadRow,
+) {
+  return candidate.tenantId === row.tenantId
+    && candidate.clientId === row.businessEntityId
+    && candidate.periodKey === row.periodKey
+    && candidate.inputFingerprint === row.recommendationFingerprint
+    && candidate.ruleVersion === row.ruleVersion
+    && candidate.promptVersion === VAT_TAX_TREATMENT_AI_PROMPT_VERSION
+}
+
+function hasValidLease(candidate: VatTaxTreatmentAiResultReadRow, currentTime: DateTime) {
+  return !expired(candidate.leaseExpiresAt, currentTime)
+}
+
+function workflowStateForRow(params: {
+  row: VatTaxTreatmentDisplayRow
+  resultRows: VatTaxTreatmentAiResultReadRow[]
+  currentTime: DateTime
+}): VatTaxTreatmentAiWorkflowState {
+  const canEvaluate = shouldEvaluateVatTaxTreatmentRowWithAi(params.row)
+  const scoped = params.resultRows.filter((candidate) => (
+    candidate.tenantId === params.row.tenantId
+    && candidate.clientId === params.row.businessEntityId
+    && candidate.periodKey === params.row.periodKey
+  ))
+  const current = scoped.find((candidate) => matchesCurrentInput(params.row, candidate))
+  let status: VatTaxTreatmentAiWorkflowState['status'] = scoped.length > 0 ? 'stale' : 'idle'
+
+  if (current?.status === 'queued' || current?.status === 'running') {
+    status = hasValidLease(current, params.currentTime) ? 'checking' : 'stale'
+  } else if (current?.status === 'ready') {
+    status = parseStoredResult(params.row, current) ? 'ready' : 'stale'
+  } else if (current?.status === 'manual_fallback') {
+    status = parseStoredResult(params.row, current) ? 'manual_fallback' : 'stale'
+  } else if (current?.status === 'stale') {
+    status = 'stale'
+  }
+
+  return vatTaxTreatmentAiWorkflowStateSchema.parse({
+    rowId: params.row.rowId,
+    status: canEvaluate ? status : 'idle',
+    canEvaluate,
+    completedAt: current?.completedAt ?? null,
+    nextRetryAt: current?.nextRetryAt ?? null,
+  })
+}
+
+export function applyVatTaxTreatmentAiWorkflowStates(params: {
+  rows: VatTaxTreatmentDisplayRow[]
+  resultRows: VatTaxTreatmentAiResultReadRow[]
+  nowAt?: DateTime
+}) {
+  const currentTime = params.nowAt ?? now()
+  const resultsByClassification = new Map<string, VatTaxTreatmentAiResultReadRow[]>()
+  for (const resultRow of params.resultRows) {
+    const existing = resultsByClassification.get(resultRow.classificationRowId) ?? []
+    resultsByClassification.set(resultRow.classificationRowId, [...existing, resultRow])
+  }
+
+  return params.rows.map((row) => vatTaxTreatmentDisplayRowSchema.parse({
+    ...row,
+    aiWorkflow: workflowStateForRow({
+      row,
+      resultRows: resultsByClassification.get(row.classificationRowId) ?? [],
+      currentTime,
+    }),
+  }))
+}
+
 export function applyReusableVatTaxTreatmentAiResults(params: {
   rows: VatTaxTreatmentDisplayRow[]
   resultRows: VatTaxTreatmentAiResultReadRow[]
@@ -132,25 +226,12 @@ export function applyReusableVatTaxTreatmentAiResults(params: {
   return params.rows.map((row) => {
     if (row.finalDecision || row.userActionStatus !== 'pending') return row
     const stored = (resultsByClassification.get(row.classificationRowId) ?? []).find((candidate) => (
-      candidate.tenantId === row.tenantId
-      && candidate.clientId === row.businessEntityId
-      && candidate.periodKey === row.periodKey
-      && candidate.inputFingerprint === row.recommendationFingerprint
-      && candidate.ruleVersion === row.ruleVersion
-      && candidate.promptVersion === VAT_TAX_TREATMENT_AI_PROMPT_VERSION
+      matchesCurrentInput(row, candidate)
       && isReusableAt(candidate, currentTime)
     ))
     if (!stored) return row
 
-    const payload = parsePayload(stored)
-    if (!payload || !payloadMatchesStatus(stored.status, payload)) return row
-    const merged = vatTaxTreatmentDisplayRowSchema.safeParse(
-      withVatTaxTreatmentRecommendationFingerprint({ ...row, ...payload }),
-    )
-    if (!merged.success || merged.data.recommendationFingerprint !== stored.resultFingerprint) {
-      return row
-    }
-    return merged.data
+    return parseStoredResult(row, stored) ?? row
   })
 }
 
@@ -177,7 +258,10 @@ export async function loadVatTaxTreatmentAiResultRows(params: {
       payloadVersion: vatTaxTreatmentAiResult.payloadVersion,
       resultPayloadJson: vatTaxTreatmentAiResult.resultPayloadJson,
       resultFingerprint: vatTaxTreatmentAiResult.resultFingerprint,
+      startedAt: vatTaxTreatmentAiResult.startedAt,
+      completedAt: vatTaxTreatmentAiResult.completedAt,
       nextRetryAt: vatTaxTreatmentAiResult.nextRetryAt,
+      leaseExpiresAt: vatTaxTreatmentAiResult.leaseExpiresAt,
       updatedAt: vatTaxTreatmentAiResult.updatedAt,
     })
     .from(vatTaxTreatmentAiResult)
@@ -186,7 +270,6 @@ export async function loadVatTaxTreatmentAiResultRows(params: {
       eq(vatTaxTreatmentAiResult.clientId, params.businessEntityId),
       eq(vatTaxTreatmentAiResult.periodKey, params.periodKey),
       inArray(vatTaxTreatmentAiResult.classificationRowId, params.classificationRowIds),
-      inArray(vatTaxTreatmentAiResult.status, ['ready', 'manual_fallback']),
     ))
     .orderBy(desc(vatTaxTreatmentAiResult.updatedAt))
 }
@@ -206,8 +289,13 @@ export async function applyStoredVatTaxTreatmentAiResults(params: {
     classificationRowIds: params.rows.map((row) => row.classificationRowId),
     database: params.database,
   })
-  return applyReusableVatTaxTreatmentAiResults({
+  const rowsWithWorkflow = applyVatTaxTreatmentAiWorkflowStates({
     rows: params.rows,
+    resultRows,
+    nowAt: params.nowAt,
+  })
+  return applyReusableVatTaxTreatmentAiResults({
+    rows: rowsWithWorkflow,
     resultRows,
     nowAt: params.nowAt,
   })
@@ -228,6 +316,7 @@ function expired(value: string | null, currentTime: DateTime) {
 
 export async function reserveVatTaxTreatmentAiResult(params: {
   row: VatTaxTreatmentDisplayRow
+  force?: boolean
   nowAt?: DateTime
   database?: VatTaxTreatmentAiDatabase
 }): Promise<VatTaxTreatmentAiReservation> {
@@ -316,6 +405,7 @@ export async function reserveVatTaxTreatmentAiResult(params: {
   const canRequeue = current.status === 'stale'
     || ((current.status === 'queued' || current.status === 'running') && expired(current.leaseExpiresAt, currentTime))
     || (current.status === 'manual_fallback' && expired(current.nextRetryAt, currentTime))
+    || (params.force === true && (current.status === 'ready' || current.status === 'manual_fallback'))
   if (!canRequeue) {
     return {
       resultId: current.id,
@@ -327,6 +417,8 @@ export async function reserveVatTaxTreatmentAiResult(params: {
 
   const reclaimCondition = current.status === 'stale'
     ? eq(vatTaxTreatmentAiResult.status, 'stale')
+    : params.force === true && (current.status === 'ready' || current.status === 'manual_fallback')
+      ? eq(vatTaxTreatmentAiResult.status, current.status)
     : current.status === 'manual_fallback'
       ? and(
         eq(vatTaxTreatmentAiResult.status, 'manual_fallback'),
