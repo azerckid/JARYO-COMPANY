@@ -154,6 +154,15 @@ describe('VAT workspace static contract', () => {
     expect(actionsSource).not.toContain('window.prompt')
   })
 
+  it('blocks direct deduction-review API mutation while the classification has an unresolved handoff', () => {
+    expect(deductionRouteSource).toContain('classificationRowId: vatDeductionReview.classificationRowId')
+    expect(deductionRouteSource).toContain('loadVatTaxTreatmentDisplayRows')
+    expect(deductionRouteSource).toContain('includeStoredAi: true')
+    expect(deductionRouteSource).toContain('findUnresolvedVatTaxTreatmentHandoff')
+    expect(deductionRouteSource).toContain('담당자 확인 질문에 답한 뒤 판단을 확정해 주세요')
+    expect(deductionRouteSource).toContain('{ status: 409 }')
+  })
+
   it('guards deduction review mutations by tenant and recalculates the period summary (S-53)', () => {
     expect(deductionRouteSource).toContain('requireTenantSession')
     expect(deductionRouteSource).toContain('getActiveStaffForUser')

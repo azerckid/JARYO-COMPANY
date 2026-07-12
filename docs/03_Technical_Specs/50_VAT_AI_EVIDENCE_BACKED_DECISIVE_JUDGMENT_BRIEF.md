@@ -192,6 +192,8 @@ VAI-8 결과는 추천·workflow 계층이며 사용자 확인 없이 canonical 
   입력 fingerprint가 바뀔 때만 stale이 된다.
 - handoff 질문이 남아 있는 행은 추천 바로 적용을 UI helper와 서버 mutation에서 차단한다. 사용자는
   이유를 포함한 다른 판단 확정 또는 후속 VAI-8e 질문 응답 흐름을 사용한다.
+- 같은 classification에 연결된 legacy `vat_deduction_review` PATCH도 live display row를 다시 만들고
+  unresolved handoff를 확인한다. 질문이 남아 있으면 canonical 공제 decision UPDATE 전에 409로 거부한다.
 - stored result는 payload v5·prompt `vat-tax-treatment-v5`를 사용하며 v1~v4 결과는 재사용하지 않는다.
 - 신규 SQL migration·canonical VAT fact·deduction decision·gate write·기본 UI 변경은 없다.
 
@@ -215,7 +217,7 @@ VAI-8 결과는 추천·workflow 계층이며 사용자 확인 없이 canonical 
 | **VAI-8b · Evidence Resolver** | 정해진 소스 탐색·evidence trace·공식 규칙 reference | **완료(2026-07-13)** · 여섯 source 탐색·실제 reference·fingerprint/payload v3 연결 |
 | **VAI-8c · Decisive Recommendation** | 근거 기반 잠정 결론과 근거 없음 기본처리 | **완료(2026-07-13)** · 공제 근거 없음→불공제, 영세율·면세 근거 없음→과세, 안분율 추정 금지, payload/prompt v4 |
 | **VAI-8d · Handoff Gate** | 필수 사실 부재·충돌·규칙 공백/합의 실패만 이관 | **완료(2026-07-13)** · 구조화 payload, 4개 허용 reason, provider 장애 분리, 추천 바로 적용 차단, payload/prompt v5 |
-| **VAI-8e · UI and E2E** | 결론→근거→행동 표시, 적용/변경·담당자 이관 검증 | **완료(2026-07-13)** · 기본 셀 한 줄 유지, found evidence 요약, 질문 1개, 답변·판단 확정 모달, 샘플 브라우저 E2E |
+| **VAI-8e · UI and E2E** | 결론→근거→행동 표시, 적용/변경·담당자 이관 검증 | **완료(2026-07-13)** · 기본 셀 한 줄 유지, found evidence 요약, 질문 1개, 답변·판단 확정 모달, deduction API 409 서버 가드, 샘플 브라우저 E2E |
 
 JC-037 결과 저장은 evidence trace와 새 judgment/workflow 구조를 저장할 수 있어야 한다.
 JC-038 Preview는 VAI-8의 결론 우선 정보 계층을 반영한 뒤 runtime을 수정한다.
