@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache'
 import { NextResponse } from 'next/server'
 import { requireTenantSession } from '@/lib/auth-helpers'
+import { getActiveStaffForUser } from '@/lib/bookkeeping/classification-service'
 import { executeVatTaxTreatmentAiRows } from '@/lib/vat/tax-treatment-ai-execution'
 import {
   applyVatTaxTreatmentAiWorkflowStates,
@@ -47,10 +48,14 @@ export async function GET(
   { params }: { params: Promise<{ periodKey: string }> },
 ) {
   try {
-    const { tenantId } = await requireTenantSession()
+    const { user, tenantId } = await requireTenantSession()
     const parsedPeriod = vatPeriodKeySchema.safeParse((await params).periodKey)
     if (!parsedPeriod.success) {
       return NextResponse.json({ error: parsedPeriod.error.message }, { status: 400 })
+    }
+    const staffRecord = await getActiveStaffForUser({ userId: user.id, tenantId })
+    if (!staffRecord) {
+      return NextResponse.json({ error: '담당자 정보를 찾을 수 없습니다.' }, { status: 403 })
     }
 
     const summary = await loadVatSummary({
@@ -77,10 +82,14 @@ export async function POST(
   { params }: { params: Promise<{ periodKey: string }> },
 ) {
   try {
-    const { tenantId } = await requireTenantSession()
+    const { user, tenantId } = await requireTenantSession()
     const parsedPeriod = vatPeriodKeySchema.safeParse((await params).periodKey)
     if (!parsedPeriod.success) {
       return NextResponse.json({ error: parsedPeriod.error.message }, { status: 400 })
+    }
+    const staffRecord = await getActiveStaffForUser({ userId: user.id, tenantId })
+    if (!staffRecord) {
+      return NextResponse.json({ error: '담당자 정보를 찾을 수 없습니다.' }, { status: 403 })
     }
     const input = vatTaxTreatmentAiRunRequestSchema.safeParse(await request.json())
     if (!input.success) {

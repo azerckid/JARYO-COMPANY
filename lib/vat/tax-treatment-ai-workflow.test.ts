@@ -32,6 +32,17 @@ describe('VAI-7c async workflow contract', () => {
     expect(gate).toContain('includeStoredAi: false')
   })
 
+  it('requires an active staff record before reading or running AI status, matching the sibling mutation route', () => {
+    const route = readFileSync(
+      new URL('../../app/api/vat/periods/[periodKey]/tax-treatment-ai/route.ts', import.meta.url),
+      'utf8',
+    )
+    const [getBody, postBody] = route.split('export async function POST(')
+    expect(getBody).toContain('getActiveStaffForUser')
+    expect(postBody).toContain('getActiveStaffForUser')
+    expect(route).toContain("error: '담당자 정보를 찾을 수 없습니다.' }, { status: 403 }")
+  })
+
   it('validates all visible workflow states returned to the client', () => {
     const states = ['idle', 'checking', 'ready', 'manual_fallback', 'stale'].map((status, index) => ({
       rowId: `row-${index}`,
