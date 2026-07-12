@@ -261,4 +261,11 @@ describe('VAT tax treatment loader boundaries', () => {
     expect(source).not.toContain('.update(')
     expect(source).not.toContain('.delete(')
   })
+
+  it('reuses stored AI results after evidence state and before user audit state', () => {
+    expect(source).toContain('applyVatTaxTreatmentEvidenceAttestations')
+    expect(source).toContain('applyStoredVatTaxTreatmentAiResults')
+    expect(source).toContain('params.includeStoredAi === false')
+    expect(source).toContain('applyVatTaxTreatmentAuditStates({ rows: recommendedRows, auditRows })')
+  })
 })
