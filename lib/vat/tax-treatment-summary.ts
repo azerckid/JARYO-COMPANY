@@ -521,13 +521,13 @@ export async function loadVatTaxTreatmentDisplayRows(params: {
   })
   const recommendedRows = params.includeAi
     ? await enhanceVatTaxTreatmentRowsWithAi({ rows: rowsWithAttestations })
-    : params.includeStoredAi === false
-      ? rowsWithAttestations
-      : await applyStoredVatTaxTreatmentAiResults({
+    : params.includeStoredAi === true
+      ? await applyStoredVatTaxTreatmentAiResults({
         tenantId: params.tenantId,
         businessEntityId: params.businessEntityId,
         periodKey: params.period.key,
         rows: rowsWithAttestations,
       })
+      : rowsWithAttestations
   return applyVatTaxTreatmentAuditStates({ rows: recommendedRows, auditRows })
 }

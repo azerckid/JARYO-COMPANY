@@ -158,7 +158,7 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 | S-111 | 저장 결과가 있으나 사용자가 새 판단을 원함 | `AI 다시 확인` 클릭 | 명시적 신규 실행 1회, 기존 사용자 확정값·canonical VAT fact 미변경 | Pending·VAI-7c |
 | S-112 | 사용자 최종 확정 행 | 자동 비동기 판단 대상 계산 | provider 호출 대상에서 제외, 규칙 변경은 기존 결정 덮기 대신 재검토 상태만 표시 | PARTIAL·VAI-7b 확정 행 service guard PASS, VAI-7c trigger 경계 Pending |
 | S-113 | 다른 tenant·사업장·기간의 동일 거래처/금액 또는 민감 원문 존재 | 결과 저장·재사용 | scope 밖 결과 미사용, 원문 prompt/provider 응답·민감 식별정보 미저장 | PASS·VAI-7b scope/schema/payload guard |
-| S-114 | VAT package/rebuild gate 평가 | AI가 실행 중이거나 실패 | live LLM을 기다리지 않고 canonical 사용자 확정값만으로 결정 | PASS·VAI-7a 정적 회귀 확인 |
+| S-114 | VAT package/rebuild gate 평가 | AI가 실행 중이거나 실패하거나 저장 추천이 존재 | live·저장 AI를 읽지 않고 canonical 사용자 확정값만으로 결정 | PASS·VAI-7b `includeStoredAi: false` 정적 회귀 확인 |
 
 ### 2.12 JC-038 VAT 화면 단순화·중복 제거
 

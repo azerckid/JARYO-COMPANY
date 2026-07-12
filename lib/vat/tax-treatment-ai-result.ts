@@ -247,118 +247,118 @@ export async function reserveVatTaxTreatmentAiResult(params: {
   const leaseExpiresAt = toDBString(currentTime.plus({ minutes: VAT_TAX_TREATMENT_AI_LEASE_MINUTES }))
   const executionToken = randomUUID()
 
-    const scope = and(
-      eq(vatTaxTreatmentAiResult.tenantId, row.tenantId),
-      eq(vatTaxTreatmentAiResult.clientId, row.businessEntityId),
-      eq(vatTaxTreatmentAiResult.periodKey, row.periodKey),
-      eq(vatTaxTreatmentAiResult.classificationRowId, row.classificationRowId),
-    )
-    await db
-      .update(vatTaxTreatmentAiResult)
-      .set({
-        status: 'stale',
-        executionToken: null,
-        leaseExpiresAt: null,
-        updatedAt: timestamp,
-      })
-      .where(and(
-        scope,
-        notInArray(vatTaxTreatmentAiResult.status, ['stale']),
-        or(
-          ne(vatTaxTreatmentAiResult.inputFingerprint, row.recommendationFingerprint),
-          ne(vatTaxTreatmentAiResult.ruleVersion, row.ruleVersion),
-          ne(vatTaxTreatmentAiResult.promptVersion, VAT_TAX_TREATMENT_AI_PROMPT_VERSION),
-        ),
-      ))
+  const scope = and(
+    eq(vatTaxTreatmentAiResult.tenantId, row.tenantId),
+    eq(vatTaxTreatmentAiResult.clientId, row.businessEntityId),
+    eq(vatTaxTreatmentAiResult.periodKey, row.periodKey),
+    eq(vatTaxTreatmentAiResult.classificationRowId, row.classificationRowId),
+  )
+  await db
+    .update(vatTaxTreatmentAiResult)
+    .set({
+      status: 'stale',
+      executionToken: null,
+      leaseExpiresAt: null,
+      updatedAt: timestamp,
+    })
+    .where(and(
+      scope,
+      notInArray(vatTaxTreatmentAiResult.status, ['stale']),
+      or(
+        ne(vatTaxTreatmentAiResult.inputFingerprint, row.recommendationFingerprint),
+        ne(vatTaxTreatmentAiResult.ruleVersion, row.ruleVersion),
+        ne(vatTaxTreatmentAiResult.promptVersion, VAT_TAX_TREATMENT_AI_PROMPT_VERSION),
+      ),
+    ))
 
-    const inserted = await db
-      .insert(vatTaxTreatmentAiResult)
-      .values({
-        id: randomUUID(),
-        tenantId: row.tenantId,
-        clientId: row.businessEntityId,
-        periodKey: row.periodKey,
-        classificationRowId: row.classificationRowId,
-        inputFingerprint: row.recommendationFingerprint,
-        ruleVersion: row.ruleVersion,
-        promptVersion: VAT_TAX_TREATMENT_AI_PROMPT_VERSION,
-        status: 'queued',
-        executionToken,
-        leaseExpiresAt,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      })
-      .onConflictDoNothing()
-      .returning({ id: vatTaxTreatmentAiResult.id })
+  const inserted = await db
+    .insert(vatTaxTreatmentAiResult)
+    .values({
+      id: randomUUID(),
+      tenantId: row.tenantId,
+      clientId: row.businessEntityId,
+      periodKey: row.periodKey,
+      classificationRowId: row.classificationRowId,
+      inputFingerprint: row.recommendationFingerprint,
+      ruleVersion: row.ruleVersion,
+      promptVersion: VAT_TAX_TREATMENT_AI_PROMPT_VERSION,
+      status: 'queued',
+      executionToken,
+      leaseExpiresAt,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    })
+    .onConflictDoNothing()
+    .returning({ id: vatTaxTreatmentAiResult.id })
 
-    const [current] = await db
-      .select()
-      .from(vatTaxTreatmentAiResult)
-      .where(and(
-        scope,
-        eq(vatTaxTreatmentAiResult.inputFingerprint, row.recommendationFingerprint),
-        eq(vatTaxTreatmentAiResult.ruleVersion, row.ruleVersion),
-        eq(vatTaxTreatmentAiResult.promptVersion, VAT_TAX_TREATMENT_AI_PROMPT_VERSION),
-      ))
-      .limit(1)
-    if (!current) {
-      return { resultId: null, executionToken: null, status: 'excluded', shouldRun: false }
-    }
-    if (inserted.length > 0) {
-      return {
-        resultId: current.id,
-        executionToken,
-        status: 'queued',
-        shouldRun: true,
-      }
-    }
-
-    const canRequeue = current.status === 'stale'
-      || ((current.status === 'queued' || current.status === 'running') && expired(current.leaseExpiresAt, currentTime))
-      || (current.status === 'manual_fallback' && expired(current.nextRetryAt, currentTime))
-    if (!canRequeue) {
-      return {
-        resultId: current.id,
-        executionToken: null,
-        status: current.status === 'stale' ? 'queued' : current.status,
-        shouldRun: false,
-      }
-    }
-
-    const reclaimCondition = current.status === 'stale'
-      ? eq(vatTaxTreatmentAiResult.status, 'stale')
-      : current.status === 'manual_fallback'
-        ? and(
-          eq(vatTaxTreatmentAiResult.status, 'manual_fallback'),
-          lte(vatTaxTreatmentAiResult.nextRetryAt, timestamp),
-        )
-        : and(
-          eq(vatTaxTreatmentAiResult.status, current.status),
-          lte(vatTaxTreatmentAiResult.leaseExpiresAt, timestamp),
-        )
-    const reclaimed = await db
-      .update(vatTaxTreatmentAiResult)
-      .set({
-        status: 'queued',
-        executionToken,
-        leaseExpiresAt,
-        resultPayloadJson: null,
-        resultFingerprint: null,
-        providerTraceJson: '[]',
-        startedAt: null,
-        completedAt: null,
-        nextRetryAt: null,
-        updatedAt: timestamp,
-      })
-      .where(and(eq(vatTaxTreatmentAiResult.id, current.id), reclaimCondition))
-      .returning({ id: vatTaxTreatmentAiResult.id })
-
+  const [current] = await db
+    .select()
+    .from(vatTaxTreatmentAiResult)
+    .where(and(
+      scope,
+      eq(vatTaxTreatmentAiResult.inputFingerprint, row.recommendationFingerprint),
+      eq(vatTaxTreatmentAiResult.ruleVersion, row.ruleVersion),
+      eq(vatTaxTreatmentAiResult.promptVersion, VAT_TAX_TREATMENT_AI_PROMPT_VERSION),
+    ))
+    .limit(1)
+  if (!current) {
+    return { resultId: null, executionToken: null, status: 'excluded', shouldRun: false }
+  }
+  if (inserted.length > 0) {
     return {
       resultId: current.id,
-      executionToken: reclaimed.length > 0 ? executionToken : null,
+      executionToken,
       status: 'queued',
-      shouldRun: reclaimed.length > 0,
+      shouldRun: true,
     }
+  }
+
+  const canRequeue = current.status === 'stale'
+    || ((current.status === 'queued' || current.status === 'running') && expired(current.leaseExpiresAt, currentTime))
+    || (current.status === 'manual_fallback' && expired(current.nextRetryAt, currentTime))
+  if (!canRequeue) {
+    return {
+      resultId: current.id,
+      executionToken: null,
+      status: current.status === 'stale' ? 'queued' : current.status,
+      shouldRun: false,
+    }
+  }
+
+  const reclaimCondition = current.status === 'stale'
+    ? eq(vatTaxTreatmentAiResult.status, 'stale')
+    : current.status === 'manual_fallback'
+      ? and(
+        eq(vatTaxTreatmentAiResult.status, 'manual_fallback'),
+        lte(vatTaxTreatmentAiResult.nextRetryAt, timestamp),
+      )
+      : and(
+        eq(vatTaxTreatmentAiResult.status, current.status),
+        lte(vatTaxTreatmentAiResult.leaseExpiresAt, timestamp),
+      )
+  const reclaimed = await db
+    .update(vatTaxTreatmentAiResult)
+    .set({
+      status: 'queued',
+      executionToken,
+      leaseExpiresAt,
+      resultPayloadJson: null,
+      resultFingerprint: null,
+      providerTraceJson: '[]',
+      startedAt: null,
+      completedAt: null,
+      nextRetryAt: null,
+      updatedAt: timestamp,
+    })
+    .where(and(eq(vatTaxTreatmentAiResult.id, current.id), reclaimCondition))
+    .returning({ id: vatTaxTreatmentAiResult.id })
+
+  return {
+    resultId: current.id,
+    executionToken: reclaimed.length > 0 ? executionToken : null,
+    status: 'queued',
+    shouldRun: reclaimed.length > 0,
+  }
 }
 
 export async function startVatTaxTreatmentAiResult(params: {

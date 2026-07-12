@@ -789,11 +789,12 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [ ] 사용자가 `AI 다시 확인`을 명시적으로 요청할 수 있고 기존 확정값은 바뀌지 않는다.
   - [ ] 사용자 확정 행은 자동 AI 재판단 대상에서 제외된다. (VAI-7b service guard PASS, VAI-7c trigger 경계 Pending)
   - [x] tenant·사업장·기간·행 격리와 PII 최소화, 원문 prompt/응답 미저장을 지킨다. (VAI-7b scope/schema/payload guard)
-  - [x] rebuild/package gate는 live AI 응답을 기다리지 않고 추천만으로 해제되지 않는다. (VAI-7a 정적 회귀)
+  - [x] rebuild/package gate는 live AI 응답과 저장 AI 추천을 읽지 않고 canonical 사용자 확정값만 사용한다. (VAI-7b explicit opt-out 정적 회귀)
   - [ ] 브라우저 E2E와 계측으로 초기 렌더 시간·provider 호출 수·stale 재실행을 증명한다.
 - Scope Boundary: VAT 화면의 시각적 정보구조 개편은 후속 논의로 분리하며 JC-037에 섞지 않는다.
 - Document Sync Check (2026-07-12, VAI-7a 기준): VAT 최초 read에서 `includeTaxTreatmentAi`를 제거해 provider 0회를 고정하고 호출 수를 비가시 DOM 속성으로 노출했다. 당시에는 결과 저장소가 없어 deterministic rule·이전 확정·사용자 결정만 표시했으며 DB·migration·Preview 변경은 없었다.
 - Document Sync Check (2026-07-12): VAI-7b는 additive `vat_tax_treatment_ai_result`와 migration `0073`, versioned payload, fingerprint/version stale 처리, 2분 실행 lease, 15분 fallback backoff, active-scope partial unique index를 구현했다. VAT read는 증빙 확인을 먼저 합성한 뒤 동일 scope/fingerprint 저장 결과를 재사용하고 사용자 확정 audit를 마지막에 적용한다. 다중 요청·변경 fingerprint·fallback retry·확정 행 제외·tenant/business/period 격리·민감 원문 미저장을 DB/단위 테스트로 검증했다. migration dev/prod 적용과 VAI-7c 비동기 trigger/UI, VAI-7d 브라우저 계측이 남아 JC-037은 `todo`를 유지한다.
+- Document Sync Check (2026-07-12): 저장 AI read를 기본 OFF로 고정했다. VAT 화면과 사용자 확정·증빙 mutation만 명시적으로 opt-in하고, filing-preparation·internal-reminders·package/rebuild gate는 명시적으로 opt-out해 불필요 SELECT와 추천 캐시의 gate 혼입을 차단한다.
 
 ### JC-038 · 부가세 화면 단순화·중복 정보 제거
 
