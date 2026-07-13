@@ -137,6 +137,7 @@
 | Recent Tax Treatment Undo | 방금 저장한 판단을 원래 canonical·감사 상태로 복원 | sonner `되돌리기`; 최신 1건·일회용 토큰·서버 current-state 검증 |
 | Confirmed Ledger Rebuild | 현재 확정 VAT fact로 summary와 fingerprint를 재계산 | 다른 gate가 모두 ready이고 snapshot만 stale일 때 파란 outline `확정 원장 다시 계산`; 처리 중 spinner |
 | VAT Package API Gate | package/rebuild 요청 시 미완료 자료를 서버에서 차단 | 화면에 별도 준비 카드·차단 이유 목록을 반복하지 않고 API에서만 강제 |
+| VAT Path 1b Input Summary | 확정 부가세 값을 홈택스 신고서 행·칸과 연결 | 별도 `홈택스 입력값` 화면. 한 개 표에서 `신고서 위치/금액/세액/확인 방식` 표시, AI 설명 반복 없음 |
 | Hidden Empty State | 수정 거래가 0건일 때 불필요한 작업대 제거 | `신고 전 수정 필요` 섹션 전체를 렌더하지 않고 Hero에 `수정할 거래가 없습니다` 한 줄만 표시 |
 
 - 사이드바 "부가세"에 공제 검토 대기 건수 카운트 배지(warn)를 노출한다.
@@ -148,6 +149,8 @@
 - **중복 제거**: 같은 classification 행의 AI 판단과 공제 검토 mutation은 한 행에 합치며, 별도 부속명세·상태 예시·대형 패키지 미리보기·동작 없는 `확정 신고` control을 두지 않는다.
 - **증빙 확인 경계**: `확인 완료`는 증빙파일 생성·AI 자동확정이 아니라 사용자가 법정 증빙 준비를 직접 확인했다는 기록이다. 확인 취소 시 세무판단·package gate를 다시 잠근다.
 - **자동 홈택스 제출은 범위 밖**이다. 부가세 공식 비암호화 업로드 파일은 Stage A 외부 확인 전 미제공이며, 세액은 사용자 판단 완료 전 "예정"으로 표기한다.
+- **Path 1b 분리**: VAT 작업대 상단 CTA에서 별도 `홈택스 입력값` 화면으로 이동한다. ready 상태에서만 입력표를 표시하고, blocked/empty/stale/unsupported 상태에서는 이전 값을 확정값처럼 노출하지 않는다. 직접 입력 행은 `값 비교·수정`, 신고서 합계 행은 `자동 합계 대조`, `(27)`은 `최종 확인`으로 구분한다.
+- **최종세액 경계**: 현재 `payableTaxKrw`는 신고서 ㉰(매출세액-공제 가능 매입세액)이며 경감·공제·예정고지·가산세를 반영한 (27) 최종 납부세액이 아니다. 화면에서 두 값을 같은 것으로 표시하지 않는다.
 - 상태칩·Table 골격은 앞 화면들과 공통(DRY). Loading·Error는 실제 상태에서 처리하고 live 화면에 데모 카드를 상시 표시하지 않는다.
 - **모바일 셸**: `md` 미만에서는 248px 고정 사이드바를 숨기고 상단 전체 메뉴 버튼으로 왼쪽 Sheet를 연다. Sheet는 데스크톱과 같은 메뉴·배지·사업자 유형 분기를 재사용하며 링크 선택 시 닫힌다.
 
@@ -358,6 +361,7 @@
 - Preview (자료수집): [01_source_collection.html](./previews/01_source_collection.html)
 - Preview (기장검토): [02_bookkeeping_review.html](./previews/02_bookkeeping_review.html)
 - Preview (부가세): [03_vat.html](./previews/03_vat.html)
+- Preview (부가세 Path 1b 홈택스 입력값): [14_vat_path1b.html](./previews/14_vat_path1b.html)
 - Preview (급여·지급): [04_payroll.html](./previews/04_payroll.html)
 - Preview (원천세): [05_filing_support.html](./previews/05_filing_support.html)
 - Preview (직원 명부): [06_employee_directory.html](./previews/06_employee_directory.html)
@@ -376,6 +380,7 @@
 - **UI_Screens**: [Source Collection Prototype Review](./03_SOURCE_COLLECTION_PROTOTYPE_REVIEW.md) - 자료수집 확인 결과
 - **UI_Screens**: [Bookkeeping Review Prototype Review](./04_BOOKKEEPING_REVIEW_PROTOTYPE_REVIEW.md) - 기장검토 확인 결과
 - **UI_Screens**: [VAT Prototype Review](./05_VAT_PROTOTYPE_REVIEW.md) - 부가세 확인 결과
+- **UI_Screens**: [VAT Path 1b Prototype Review](./14_VAT_PATH1B_PROTOTYPE_REVIEW.md) - 부가세 직접입력 정리 화면 확인
 - **UI_Screens**: [Payroll Prototype Review](./06_PAYROLL_PROTOTYPE_REVIEW.md) - 급여 확인 결과
 - **UI_Screens**: [Withholding Tax Prototype Review](./07_FILING_SUPPORT_PROTOTYPE_REVIEW.md) - 원천세 재배치 기록
 - **UI_Screens**: [Employee Directory Prototype Review](./08_EMPLOYEE_DIRECTORY_PROTOTYPE_REVIEW.md) - 직원 명부 확인 결과
