@@ -1,6 +1,6 @@
 # Open Backlog Completion Contracts
 > Created: 2026-07-05 21:34
-> Last Updated: 2026-07-12 KST
+> Last Updated: 2026-07-13 KST
 
 ## 0. Purpose
 
@@ -160,7 +160,8 @@ Path 1b** (confirmed A01 aggregate as a `항목 = 값` direct-entry summary), **
 1b screen is implemented** (2026-07-12) — `/dashboard/filing-support` shows the
 withholding value-summary screen with a local income tax reference value; Path 1a
 W1-W5 stay unstarted until a form is confirmed. **VAT is likewise assigned to
-Path 1b**, but the 1b VAT value-summary screen is **not yet built**, while VAT
+Path 1b**. Its legal-row field mapping and HTML Preview are project-owner
+approved, while the Pre-Code Brief and runtime read model/screen remain pending. VAT
 Stage A remains an optional Path 1a upgrade check for the official non-encrypted
 whole-return template and direct-acceptance path. No tax type ends as `blocked`.
 The fixed order and completion lines are in
@@ -168,9 +169,9 @@ The fixed order and completion lines are in
 
 **Beta focus is Path 1 only** (1a form upload where a form exists, 1b direct-entry
 summary otherwise). Path 2 is after the full Path 1 beta (1a files + 1b summary screens). Path 3 encryption, fcrypt and
-certification tooling are outside the current product scope. Step-by-step Hometax
-menu/field-location guidance is also excluded — Path 1b provides the value summary
-only.
+certification tooling are outside the current product scope. Path 1b includes the
+exact Hometax menu, screen, legal row/field location and value; only a
+screenshot-by-screenshot click tutorial and automatic navigation are excluded.
 
 **Filing path priority (2026-07-11):** JC-030 is focused on Path 1. Path 2 is deferred and encrypted Path 3 is excluded:
 
@@ -178,7 +179,7 @@ only.
 |---|---|---|
 | **Validation** | Path 1 & 2 공통 | Implemented for simplified wage; repeated per tax type |
 | **Path 1a** | 홈택스가 직접 수용하는 공식 비암호화 양식·파일 작성 | In progress — simplified wage form implemented; withholding no form, VAT Stage A is the 1a upgrade check |
-| **Path 1b** | 공식 양식 없을 때 확정값과 신고 메뉴·화면·행/칸 위치를 함께 제공 | 원천세: **구현 완료(2026-07-12)**. 부가세 등 나머지 양식 미확인 세목: **대상으로 결정됨 · 화면 구현 대기** (`blocked` 없음) |
+| **Path 1b** | 공식 양식 없을 때 확정값과 신고 메뉴·화면·행/칸 위치를 함께 제공 | 원천세: **구현 완료(2026-07-12)**. 부가세: **Mapping·Preview 오너 승인 완료, Pre-Code Brief·runtime 대기**. 나머지 양식 미확인 세목: 대상 결정·화면 구현 대기 (`blocked` 없음) |
 | **Path 2** | 세무사무소 handoff ZIP | Deferred until full Path 1 beta (1a + 1b) |
 | **Path 3** | 인증·암호화 업로드 파일 | Excluded from current product scope |
 
@@ -204,7 +205,7 @@ and Hometax upload guide are on main. Withholding retains Slice 1a validation
 assets but has no confirmed official form, so it is assigned to Path 1b (1b screen
 implemented, see below). VAT Stage A found official conversion flows for some schedules, but not a
 complete official non-encrypted whole-return template or verified direct-acceptance
-route, so VAT is assigned to Path 1b (1b screen pending) while Stage A stays a 1a
+route, so VAT is assigned to Path 1b (Mapping·Preview complete, runtime pending) while Stage A stays a 1a
 upgrade check. Other ordered tax types generate a Path 1a file only when their own
 Stage A confirms a form.
 
@@ -233,16 +234,16 @@ Path 1b with official Stage A evidence that no form exists. No tax type ends as
 
 #### Path 1b — 직접입력 `항목 = 값` 정리 (양식 없을 때)
 
-Current state: **withholding done, VAT pending.** Withholding and VAT are both
+Current state: **withholding done, VAT UI-First in progress.** Withholding and VAT are both
 assigned to Path 1b because no official form is confirmed. Withholding's 1b
 `항목 = 값` value-summary screen shipped 2026-07-12
 (`/dashboard/filing-support`, `WithholdingEfilingPanel`) — it shows A01
 employee count/gross pay/income tax plus a local income tax reference value,
 and the panel copy was rewritten from 1a-pending framing (binary layout
 wait, conversion-upload guide, disabled download) to the confirmed 1b
-framing. VAT's 1b value-summary screen is not built yet; the underlying
-confirmed VAT facts already exist in the validation read models — Path 1b for
-VAT is the pending UI that reorganizes them for direct entry. Any tax type
+framing. VAT's legal-row field mapping and separate HTML Preview are
+project-owner approved; the Pre-Code Brief and runtime value-summary screen remain pending.
+The underlying confirmed VAT facts already exist in the validation read models. Any tax type
 without a confirmed official form is assigned to Path 1b instead of being
 blocked.
 
@@ -254,7 +255,8 @@ Done means (Path 1b, per tax type):
 - 신고 양식(해당 시 화면 명칭), 귀속기간, 사업자, 합계가 화면에 표시된다.
 - tenant/business/period isolation과 PII 비저장이 유지된다.
 
-Withholding satisfies this line (2026-07-12). VAT does not yet.
+Withholding satisfies this line (2026-07-12). VAT does not yet because the
+approved runtime screen and its scoped read model are not implemented.
 
 #### Path 3 — 인증·암호화 파일 (excluded)
 
@@ -268,7 +270,7 @@ Non-goals (all JC-030 layers):
 - User-approved auto-submit (JC-023).
 - Tax-representative marketplace positioning.
 - Path 1a file types without an official current layout (served via Path 1b instead).
-- Step-by-step Hometax menu/field-location walkthrough (1b is value display only).
+- Screenshot-by-screenshot Hometax click tutorial or automatic navigation. Path 1b exact menu/screen/row/field mapping remains in scope.
 
 ### JC-035 — 부가세 AI 세무판단 보조
 

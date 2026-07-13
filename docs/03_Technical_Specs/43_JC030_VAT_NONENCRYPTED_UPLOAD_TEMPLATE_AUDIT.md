@@ -1,16 +1,16 @@
 # JC-030 VAT Stage A — Official Non-Encrypted Upload Template Audit
 > Created: 2026-07-10 21:22 KST
-> Last Updated: 2026-07-11 KST
+> Last Updated: 2026-07-13 KST
 
 ## 0. Flow Status
 
 ```text
 [Flow]
-판정: 부가세 1a 양식 미확인 → **1b(직접입력 정리) 대상으로 결정**(값 정리 화면 미구현). Stage A는 1a 승격용 선택 조사
+판정: 부가세 1a 양식 미확인 → **1b(직접입력 정리) 대상으로 결정**. Field Mapping·Preview 오너 승인 완료, Pre-Code Brief·runtime 대기
 완료: 공개 자료 감사 — 현재 홈택스 메뉴와 국세청 부가세 첨부서류 엑셀 프로그램 확인
 확인: 현재 메뉴는 파일 변환신고(회계프로그램), 공식 엑셀은 일부 첨부서류 전용
 미확인(1a 조건): 전체 신고 비암호화 양식과 2026년 첨부서류 파일 수용 규격·암호 요구 여부
-1b(대상·구현 대기): 자료대조 Phase 2·VAT provenance·JC-035 확정값을 `항목 = 값` 화면으로 정리하는 것이 목표(파일 없음·**화면 미구현**)
+1b(UI-First 진행): 자료대조 Phase 2·VAT provenance·JC-035 확정값의 법정 신고서 행·칸 Mapping과 Preview 완료(파일 없음·runtime 미구현)
 1a 승격 조사(선택): 로그인 화면 또는 126으로 공식 비암호화 양식·직접 수용 여부 확인
 금지: 1a(파일 매핑·Preview·Brief·generator)는 Stage A 양식 확인 전 착수 금지
 ```
@@ -140,11 +140,11 @@ https://www.nts.go.kr/comm/nttFileDownload.do?fileKey=0a47eb5b2cc9b85328e401bfcc
 
 ## 5. Stage A Verdict
 
-**판정: 공식 비암호화 전체 신고 양식 미확인 → 부가세는 Path 1b(직접입력 정리) 대상으로 결정. 값 정리 화면은 아직 구현하지 않았다.**
+**판정: 공식 비암호화 전체 신고 양식 미확인 → 부가세는 Path 1b(직접입력 정리) 대상으로 결정. Field Mapping·Preview 오너 승인 완료, Pre-Code Brief·runtime 구현 대기.**
 
 공개 자료 감사는 완료했다. 현재 메뉴는 회계프로그램 파일 변환신고이고, 공식 Excel
 도구는 일부 첨부서류 전용이라 **1a(양식 파일) 조건이 완결되지 않았다.** 따라서 1a는
-착수하지 않고 부가세를 1b(직접입력 정리) 대상으로 두며(값 정리 화면은 후속 구현),
+착수하지 않고 부가세를 1b(직접입력 정리) 대상으로 두며(Mapping·Preview 이후 runtime은 후속 구현),
 다음은 하지 않는다.
 
 - 부가세 generator 코드 작성(1a)
@@ -153,11 +153,11 @@ https://www.nts.go.kr/comm/nttFileDownload.do?fileKey=0a47eb5b2cc9b85328e401bfcc
 - 화면 캡처 기반 클릭별 튜토리얼·자동 입력(1b 메뉴 경로·화면명·행/칸 위치 매핑은 포함)
 - 암호화 변환파일 경로로 우회
 
-부가세는 `blocked`가 아니라 1b 대상으로 유지한다(값 정리 화면 미구현). 아래 §6 조사는 1a로 승격하기 위한 선택 작업이다.
+부가세는 `blocked`가 아니라 1b 대상으로 유지한다(Mapping·Preview 완료, runtime 미구현). 아래 §6 조사는 1a로 승격하기 위한 선택 작업이다.
 
 ## 6. Next External Verification (1a 승격용 · 선택)
 
-부가세는 1b(직접입력 정리) 대상으로 결정됐고 값 정리 화면은 구현 대기다. 1a(양식 파일)로 승격하려면 홈택스
+부가세는 1b(직접입력 정리) 대상으로 결정됐고 Field Mapping·Preview는 완료했으며 runtime은 구현 대기다. 1a(양식 파일)로 승격하려면 홈택스
 로그인 화면 또는 국세상담센터 126에서 아래 질문을 확인한다.
 
 1. `파일 변환신고(회계프로그램)`에서 부가세 신고서 전체 파일을 받는가, 일부

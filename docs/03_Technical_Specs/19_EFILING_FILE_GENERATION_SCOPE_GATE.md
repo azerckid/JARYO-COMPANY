@@ -1,6 +1,6 @@
 # E-Filing File Generation Scope Gate
 > Created: 2026-07-05 11:18
-> Last Updated: 2026-07-11 KST
+> Last Updated: 2026-07-13 KST
 
 ## 0. Flow Status
 
@@ -8,8 +8,8 @@
 [Flow]
 현재: Path 1 세목 확대 최우선 — 세목별 1a(양식 업로드) 우선, 없으면 1b(직접입력 정리)
 구현 완료: 근로소득 간이지급 — Validation + 1a 비암호화 파일 후보·검증·홈택스 안내; 공식 직접 수용은 beta 검증 대상
-1b 판정: 원천세 — 공식 업로드 양식 없음(직접작성/비밀번호 변환파일만) → 1b 대상으로 결정, 값 정리 화면 미구현
-1b 판정: 부가세 — 전체 신고 비암호화 양식 미확인 → 1b 대상으로 결정, 값 정리 화면 미구현; 1a는 [Stage A 확인](./43_JC030_VAT_NONENCRYPTED_UPLOAD_TEMPLATE_AUDIT.md) 시
+1b 완료: 원천세 — 공식 업로드 양식 없음(직접작성/비밀번호 변환파일만) → 직접입력 안내 화면 구현
+1b 진행: 부가세 — 전체 신고 비암호화 양식 미확인 → Field Mapping·Preview 오너 승인 완료, Pre-Code Brief·runtime 대기; 1a는 [Stage A 확인](./43_JC030_VAT_NONENCRYPTED_UPLOAD_TEMPLATE_AUDIT.md) 시
 보류: JC-034 Path 2 ZIP 구현
 제외: Path 3 fcrypt·암호화 파일·적합성 검정, 화면 캡처 기반 클릭별 튜토리얼·자동 입력
 ```
@@ -17,12 +17,13 @@
 ## 1. Purpose
 
 JC-030은 [Product Baseline §Filing Path Priority](../01_Concept_Design/01_PRODUCT_BASELINE.md)의
-**공통 검증**과 **Path 1 비암호화 업로드 파일 생성**을 담당한다.
+**공통 검증**과 **Path 1a 비암호화 업로드 파일 생성 또는 Path 1b 직접입력 정리**를 담당한다.
 
 | 구성 | Filing Path | 설명 |
 |---|---|---|
 | **Validation** | Path 1 & 2 공통 | 레이아웃·정합성 검증 후 다운로드/ZIP |
-| **Path 1** | 공식 비암호화 양식 파일 + 홈택스 안내 | 사이트가 직접 수용하는 공식 업로드 양식 (**현재**) |
+| **Path 1a** | 공식 비암호화 양식 파일 + 홈택스 안내 | 사이트가 직접 수용하는 공식 업로드 양식이 있을 때 |
+| **Path 1b** | 확정값 + 홈택스 메뉴·화면·행/칸 위치 | 공식 업로드 양식이 없을 때, 파일 생성 없이 직접입력 정리 |
 | **Path 3** | 인증·암호화 파일 | **현재 제품 범위 밖** |
 
 Path 2 (GIWA handoff ZIP)는 **JC-034**가 담당하며, JC-030 Validation 출력을 소비한다.

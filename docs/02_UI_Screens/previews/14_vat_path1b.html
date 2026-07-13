@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SemuAgent · 부가세 홈택스 입력값 (Path 1b Preview)</title>
+<style>
+  :root {
+    --bg: #f6f6f7;
+    --surface: #ffffff;
+    --border: #e4e4e7;
+    --border-strong: #d4d4d8;
+    --fg: #18181b;
+    --muted: #71717a;
+    --subtle: #a1a1aa;
+    --blue: #2563eb;
+    --blue-soft: #eff6ff;
+    --green: #15803d;
+    --green-soft: #f0fdf4;
+    --orange: #b45309;
+    --orange-soft: #fffbeb;
+    --radius: 8px;
+    --shadow: 0 1px 2px rgba(24, 24, 27, .05);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", "Apple SD Gothic Neo", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; }
+
+  .app { display: grid; min-height: 100vh; grid-template-columns: 248px minmax(0, 1fr); }
+  .sidebar { position: sticky; top: 0; display: flex; height: 100vh; flex-direction: column; gap: 4px; border-right: 1px solid var(--border); background: var(--surface); padding: 20px 14px; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 18px; }
+  .logo { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 8px; background: var(--fg); color: #fff; font-size: 15px; font-weight: 700; }
+  .brand-name { display: block; font-size: 15px; font-weight: 650; }
+  .brand-sub { display: block; color: var(--subtle); font-size: 11px; }
+  .nav-label { padding: 14px 8px 6px; color: var(--subtle); font-size: 11px; font-weight: 600; }
+  .nav-item { display: flex; align-items: center; border-radius: 8px; padding: 8px 10px; color: var(--muted); font-size: 13.5px; font-weight: 500; }
+  .nav-item:hover { background: #f4f4f5; color: var(--fg); }
+  .nav-item.active { background: #f4f4f5; color: var(--fg); font-weight: 650; }
+  .nav-item.sub { padding: 6px 10px 6px 28px; font-size: 12.5px; }
+  .spacer { flex: 1; }
+  .user { border-top: 1px solid var(--border); padding: 12px 8px 0; }
+  .user strong { display: block; font-size: 12.5px; }
+  .user span { color: var(--subtle); font-size: 11px; }
+
+  .main { min-width: 0; }
+  .mobile-bar { display: none; }
+  .topbar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; border-bottom: 1px solid var(--border); background: var(--surface); padding: 14px 28px; }
+  .crumb { color: var(--subtle); font-size: 12.5px; font-weight: 500; }
+  .topbar h1 { font-size: 16px; font-weight: 650; }
+  .company { color: var(--muted); font-size: 13px; font-weight: 500; }
+  .period { margin-left: auto; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); padding: 6px 12px; font-size: 13px; font-weight: 500; }
+
+  .content { display: flex; width: 100%; max-width: 1180px; flex-direction: column; gap: 16px; padding: 24px 28px 48px; }
+  .back { width: fit-content; color: var(--blue); font-size: 12.5px; font-weight: 650; }
+  .readiness { display: flex; align-items: center; gap: 16px; border: 1px solid #bbf7d0; border-radius: var(--radius); background: var(--green-soft); padding: 14px 16px; box-shadow: var(--shadow); }
+  .readiness-copy { flex: 1; min-width: 0; }
+  .readiness-title { color: var(--green); font-size: 14px; font-weight: 700; }
+  .readiness-desc { margin-top: 2px; color: #3f6212; font-size: 12.5px; }
+  .readiness-count { flex: none; color: var(--green); font-size: 12px; font-weight: 700; }
+
+  .route { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: center; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 12px 16px; box-shadow: var(--shadow); }
+  .route-label { color: var(--muted); font-size: 12px; font-weight: 650; }
+  .route-value { font-size: 13px; font-weight: 650; }
+  .route-note { grid-column: 2; margin-top: 2px; color: var(--subtle); font-size: 11px; }
+
+  .panel { overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+  .panel-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; border-bottom: 1px solid var(--border); padding: 15px 16px; }
+  .panel-head h2 { font-size: 15px; font-weight: 650; }
+  .panel-head p { color: var(--subtle); font-size: 12px; }
+  .form-meta { margin-left: auto; color: var(--muted); font-size: 12px; }
+
+  .input-grid { width: 100%; }
+  .grid-head, .input-row { display: grid; grid-template-columns: minmax(260px, 1.6fr) minmax(130px, .8fr) minmax(130px, .8fr) 140px; align-items: center; }
+  .grid-head { border-bottom: 1px solid var(--border); background: #fafafa; color: var(--subtle); font-size: 11.5px; font-weight: 650; }
+  .grid-head > div, .input-row > div { padding: 10px 16px; }
+  .grid-head .number, .input-row .number { text-align: right; }
+  .group-label { border-bottom: 1px solid var(--border); background: #fafafa; padding: 8px 16px; color: var(--muted); font-size: 11.5px; font-weight: 700; }
+  .input-row { min-height: 54px; border-bottom: 1px solid var(--border); }
+  .input-row:last-child { border-bottom: 0; }
+  .line-title { font-size: 13px; font-weight: 650; }
+  .line-sub { margin-top: 1px; color: var(--subtle); font-size: 11px; }
+  .number { font-variant-numeric: tabular-nums; font-weight: 650; white-space: nowrap; }
+  .number.muted { color: var(--subtle); font-weight: 500; }
+  .mode { justify-self: start; border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; color: var(--muted); background: #f4f4f5; font-size: 11px; font-weight: 650; white-space: nowrap; }
+  .mode.input { border-color: #bfdbfe; color: var(--blue); background: var(--blue-soft); }
+  .mode.final { border-color: #fde68a; color: var(--orange); background: var(--orange-soft); }
+  .total-row { background: #fcfcfd; }
+  .total-row .line-title { font-weight: 700; }
+  .result-row { background: var(--blue-soft); }
+  .result-row .line-title, .result-row .number { color: #1d4ed8; font-weight: 750; }
+
+  .final-note { display: flex; align-items: flex-start; gap: 10px; border-top: 1px solid var(--border); background: var(--orange-soft); padding: 12px 16px; color: #92400e; font-size: 12px; }
+  .final-note strong { color: #78350f; }
+  .boundary { color: var(--subtle); font-size: 11.5px; line-height: 1.6; }
+  .preview-note { border: 1px solid var(--border); border-radius: var(--radius); background: #fafafa; padding: 12px 14px; color: var(--subtle); font-size: 11.5px; }
+  .preview-note strong { color: var(--muted); }
+
+  @media (max-width: 767px) {
+    .app { grid-template-columns: minmax(0, 1fr); }
+    .sidebar { display: none; }
+    .mobile-bar { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); background: var(--surface); padding: 12px 16px; }
+    .mobile-bar .brand { padding: 0; }
+    .menu-btn { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--fg); }
+    .topbar { align-items: flex-start; padding: 12px 16px; }
+    .topbar > div { width: 100%; }
+    .company { order: 2; width: 100%; }
+    .period { order: 3; margin-left: 0; max-width: 100%; }
+    .content { padding: 18px 16px 40px; }
+    .readiness { align-items: flex-start; flex-direction: column; }
+    .readiness-count { max-width: 100%; white-space: normal; }
+    .route { grid-template-columns: 1fr; gap: 3px; }
+    .route-note { grid-column: 1; }
+    .panel-head { align-items: flex-start; flex-direction: column; }
+    .form-meta { margin-left: 0; }
+    .grid-head { display: none; }
+    .input-row { grid-template-columns: 1fr 1fr; gap: 8px 12px; padding: 12px 14px; }
+    .input-row > div { padding: 0; }
+    .input-row .line { grid-column: 1 / -1; }
+    .input-row .number { text-align: left; }
+    .input-row .number::before { display: block; margin-bottom: 1px; color: var(--subtle); font-size: 10px; font-weight: 600; }
+    .input-row .amount::before { content: "금액"; }
+    .input-row .tax::before { content: "세액"; }
+    .input-row .mode { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="mobile-bar">
+    <a href="00_company_home.html" class="brand">
+      <span class="logo">S</span>
+      <span><span class="brand-name">SemuAgent</span><span class="brand-sub">회사 세무·회계 운영</span></span>
+    </a>
+    <button class="menu-btn" aria-label="전체 메뉴 열기">메뉴</button>
+  </div>
+
+  <aside class="sidebar">
+    <a href="00_company_home.html" class="brand">
+      <span class="logo">S</span>
+      <span><span class="brand-name">SemuAgent</span><span class="brand-sub">회사 세무·회계 운영</span></span>
+    </a>
+    <a href="00_company_home.html" class="nav-item">회사 홈</a>
+    <div class="nav-label">운영 흐름</div>
+    <a href="01_source_collection.html" class="nav-item">자료수집</a>
+    <a href="02_bookkeeping_review.html" class="nav-item">기장검토</a>
+    <a href="04_payroll.html" class="nav-item">급여·지급</a>
+    <a href="03_vat.html" class="nav-item active">부가세</a>
+    <a href="14_vat_path1b.html" class="nav-item sub active">홈택스 입력값</a>
+    <a href="08_filing_preparation.html" class="nav-item">연간신고</a>
+    <div class="nav-label">관리</div>
+    <div class="nav-item">설정</div>
+    <a href="07_internal_reminder.html" class="nav-item">리마인드</a>
+    <div class="spacer"></div>
+    <div class="user"><strong>김대표</strong><span>샘플컴퍼니(주) · 대표</span></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="crumb"><a href="03_vat.html">부가세</a> › 홈택스 입력값</div>
+        <h1>홈택스 입력값</h1>
+      </div>
+      <span class="company">샘플컴퍼니(주)</span>
+      <span class="period">2026년 1기 (1~6월)</span>
+    </div>
+
+    <div class="content">
+      <a href="03_vat.html" class="back">← 부가세로 돌아가기</a>
+
+      <section class="readiness" aria-label="신고서 입력 준비 상태">
+        <div class="readiness-copy">
+          <div class="readiness-title">입력 준비 완료</div>
+          <div class="readiness-desc">홈택스 미리채움과 아래 확정값을 비교하고, 다르면 해당 행만 수정하세요.</div>
+        </div>
+        <div class="readiness-count">확정 원장 393건 · 미완료 0건</div>
+      </section>
+
+      <section class="route" aria-label="홈택스 신고 경로">
+        <div class="route-label">홈택스 경로</div>
+        <div class="route-value">세금신고 → 부가가치세 신고 → 일반과세자 정기신고</div>
+        <div class="route-note">2026년 제1기 확정신고 기준. 홈택스 메뉴명은 개편될 수 있습니다.</div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>일반과세자 부가가치세 신고서</h2>
+          <p>별지 제21호서식 · 확정 신고</p>
+          <div class="form-meta">샘플컴퍼니(주) · 2026.01.01~2026.06.30</div>
+        </div>
+
+        <div class="input-grid" role="table" aria-label="홈택스 부가세 입력값">
+          <div class="grid-head" role="row">
+            <div role="columnheader">홈택스 신고서 위치</div>
+            <div role="columnheader" class="number">금액</div>
+            <div role="columnheader" class="number">세액</div>
+            <div role="columnheader">확인 방식</div>
+          </div>
+
+          <div class="group-label">과세표준 및 매출세액</div>
+          <div class="input-row" role="row">
+            <div class="line" role="cell"><div class="line-title">(1) 과세 · 세금계산서 발급분</div><div class="line-sub">전자·종이 세금계산서 과세 매출</div></div>
+            <div class="number amount" role="cell">220,000,000원</div><div class="number tax" role="cell">22,000,000원</div><div class="mode input" role="cell">값 비교·수정</div>
+          </div>
+          <div class="input-row" role="row">
+            <div class="line" role="cell"><div class="line-title">(3) 과세 · 카드·현금영수증 발행분</div><div class="line-sub">카드·현금영수증 과세 매출</div></div>
+            <div class="number amount" role="cell">80,000,000원</div><div class="number tax" role="cell">8,000,000원</div><div class="mode input" role="cell">값 비교·수정</div>
+          </div>
+          <div class="input-row" role="row">
+            <div class="line" role="cell"><div class="line-title">(4) 과세 · 기타 매출분</div><div class="line-sub">정규영수증 외 과세 매출</div></div>
+            <div class="number amount" role="cell">20,000,000원</div><div class="number tax" role="cell">2,000,000원</div><div class="mode input" role="cell">값 비교·수정</div>
+          </div>
+          <div class="input-row" role="row">
+            <div class="line" role="cell"><div class="line-title">(5) 영세율 · 세금계산서 발급분</div><div class="line-sub">증빙 확인을 마친 영세율 매출</div></div>
+            <div class="number amount" role="cell">40,000,000원</div><div class="number tax" role="cell">0원</div><div class="mode input" role="cell">값 비교·수정</div>
+          </div>
+          <div class="input-row total-row" role="row">
+            <div class="line" role="cell"><div class="line-title">(9) 과세표준 및 매출세액 합계</div><div class="line-sub">위 매출 항목의 합계</div></div>
+            <div class="number amount" role="cell">360,000,000원</div><div class="number tax" role="cell">32,000,000원</div><div class="mode" role="cell">자동 합계 대조</div>
+          </div>
+
+          <div class="group-label">매입세액</div>
+          <div class="input-row" role="row">
+            <div class="line" role="cell"><div class="line-title">(10) 세금계산서 수취분 · 일반매입</div><div class="line-sub">고정자산을 제외한 세금계산서 매입</div></div>
+            <div class="number amount" role="cell">130,000,000원</div><div class="number tax" role="cell">13,000,000원</div><div class="mode input" role="cell">값 비교·수정</div>
+          </div>
+          <div class="input-row" role="row">
+            <div class="line" role="cell"><div class="line-title">(11) 세금계산서 수취분 · 고정자산 매입</div><div class="line-sub">고정자산으로 확인한 매입</div></div>
+            <div class="number amount" role="cell">20,000,000원</div><div class="number tax" role="cell">2,000,000원</div><div class="mode input" role="cell">값 비교·수정</div>
+          </div>
+          <div class="input-row" role="row">
+            <div class="line" role="cell"><div class="line-title">(14) 그 밖의 공제매입세액</div><div class="line-sub">카드·현금영수증 등 공제 대상 매입</div></div>
+            <div class="number amount" role="cell">42,000,000원</div><div class="number tax" role="cell">4,200,000원</div><div class="mode input" role="cell">값 비교·수정</div>
+          </div>
+          <div class="input-row total-row" role="row">
+            <div class="line" role="cell"><div class="line-title">(15) 매입세액 합계</div><div class="line-sub">일반매입·고정자산·그 밖의 공제매입 합계</div></div>
+            <div class="number amount" role="cell">192,000,000원</div><div class="number tax" role="cell">19,200,000원</div><div class="mode" role="cell">자동 합계 대조</div>
+          </div>
+          <div class="input-row" role="row">
+            <div class="line" role="cell"><div class="line-title">(16) 공제받지 못할 매입세액</div><div class="line-sub">불공제·안분 불공제분 합계</div></div>
+            <div class="number amount" role="cell">12,000,000원</div><div class="number tax" role="cell">1,200,000원</div><div class="mode input" role="cell">값 비교·수정</div>
+          </div>
+          <div class="input-row total-row" role="row">
+            <div class="line" role="cell"><div class="line-title">(17) 공제 가능 매입세액 차감계</div><div class="line-sub">(15) 매입세액 합계 - (16) 불공제 매입세액</div></div>
+            <div class="number amount" role="cell">180,000,000원</div><div class="number tax" role="cell">18,000,000원</div><div class="mode" role="cell">자동 합계 대조</div>
+          </div>
+
+          <div class="group-label">신고서 계산값과 면세 수입</div>
+          <div class="input-row result-row" role="row">
+            <div class="line" role="cell"><div class="line-title">㉰ 납부(환급)세액</div><div class="line-sub">매출세액 ㉮ - 매입세액 ㉯</div></div>
+            <div class="number amount muted" role="cell">-</div><div class="number tax" role="cell">14,000,000원</div><div class="mode" role="cell">자동 계산 대조</div>
+          </div>
+          <div class="input-row" role="row">
+            <div class="line" role="cell"><div class="line-title">(84) 면세사업 수입금액 합계</div><div class="line-sub">면세 매출이 있는 경우만 확인</div></div>
+            <div class="number amount" role="cell">15,000,000원</div><div class="number tax muted" role="cell">해당 없음</div><div class="mode input" role="cell">값 비교·수정</div>
+          </div>
+          <div class="input-row" role="row">
+            <div class="line" role="cell"><div class="line-title">(27) 최종 납부(환급)세액</div><div class="line-sub">경감·공제·예정고지·가산세 반영 후</div></div>
+            <div class="number amount muted" role="cell">-</div><div class="number tax muted" role="cell">홈택스 계산값</div><div class="mode final" role="cell">최종 확인</div>
+          </div>
+        </div>
+
+        <div class="final-note">
+          <strong>(27)은 홈택스에서 최종 확인합니다.</strong>
+          <span>위 14,000,000원은 경감·공제·예정고지·가산세 반영 전 ㉰ 금액입니다.</span>
+        </div>
+      </section>
+
+      <p class="boundary">SemuAgent는 확정값과 입력 위치를 정리합니다. 홈택스 입력·제출·납부는 사용자가 직접 진행하며, 자격증명과 인증서를 저장하지 않습니다.</p>
+      <div class="preview-note"><strong>Preview 안내</strong> — JC-030 부가세 Path 1b UI-First Gate용 정적 샘플입니다. 실제 데이터가 아니며 런타임은 아직 구현하지 않았습니다.</div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

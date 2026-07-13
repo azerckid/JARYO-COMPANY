@@ -97,6 +97,16 @@
 - 펼친 상세에서 중복된 출처·판단 근거·규칙·미확정 문구를 제거하고 실제 찾은 근거·필요 증빙·할 일·행동만 유지한다.
 - `md` 미만에서는 고정 Sidebar 대신 전체 메뉴 Sheet를 사용한다. 메뉴 데이터·배지·사업자 유형 분기는 데스크톱과 공유한다.
 
+### 6.6 JC-030 VAT Path 1b — Preview Review Pending
+
+- 기존 부가세 판단 작업대에 입력 안내를 더 쌓지 않고 별도 `홈택스 입력값` 화면으로 분리한다.
+- 홈택스 미리채움과 SemuAgent 확정값을 비교하고, 다른 신고서 행만 수정하는 흐름이다.
+- 기본 화면에는 일반과세자 정기 확정신고의 행 번호·금액·세액·확인 방식만 표시한다.
+- AI 출처·근거·증빙·workflow 상태는 기존 VAT 작업대에서만 처리하고 Path 1b 화면에서 반복하지 않는다.
+- `(27)` 최종 납부(환급)세액은 홈택스 계산값으로 확인하며, SemuAgent의 ㉰ 금액과 동일하다고 표시하지 않는다.
+- Preview: [VAT Path 1b](./previews/14_vat_path1b.html)
+- 상태: Preview 제작·프로젝트 오너 승인 완료(2026-07-13), runtime 미구현.
+
 ## 7. Feedback & Improvements
 - (반영) 신고 패키지 생성 버튼을 승인 전 잠금 상태로 표현: `is-disabled` + `disabled` + `aria-disabled="true"`, muted 스타일, 잠김 라벨.
 - (구현 노트) disabled 버튼의 `title` 툴팁은 브라우저별로 표시가 일관되지 않는다. React 구현 시 비활성 버튼을 래퍼(예: span/tooltip 컴포넌트)로 감싸 잠금 사유를 접근성 있게 노출한다. → Component & Library Plan / JC-011 전제조건에 반영.
@@ -116,3 +126,5 @@
 - **UI_Screens**: [HTML Preview](./previews/03_vat.html) - 브라우저 확인용 프로토타입
 - **Technical_Specs**: [VAT AI Tax Treatment Completion Contract](../03_Technical_Specs/44_VAT_AI_TAX_TREATMENT_COMPLETION_CONTRACT.md) - JC-035 완료선·실행 순서
 - **Technical_Specs**: [VAT Screen Simplification Brief](../03_Technical_Specs/48_VAT_SCREEN_SIMPLIFICATION_AND_DEDUPLICATION_BRIEF.md) - JC-038 중복 제거·삭제 원칙·Preview 재승인
+- **Technical_Specs**: [VAT Path 1b Field Mapping](../03_Technical_Specs/52_JC030_VAT_PATH1B_FIELD_MAPPING.md) - 홈택스 신고서 행·필드 매핑과 runtime gap
+- **UI_Screens**: [VAT Path 1b Prototype Review](./14_VAT_PATH1B_PROTOTYPE_REVIEW.md) - 별도 입력값 화면 UI-First Gate
