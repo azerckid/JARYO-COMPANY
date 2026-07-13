@@ -108,6 +108,7 @@ Data Contract·Derivation·Mutation·Acceptance를 검증 케이스로 옮긴다
 | S-82 | 로드 실패 | 진입 | "신고 항목을 불러오지 못했습니다" + 다시 시도 | PASS·구현 |
 | S-83 | 미인증 | 접근 | `/sign-in` redirect | PASS·구현 |
 | S-84 | tenant 없음 | 진입 | tenant-scoped 접근 차단 | PASS·구현 |
+| S-85 | 급여·지급 사이드바 | 지급명세서와 연말정산을 각각 선택 | 서로 다른 route·breadcrumb·전용 표를 표시하고 각 화면 준비율에 다른 화면 상태를 섞지 않음 | PASS·단위/정적/브라우저 |
 
 ### 2.10 Path 1a Tax-Type File Completion (Pending)
 

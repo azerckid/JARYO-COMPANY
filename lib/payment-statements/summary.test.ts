@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest'
 import {
   buildPaymentStatementBlockers,
   buildPaymentStatementHero,
+  buildSimplifiedStatementBlockers,
+  buildSimplifiedStatementHero,
   buildSimplifiedRow,
+  buildYearEndSettlementBlockers,
+  buildYearEndSettlementHero,
   buildYearEndRow,
   employeeKeyOf,
   resolveEmployeeGroupKey,
@@ -218,6 +222,20 @@ describe('blockers + hero', () => {
     expect(blockers.find((b) => b.id === 'profile')?.href).toBe('/dashboard/employees')
   })
 
+  it('keeps payment and year-end blocker counts scoped to their own rows', () => {
+    const simplified = rows(['ready', 'ready'])
+    const yearEnd: YearEndRow[] = [
+      { employeeKey: 'k0', employeeName: 'e0', employeeCode: null, employeeStatus: 'active', employeeStatusLabel: '재직', annualGrossPayKrw: null, annualWithholdingTaxKrw: null, missingLabel: '월 급여 미확정', status: 'needs_payroll', statusLabel: '월 급여 확정 필요', tone: 'warn' },
+      { employeeKey: 'k1', employeeName: 'e1', employeeCode: null, employeeStatus: 'active', employeeStatusLabel: '재직', annualGrossPayKrw: null, annualWithholdingTaxKrw: null, missingLabel: '인적사항', status: 'profile_incomplete', statusLabel: '인적사항 확인', tone: 'danger' },
+    ]
+
+    expect(buildSimplifiedStatementBlockers(simplified)).toEqual([])
+    expect(buildYearEndSettlementBlockers(yearEnd).map((blocker) => blocker.id)).toEqual([
+      'year_end_payroll',
+      'year_end_profile',
+    ])
+  })
+
   it('computes readiness = ready / total', () => {
     const hero = buildPaymentStatementHero(rows(['ready', 'ready', 'needs_review', 'missing_months']), [])
     expect(hero.totalEmployees).toBe(4)
@@ -249,5 +267,24 @@ describe('blockers + hero', () => {
     expect(hero.totalEmployees).toBe(2)
     expect(hero.readyCount).toBe(1)
     expect(hero.attentionCount).toBe(1)
+  })
+
+  it('keeps the 지급명세서 and 연말정산 screen metrics independent', () => {
+    const simplified = rows(['ready', 'ready'])
+    const yearEnd: YearEndRow[] = [
+      { employeeKey: 'k0', employeeName: 'e0', employeeCode: null, employeeStatus: 'active', employeeStatusLabel: '재직', annualGrossPayKrw: 100, annualWithholdingTaxKrw: 10, missingLabel: '없음', status: 'ready', statusLabel: '검토 준비', tone: 'ok' },
+      { employeeKey: 'k1', employeeName: 'e1', employeeCode: null, employeeStatus: 'terminated', employeeStatusLabel: '중도퇴사', annualGrossPayKrw: 90, annualWithholdingTaxKrw: 9, missingLabel: '퇴사 정산 확인', status: 'mid_year_settlement', statusLabel: '중도정산 검토', tone: 'warn' },
+    ]
+
+    expect(buildSimplifiedStatementHero(simplified)).toMatchObject({
+      readyCount: 2,
+      attentionCount: 0,
+      readinessPercent: 100,
+    })
+    expect(buildYearEndSettlementHero(yearEnd)).toMatchObject({
+      readyCount: 1,
+      attentionCount: 1,
+      readinessPercent: 50,
+    })
   })
 })

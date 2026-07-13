@@ -83,11 +83,19 @@ export type PaymentStatementBlocker = {
   ctaLabel: string
 }
 
+export type PaymentStatementHero = {
+  totalEmployees: number
+  attentionCount: number
+  readyCount: number
+  periodOpenCount: number
+  readinessPercent: number
+}
+
 export type PaymentStatementSummary = {
   tenant: { id: string; name: string; timezone: string }
   businessEntity: { id: string; name: string } | null
   context: ReportingContext
-  hero: { totalEmployees: number; attentionCount: number; readyCount: number; periodOpenCount: number; readinessPercent: number }
+  hero: PaymentStatementHero
   blockers: PaymentStatementBlocker[]
   simplified: SimplifiedRow[]
   yearEnd: YearEndRow[]
@@ -266,13 +274,10 @@ export function buildYearEndRow(params: {
   }
 }
 
-export function buildPaymentStatementBlockers(params: {
-  simplified: SimplifiedRow[]
-  yearEnd: YearEndRow[]
-}): PaymentStatementBlocker[] {
+export function buildSimplifiedStatementBlockers(rows: SimplifiedRow[]): PaymentStatementBlocker[] {
   const blockers: PaymentStatementBlocker[] = []
-  const payrollCount = params.simplified.filter((r) => r.status === 'needs_review' || r.status === 'missing_months').length
-  const profileCount = params.simplified.filter((r) => r.status === 'profile_incomplete').length
+  const payrollCount = rows.filter((row) => row.status === 'needs_review' || row.status === 'missing_months').length
+  const profileCount = rows.filter((row) => row.status === 'profile_incomplete').length
 
   if (payrollCount > 0) {
     blockers.push({
@@ -297,6 +302,75 @@ export function buildPaymentStatementBlockers(params: {
   return blockers
 }
 
+export function buildYearEndSettlementBlockers(rows: YearEndRow[]): PaymentStatementBlocker[] {
+  const blockers: PaymentStatementBlocker[] = []
+  const payrollCount = rows.filter((row) => row.status === 'needs_payroll').length
+  const profileCount = rows.filter((row) => row.status === 'profile_incomplete').length
+
+  if (payrollCount > 0) {
+    blockers.push({
+      id: 'year_end_payroll',
+      title: `연간 급여 확인 필요 ${payrollCount}명`,
+      description: '확정 급여가 있어야 연간 지급액과 기납부 원천세를 집계할 수 있습니다.',
+      tone: 'danger',
+      href: '/dashboard/payroll',
+      ctaLabel: '급여 열기',
+    })
+  }
+  if (profileCount > 0) {
+    blockers.push({
+      id: 'year_end_profile',
+      title: `인적사항 확인 필요 ${profileCount}명`,
+      description: '연말정산 준비에 필요한 직원 명부와 재직 상태를 확인하세요.',
+      tone: 'warn',
+      href: '/dashboard/employees',
+      ctaLabel: '직원 명부 열기',
+    })
+  }
+  return blockers
+}
+
+export function buildPaymentStatementBlockers(params: {
+  simplified: SimplifiedRow[]
+  yearEnd: YearEndRow[]
+}): PaymentStatementBlocker[] {
+  return buildSimplifiedStatementBlockers(params.simplified)
+}
+
+function buildSectionHero(params: {
+  totalEmployees: number
+  readyCount: number
+  periodOpenCount?: number
+}): PaymentStatementHero {
+  const periodOpenCount = params.periodOpenCount ?? 0
+  const attentionCount = params.totalEmployees - params.readyCount - periodOpenCount
+  const readinessPercent = params.totalEmployees === 0
+    ? 0
+    : Math.round((params.readyCount / params.totalEmployees) * 100)
+  return {
+    totalEmployees: params.totalEmployees,
+    attentionCount,
+    readyCount: params.readyCount,
+    periodOpenCount,
+    readinessPercent,
+  }
+}
+
+export function buildSimplifiedStatementHero(rows: SimplifiedRow[]): PaymentStatementHero {
+  return buildSectionHero({
+    totalEmployees: rows.length,
+    readyCount: rows.filter((row) => row.status === 'ready').length,
+    periodOpenCount: rows.filter((row) => row.status === 'period_open').length,
+  })
+}
+
+export function buildYearEndSettlementHero(rows: YearEndRow[]): PaymentStatementHero {
+  return buildSectionHero({
+    totalEmployees: rows.length,
+    readyCount: rows.filter((row) => row.status === 'ready').length,
+  })
+}
+
 // 준비 완료는 반기(simplified)와 연말정산(yearEnd) 둘 다 ready일 때만이다.
 // yearEnd만 보는 것(예: 중도퇴사 → mid_year_settlement)도 hero/허브 attention에
 // 반영해야, 연말정산 표의 "중도정산 검토"가 hero·허브 트랙에서 "데이터 준비"로
@@ -312,9 +386,7 @@ export function buildPaymentStatementHero(simplified: SimplifiedRow[], yearEnd: 
     const ye = yearEndByKey.get(r.employeeKey)
     return r.status === 'period_open' && (!ye || ye.status === 'ready')
   }).length
-  const attentionCount = totalEmployees - readyCount - periodOpenCount
-  const readinessPercent = totalEmployees === 0 ? 0 : Math.round((readyCount / totalEmployees) * 100)
-  return { totalEmployees, attentionCount, readyCount, periodOpenCount, readinessPercent }
+  return buildSectionHero({ totalEmployees, readyCount, periodOpenCount })
 }
 
 // ---------------------------------------------------------------------------
