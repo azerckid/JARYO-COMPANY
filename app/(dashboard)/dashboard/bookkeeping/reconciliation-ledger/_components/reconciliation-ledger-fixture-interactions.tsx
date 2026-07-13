@@ -73,7 +73,7 @@ let latestUndoToastSequence = 0
 // affordance — no separate audit-log UI. Only the most recently shown
 // undo toast is actionable, which naturally limits this to "the latest
 // apply/confirm action in the current session."
-function showUndoableSuccessToast(params: {
+export function showUndoableSuccessToast(params: {
   message: string
   uploadSessionId: string
   rowId: string

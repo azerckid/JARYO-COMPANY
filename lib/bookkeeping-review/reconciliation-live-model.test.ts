@@ -271,6 +271,7 @@ describe('buildLiveReconciliationLedgerRow', () => {
       canExplain: false,
       canExclude: true,
       canConfirmMatch: false,
+      canReviewDuplicate: false,
     })
     expect(ledgerRow.patternSuggestion).toBeNull()
     expect(ledgerRow.explanationMemo).toBeNull()

@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import {
   buildReconciliationDisplaySourceCounts,
@@ -8,6 +10,7 @@ import {
   countReconciliationDisplayRows,
   filterReconciliationDisplayRows,
   reconciliationDisplayFilterHref,
+  searchReconciliationDisplayRows,
   type ReconciliationDisplayFilter,
 } from '@/lib/bookkeeping-review/reconciliation-display-filters'
 import {
@@ -23,6 +26,11 @@ import type {
   ReconciliationSource,
   ReconciliationTaxBlockerSummary,
 } from '@/lib/bookkeeping-review/reconciliation-display-model'
+import {
+  convertReconciliationPeriodKey,
+  shiftReconciliationPeriodKey,
+  type SupportedReconciliationPeriodMode,
+} from '@/lib/bookkeeping-review/reconciliation-period-navigation'
 import { evidenceRowHighlightTone, type EvidenceFinderSource } from '@/lib/bookkeeping-review/reconciliation-row-actions'
 import { cn } from '@/lib/utils'
 import {
@@ -41,19 +49,9 @@ import {
   resolveReconciliationLedgerTableVariant,
   LedgerCellText,
 } from './reconciliation-ledger-table-layout'
+import { ReconciliationDuplicateReviewModal } from './reconciliation-duplicate-review-modal'
 
 const panelClass = 'overflow-hidden rounded-xl border border-company-border bg-company-surface shadow-company-card'
-const disabledActionNote = 'Slice 2b 전까지 저장·확정이 비활성화됩니다.'
-const disabledPeriodNote = 'Slice 2a-5에서 기간 전환 및 실데이터 조회가 연결됩니다.'
-
-function withFixtureModeParam(href: string, isFixtureMode: boolean): string {
-  if (!isFixtureMode) return href
-  const [path, query] = href.split('?')
-  const params = new URLSearchParams(query)
-  params.set('display', 'fixture')
-  return `${path}?${params.toString()}`
-}
-
 type Tone = 'ok' | 'warn' | 'danger' | 'muted'
 
 const sourceLabels: Record<ReconciliationSource, { label: string; short: string; className: string }> = {
@@ -80,6 +78,8 @@ type EvidencePickerState = {
 
 export interface ReconciliationLedgerDisplayFixtureViewProps {
   readonly activeFilter: ReconciliationDisplayFilter
+  readonly activePeriodKey: string
+  readonly activePeriodLabel: string
   readonly companyName: string
   readonly displayModel: ReconciliationLedgerDisplayModel
   readonly initialRowId?: string | null
@@ -88,13 +88,19 @@ export interface ReconciliationLedgerDisplayFixtureViewProps {
 
 export function ReconciliationLedgerDisplayFixtureView({
   activeFilter,
+  activePeriodKey,
+  activePeriodLabel,
   companyName,
   displayModel,
   initialRowId = null,
   isFixtureMode = false,
 }: ReconciliationLedgerDisplayFixtureViewProps) {
   const rows = displayModel.rows
-  const filteredRows = filterReconciliationDisplayRows(rows, activeFilter)
+  const [query, setQuery] = useState('')
+  const filteredRows = useMemo(
+    () => searchReconciliationDisplayRows(filterReconciliationDisplayRows(rows, activeFilter), query),
+    [activeFilter, query, rows],
+  )
   const initialRow = useMemo(
     () => (initialRowId ? rows.find((row) => row.id === initialRowId) ?? null : null),
     [initialRowId, rows],
@@ -108,6 +114,7 @@ export function ReconciliationLedgerDisplayFixtureView({
     return null
   })
   const [exclusionRowId, setExclusionRowId] = useState<string | null>(null)
+  const [duplicateReviewRowId, setDuplicateReviewRowId] = useState<string | null>(null)
 
   const evidencePickerRow = useMemo(
     () => (evidencePicker ? rows.find((row) => row.id === evidencePicker.rowId) ?? null : null),
@@ -125,10 +132,14 @@ export function ReconciliationLedgerDisplayFixtureView({
     () => (exclusionRowId ? rows.find((row) => row.id === exclusionRowId) ?? null : null),
     [exclusionRowId, rows],
   )
+  const duplicateReviewRow = useMemo(
+    () => (duplicateReviewRowId ? rows.find((row) => row.id === duplicateReviewRowId) ?? null : null),
+    [duplicateReviewRowId, rows],
+  )
 
   const sourceCounts = buildReconciliationDisplaySourceCounts(rows)
   const cashReceiptCount = countCashReceiptDisplayRows(rows)
-  const periodLabel = rows[0]?.periodLabel ?? '기간 미정'
+  const periodLabel = rows[0]?.periodLabel ?? activePeriodLabel
   const periodMode = rows[0]?.periodMode ?? 'quarter'
   const checklist = displayModel.closingChecklist
   const taxInvoiceLayout = usesTaxInvoiceLedgerLayout(activeFilter)
@@ -139,7 +150,13 @@ export function ReconciliationLedgerDisplayFixtureView({
     <div className="flex min-h-full flex-col bg-company-bg">
       <FixtureTopbar companyName={companyName} isFixtureMode={isFixtureMode} />
       <div className="flex w-full max-w-[1320px] flex-col gap-5 px-7 pt-6 pb-12">
-        <PeriodScopeControl activeMode={periodMode} periodLabel={periodLabel} />
+        <PeriodScopeControl
+          activeFilter={activeFilter}
+          activeMode={periodMode}
+          activePeriodKey={activePeriodKey}
+          isFixtureMode={isFixtureMode}
+          periodLabel={periodLabel}
+        />
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex flex-wrap gap-0.5 rounded-[9px] bg-[#f1f1f2] p-[3px]">
@@ -169,6 +186,13 @@ export function ReconciliationLedgerDisplayFixtureView({
               label="소명 필요"
             />
             <DisplayTabChip
+              active={activeFilter === 'duplicate_review'}
+              count={checklist.duplicateReviewCount}
+              filter="duplicate_review"
+              isFixtureMode={isFixtureMode}
+              label="중복 의심"
+            />
+            <DisplayTabChip
               active={activeFilter === 'exclusion_review'}
               count={countReconciliationDisplayRows(rows, (row) => row.evidenceActionState === 'excluded' || row.blockers.some((b) => b.code === 'exclude_reason_required'))}
               filter="exclusion_review"
@@ -176,28 +200,17 @@ export function ReconciliationLedgerDisplayFixtureView({
               label="제외 검토"
             />
           </div>
-          <input
-            aria-label="자료대조원장 검색"
-            className="min-w-[240px] cursor-not-allowed rounded-lg border border-company-border bg-company-nav-hover px-2.5 py-2 text-[12.5px] text-company-fg-subtle md:ml-auto"
-            disabled
-            placeholder="거래처, 금액, 적요, 증빙번호 검색"
-          />
-          <button
-            className="cursor-not-allowed rounded-lg border border-company-border bg-company-nav-hover px-3 py-2 text-xs font-semibold text-company-fg-subtle"
-            disabled
-            title={disabledActionNote}
-            type="button"
-          >
-            표시 설정
-          </button>
-          <button
-            className="cursor-not-allowed rounded-lg border border-company-border bg-company-nav-hover px-3 py-2 text-xs font-semibold text-company-fg-subtle"
-            disabled
-            title={disabledActionNote}
-            type="button"
-          >
-            선택 건 확정
-          </button>
+          <label className="relative min-w-[240px] md:ml-auto">
+            <span className="sr-only">자료대조원장 검색</span>
+            <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-company-fg-subtle" />
+            <input
+              aria-label="자료대조원장 검색"
+              className="w-full rounded-lg border border-company-border bg-company-surface py-2 pr-2.5 pl-8 text-[12.5px] text-foreground outline-none focus:border-[#93c5fd]"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="거래처, 금액, 적요 검색"
+              value={query}
+            />
+          </label>
         </div>
 
         <ReconciliationBatchSuggestionBar
@@ -261,6 +274,7 @@ export function ReconciliationLedgerDisplayFixtureView({
                   setEvidencePicker({ highlightedEvidenceRowId: evidenceRowId, rowId: row.id, source })
                 }}
                 onOpenExclusion={() => setExclusionRowId(row.id)}
+                onOpenDuplicateReview={() => setDuplicateReviewRowId(row.id)}
                 onOpenExplanation={() => setExplanationRowId(row.id)}
                 row={row}
                 taxInvoiceLayout={taxInvoiceLayout}
@@ -324,6 +338,16 @@ export function ReconciliationLedgerDisplayFixtureView({
           row={exclusionRow}
         />
 
+        <ReconciliationDuplicateReviewModal
+          allRows={rows}
+          isFixtureMode={isFixtureMode}
+          onOpenChange={(open) => {
+            if (!open) setDuplicateReviewRowId(null)
+          }}
+          open={duplicateReviewRow !== null}
+          row={duplicateReviewRow}
+        />
+
         <section className="grid gap-4 lg:grid-cols-2">
           <ClosingChecklistPanel checklist={checklist} />
           <TaxBlockerPanel summaries={displayModel.taxBlockerSummaries} />
@@ -359,21 +383,37 @@ function FixtureTopbar({
   )
 }
 
-const periodModeOptions: Array<{ mode: ReconciliationPeriodMode; label: string }> = [
+const periodModeOptions: Array<{ mode: SupportedReconciliationPeriodMode; label: string }> = [
   { mode: 'month', label: '월' },
   { mode: 'quarter', label: '분기' },
   { mode: 'half_year', label: '반기' },
-  { mode: 'year', label: '연' },
-  { mode: 'custom', label: '사용자 지정' },
 ]
 
 function PeriodScopeControl({
+  activeFilter,
   activeMode,
+  activePeriodKey,
+  isFixtureMode,
   periodLabel,
 }: {
+  readonly activeFilter: ReconciliationDisplayFilter
   readonly activeMode: ReconciliationPeriodMode
+  readonly activePeriodKey: string
+  readonly isFixtureMode: boolean
   readonly periodLabel: string
 }) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  function navigate(periodKey: string) {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('period', periodKey)
+    if (activeFilter === 'all') params.delete('source')
+    if (!isFixtureMode) params.delete('display')
+    router.push(`${pathname}?${params.toString()}`)
+  }
+
   return (
     <section className={cn(panelClass, 'flex flex-wrap items-center gap-3 px-4 py-3')}>
       <div className="min-w-[180px]">
@@ -386,42 +426,34 @@ function PeriodScopeControl({
             key={option.mode}
             aria-pressed={activeMode === option.mode}
             className={cn(
-              'cursor-not-allowed rounded-[7px] px-3 py-1.5 text-[12.5px] font-semibold',
+              'rounded-[7px] px-3 py-1.5 text-[12.5px] font-semibold transition-colors',
               activeMode === option.mode
                 ? 'bg-company-surface text-foreground shadow-company-card'
-                : 'text-company-fg-muted',
+                : 'text-company-fg-muted hover:bg-company-surface hover:text-foreground',
             )}
-            disabled
-            title={disabledPeriodNote}
+            onClick={() => navigate(convertReconciliationPeriodKey(activePeriodKey, option.mode))}
             type="button"
           >
             {option.label}
           </button>
         ))}
       </div>
-      <div className="flex flex-wrap items-center gap-2 md:ml-auto">
-        <input
-          aria-label="기간 시작일"
-          className="w-[132px] cursor-not-allowed rounded-lg border border-company-border bg-company-nav-hover px-2.5 py-2 text-[12.5px] text-company-fg-subtle"
-          disabled
-          placeholder="시작일"
-          title={disabledPeriodNote}
-        />
-        <span className="text-[12px] text-company-fg-muted">~</span>
-        <input
-          aria-label="기간 종료일"
-          className="w-[132px] cursor-not-allowed rounded-lg border border-company-border bg-company-nav-hover px-2.5 py-2 text-[12.5px] text-company-fg-subtle"
-          disabled
-          placeholder="종료일"
-          title={disabledPeriodNote}
-        />
+      <div className="flex items-center gap-1 md:ml-auto">
         <button
-          className="cursor-not-allowed rounded-lg border border-company-border bg-company-nav-hover px-3 py-2 text-xs font-semibold text-company-fg-subtle"
-          disabled
-          title={disabledPeriodNote}
+          aria-label="이전 기간"
+          className="grid size-9 place-items-center rounded-lg border border-company-border bg-company-surface text-company-fg-muted hover:bg-company-nav-hover hover:text-foreground"
+          onClick={() => navigate(shiftReconciliationPeriodKey(activePeriodKey, -1))}
           type="button"
         >
-          기간 적용
+          <ChevronLeft aria-hidden="true" className="size-4" />
+        </button>
+        <button
+          aria-label="다음 기간"
+          className="grid size-9 place-items-center rounded-lg border border-company-border bg-company-surface text-company-fg-muted hover:bg-company-nav-hover hover:text-foreground"
+          onClick={() => navigate(shiftReconciliationPeriodKey(activePeriodKey, 1))}
+          type="button"
+        >
+          <ChevronRight aria-hidden="true" className="size-4" />
         </button>
       </div>
     </section>
@@ -435,6 +467,7 @@ function FixtureRow({
   onOpenEvidencePicker,
   onOpenFoundEvidence,
   onOpenExclusion,
+  onOpenDuplicateReview,
   onOpenExplanation,
   row,
   taxInvoiceLayout,
@@ -445,6 +478,7 @@ function FixtureRow({
   readonly onOpenEvidencePicker: (source: EvidenceFinderSource) => void
   readonly onOpenFoundEvidence: (source: EvidenceFinderSource, evidenceRowId: string) => void
   readonly onOpenExclusion: () => void
+  readonly onOpenDuplicateReview: () => void
   readonly onOpenExplanation: () => void
   readonly row: ReconciliationLedgerRow
   readonly taxInvoiceLayout: boolean
@@ -463,6 +497,7 @@ function FixtureRow({
         className={cn(
           'border-b border-company-border last:border-b-0 hover:bg-[#fafafa]',
           tone === 'danger' ? 'bg-[#fff7f7]' : '',
+          row.duplicateReview ? 'bg-[#fffbeb]' : '',
         )}
       >
         <td className="px-3 py-3 font-mono text-company-fg-muted">{formatDate(row.transactionDate)}</td>
@@ -487,7 +522,7 @@ function FixtureRow({
           <ReconciliationAccountSelector isFixtureMode={isFixtureMode} onOpenExclusion={onOpenExclusion} row={row} />
         </td>
         <td className="px-3 py-3">
-          <CardRowActionCell onOpenExplanation={onOpenExplanation} row={row} />
+          <CardRowActionCell onOpenDuplicateReview={onOpenDuplicateReview} onOpenExplanation={onOpenExplanation} row={row} />
         </td>
       </tr>
     )
@@ -499,6 +534,7 @@ function FixtureRow({
         className={cn(
           'border-b border-company-border last:border-b-0 hover:bg-[#fafafa]',
           tone === 'danger' ? 'bg-[#fff7f7]' : '',
+          row.duplicateReview ? 'bg-[#fffbeb]' : '',
         )}
       >
         <td className="px-3 py-3 font-mono text-company-fg-muted">{formatDate(row.transactionDate)}</td>
@@ -520,13 +556,24 @@ function FixtureRow({
           </span>
         </td>
         <td className="px-3 py-3">
-          <ReconciliationEvidenceCell
-            onOpenEvidenceException={onOpenEvidenceException}
-            onOpenEvidencePicker={onOpenEvidencePicker}
-            onOpenFoundEvidence={onOpenFoundEvidence}
-            onOpenExplanation={onOpenExplanation}
-            row={row}
-          />
+          <div className="space-y-2">
+            <ReconciliationEvidenceCell
+              onOpenEvidenceException={onOpenEvidenceException}
+              onOpenEvidencePicker={onOpenEvidencePicker}
+              onOpenFoundEvidence={onOpenFoundEvidence}
+              onOpenExplanation={onOpenExplanation}
+              row={row}
+            />
+            {row.duplicateReview ? (
+              <button
+                className="rounded-md border border-[#fde68a] bg-[#fffbeb] px-2 py-1 text-[11.5px] font-semibold text-[#d97706] hover:bg-[#fef3c7]"
+                onClick={onOpenDuplicateReview}
+                type="button"
+              >
+                중복 확인
+              </button>
+            ) : null}
+          </div>
         </td>
         <td className="px-3 py-3">
           <ReconciliationAccountSelector isFixtureMode={isFixtureMode} onOpenExclusion={onOpenExclusion} row={row} />
@@ -540,6 +587,7 @@ function FixtureRow({
       className={cn(
         'border-b border-company-border last:border-b-0 hover:bg-[#fafafa]',
         tone === 'danger' ? 'bg-[#fff7f7]' : '',
+        row.duplicateReview ? 'bg-[#fffbeb]' : '',
       )}
     >
       <td className="px-3 py-3 font-mono text-company-fg-muted">{formatDate(row.transactionDate)}</td>
@@ -572,18 +620,42 @@ function FixtureRow({
       <td className="px-3 py-3">
         <ReconciliationAccountSelector isFixtureMode={isFixtureMode} onOpenExclusion={onOpenExclusion} row={row} />
       </td>
-      <td className="max-w-[200px] px-3 py-3 text-[12px] text-company-fg-muted">{row.rowConclusion.headline}</td>
+      <td className="max-w-[200px] px-3 py-3 text-[12px] text-company-fg-muted">
+        {row.duplicateReview ? (
+          <button
+            className="rounded-md border border-[#fde68a] bg-[#fffbeb] px-2 py-1 text-[11.5px] font-semibold text-[#d97706] hover:bg-[#fef3c7]"
+            onClick={onOpenDuplicateReview}
+            type="button"
+          >
+            중복 확인
+          </button>
+        ) : row.rowConclusion.headline}
+      </td>
     </tr>
   )
 }
 
 function CardRowActionCell({
+  onOpenDuplicateReview,
   onOpenExplanation,
   row,
 }: {
+  readonly onOpenDuplicateReview: () => void
   readonly onOpenExplanation: () => void
   readonly row: ReconciliationLedgerRow
 }) {
+  if (row.duplicateReview) {
+    return (
+      <button
+        className="rounded-md border border-[#fde68a] bg-[#fffbeb] px-2 py-1 text-[11.5px] font-semibold text-[#d97706] hover:bg-[#fef3c7]"
+        onClick={onOpenDuplicateReview}
+        type="button"
+      >
+        중복 확인
+      </button>
+    )
+  }
+
   if (row.evidenceActionState === 'explanation_required') {
     return (
       <button
@@ -618,6 +690,7 @@ function ClosingChecklistPanel({
       <div className="mt-3 grid gap-2">
         <ChecklistLine label="증빙 필요" chip={<StatusChip tone={checklist.evidenceRequiredCount > 0 ? 'warn' : 'ok'}>{checklist.evidenceRequiredCount}건</StatusChip>} />
         <ChecklistLine label="소명 필요" chip={<StatusChip tone={checklist.explanationRequiredCount > 0 ? 'warn' : 'ok'}>{checklist.explanationRequiredCount}건</StatusChip>} />
+        <ChecklistLine label="중복 의심" chip={<StatusChip tone={checklist.duplicateReviewCount > 0 ? 'danger' : 'ok'}>{checklist.duplicateReviewCount}건</StatusChip>} />
         <ChecklistLine label="계정 미확정" chip={<StatusChip tone={checklist.accountUnconfirmedCount > 0 ? 'warn' : 'ok'}>{checklist.accountUnconfirmedCount}건</StatusChip>} />
         <ChecklistLine label="제외 사유" chip={<StatusChip tone={checklist.exclusionReasonRequiredCount > 0 ? 'warn' : 'ok'}>{checklist.exclusionReasonRequiredCount}건</StatusChip>} />
         <ChecklistLine label="세목 blocker" chip={<StatusChip tone={checklist.taxBlockerCount > 0 ? 'danger' : 'ok'}>{checklist.taxBlockerCount}건</StatusChip>} />
@@ -669,6 +742,8 @@ function DisplayTabChip({
   readonly isFixtureMode: boolean
   readonly label: string
 }) {
+  const searchParams = useSearchParams()
+  const periodKey = searchParams.get('period')
   return (
     <Link
       aria-current={active ? 'page' : undefined}
@@ -676,7 +751,10 @@ function DisplayTabChip({
         'rounded-[7px] px-3 py-1.5 text-[12.5px] font-semibold transition-colors hover:bg-company-surface hover:text-foreground',
         active ? 'bg-company-surface text-foreground shadow-company-card' : 'text-company-fg-muted',
       )}
-      href={withFixtureModeParam(reconciliationDisplayFilterHref(filter), isFixtureMode)}
+      href={reconciliationDisplayFilterHref(filter, {
+        period: periodKey,
+        display: isFixtureMode ? 'fixture' : null,
+      })}
     >
       {label} <span className="ml-1 text-[11px] text-company-fg-subtle">{count}</span>
     </Link>

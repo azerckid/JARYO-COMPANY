@@ -25,6 +25,7 @@ describe('buildReconciliationPath1Gate', () => {
     const gate = buildReconciliationPath1Gate('2026-H1', {
       evidenceRequiredCount: 7,
       explanationRequiredCount: 5,
+      duplicateReviewCount: 1,
       accountUnconfirmedCount: 11,
       exclusionReasonRequiredCount: 2,
       taxBlockerCount: 99,
@@ -34,9 +35,10 @@ describe('buildReconciliationPath1Gate', () => {
     expect(gate).toEqual({
       periodKey: '2026-H1',
       isReady: false,
-      blockerCount: 25,
+      blockerCount: 26,
       evidenceRequiredCount: 7,
       explanationRequiredCount: 5,
+      duplicateReviewCount: 1,
       accountUnconfirmedCount: 11,
       exclusionReasonRequiredCount: 2,
       taxBlockerCount: 99,
@@ -48,6 +50,7 @@ describe('buildReconciliationPath1Gate', () => {
     const ready = buildReconciliationPath1Gate('2026-07', {
       evidenceRequiredCount: 0,
       explanationRequiredCount: 0,
+      duplicateReviewCount: 0,
       accountUnconfirmedCount: 0,
       exclusionReasonRequiredCount: 0,
       taxBlockerCount: 0,
@@ -56,6 +59,7 @@ describe('buildReconciliationPath1Gate', () => {
     const inconsistent = buildReconciliationPath1Gate('2026-07', {
       evidenceRequiredCount: 0,
       explanationRequiredCount: 0,
+      duplicateReviewCount: 0,
       accountUnconfirmedCount: 0,
       exclusionReasonRequiredCount: 0,
       taxBlockerCount: 0,
@@ -87,9 +91,10 @@ describe('buildReconciliationPath1Gate', () => {
     const closingChecklist = {
       evidenceRequiredCount: 1,
       explanationRequiredCount: 2,
+      duplicateReviewCount: 5,
       accountUnconfirmedCount: 3,
       exclusionReasonRequiredCount: 4,
-      taxBlockerCount: 10,
+      taxBlockerCount: 15,
       isReadyForPath1: false,
     }
     vi.mocked(loadBookkeepingReviewSummary).mockResolvedValue(summary)
@@ -107,6 +112,6 @@ describe('buildReconciliationPath1Gate', () => {
       includeExcluded: true,
     })
     expect(buildLiveReconciliationLedgerDisplayModel).toHaveBeenCalledWith(summary)
-    expect(gate.blockerCount).toBe(10)
+    expect(gate.blockerCount).toBe(15)
   })
 })

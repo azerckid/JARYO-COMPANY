@@ -112,13 +112,18 @@
 | S-112 | 동일 거래처·근거·추천 계정의 안전 그룹 | 계정 일괄 수락 | 대상 행 확인 후에만 저장, mixed group은 미노출 | PASS·단위 |
 | S-113 | 증빙/제외 패턴 그룹 | 화면 렌더 | v1 일괄 수락 없음, 단건 확인만 유지 | PASS·구현 |
 | S-114 | 원장 table-first 화면 | 첫 화면 렌더 | 기간/행동 필터와 원장 표가 먼저 보이고 제거된 hero/source-summary/다음 할 일 카드가 재등장하지 않음 | PASS·구현 |
+| S-115 | 월·분기·반기 기간 | 단위 변경 또는 이전·다음 클릭 | 같은 시점의 지원 기간 key로 이동하고 현재 탭/fixture query 유지 | PASS·단위/구현 |
+| S-116 | 현재 기간·탭의 원장 행 | 거래처·금액·적요·날짜·계정 검색 | 쉼표·공백 정규화 후 해당 행만 즉시 표시 | PASS·단위/구현 |
+| S-117 | 같은 출처·방향·거래일·금액·거래처·적요 거래 2건 | 원장 파생 | 자동 제외 없이 두 행 모두 `중복 의심` 탭과 blocker에 표시 | PASS·단위 |
+| S-118 | 중복 의심 행 | `별도 거래로 확인` | 기존 memo 보존 + 감사 marker 저장, 해당 2건 그룹 해소, 최신 작업 undo 가능 | PASS·단위/구현 |
+| S-119 | 중복 의심 행 | `현재 거래를 중복 제외` | 표준 제외 사유 저장, 제외 행은 감사용으로 유지, counterpart blocker 해소 | PASS·단위/구현 |
 
 ### 2.12 Slice 2d Path 1 Gate (Core Complete; Payroll Boundary Pending)
 
 | # | Given | When | Then | Result |
 |:---|:---|:---|:---|:---:|
 | S-120 | tenant A/B와 같은 period key | shared gate load for tenant A | tenant B 행은 blocker/count에 포함되지 않음 | PASS·단위 |
-| S-121 | 증빙·소명·계정·제외 blocker가 섞인 동일 기간 | gate derivation | `closingChecklist`와 gate count/reason이 일치 | PASS·단위 |
+| S-121 | 증빙·소명·중복·계정·제외 blocker가 섞인 동일 기간 | gate derivation | `closingChecklist`와 gate count/reason이 일치 | PASS·단위 |
 | S-122 | 신고 준비 허브 | common bookkeeping readiness render | 별도 규칙 복사 없이 shared gate count와 자료대조원장 route 사용 | PASS·구현 |
 | S-123 | source collection 또는 reconciliation 미완 | VAT package UI | 생성 버튼 disabled + 정확한 사유와 이동 경로 표시 | PASS·구현 |
 | S-124 | source/reconciliation/VAT deduction 중 하나라도 미완 | VAT package POST | API가 conflict 응답으로 거부하고 reason/count/target route 반환 | PASS·단위/구현 |

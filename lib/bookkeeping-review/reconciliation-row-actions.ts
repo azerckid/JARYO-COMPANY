@@ -237,6 +237,7 @@ export function confidenceLabel(confidence: ReconciliationConfidence): string {
 
 export function rowPrimaryActionLabel(action: ReconciliationRowPrimaryAction): string {
   if (action === 'connect_evidence') return '증빙 연결'
+  if (action === 'review_duplicate') return '중복 확인'
   if (action === 'confirm_account') return '계정 확정'
   if (action === 'write_explanation') return '소명 입력'
   if (action === 'exclude') return '제외 검토'
