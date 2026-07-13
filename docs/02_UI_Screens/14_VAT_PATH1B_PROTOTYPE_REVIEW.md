@@ -61,11 +61,12 @@
 
 ## 7. User Confirmation
 
-- 화면/UI 선확인 여부: 대기
-- HTML Preview 확인 여부: 대기
+- 화면/UI 선확인 여부: 확인함
+- HTML Preview 확인 여부: 확인함
 - 확인자: 프로젝트 오너
-- 확인 일시: 대기
-- 승인 후 다음 단계: Pre-Code Brief와 `VatHometaxInputSummary` 계약 작성
+- 확인 일시: 2026-07-13
+- 승인 결과: 별도 `홈택스 입력값` 화면·단일 표·세 가지 확인 방식·`(27)` 경계 승인
+- 다음 단계: Pre-Code Brief와 `VatHometaxInputSummary` 계약 작성
 
 ## 8. Review Questions
 

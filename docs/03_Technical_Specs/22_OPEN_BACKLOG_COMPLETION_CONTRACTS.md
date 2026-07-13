@@ -160,8 +160,8 @@ Path 1b** (confirmed A01 aggregate as a `항목 = 값` direct-entry summary), **
 1b screen is implemented** (2026-07-12) — `/dashboard/filing-support` shows the
 withholding value-summary screen with a local income tax reference value; Path 1a
 W1-W5 stay unstarted until a form is confirmed. **VAT is likewise assigned to
-Path 1b**. Its legal-row field mapping and HTML Preview are complete, while
-project-owner confirmation and the runtime read model/screen remain pending. VAT
+Path 1b**. Its legal-row field mapping and HTML Preview are project-owner
+approved, while the Pre-Code Brief and runtime read model/screen remain pending. VAT
 Stage A remains an optional Path 1a upgrade check for the official non-encrypted
 whole-return template and direct-acceptance path. No tax type ends as `blocked`.
 The fixed order and completion lines are in
@@ -179,7 +179,7 @@ screenshot-by-screenshot click tutorial and automatic navigation are excluded.
 |---|---|---|
 | **Validation** | Path 1 & 2 공통 | Implemented for simplified wage; repeated per tax type |
 | **Path 1a** | 홈택스가 직접 수용하는 공식 비암호화 양식·파일 작성 | In progress — simplified wage form implemented; withholding no form, VAT Stage A is the 1a upgrade check |
-| **Path 1b** | 공식 양식 없을 때 확정값과 신고 메뉴·화면·행/칸 위치를 함께 제공 | 원천세: **구현 완료(2026-07-12)**. 부가세: **Mapping·Preview 완료, 오너 확인·runtime 대기**. 나머지 양식 미확인 세목: 대상 결정·화면 구현 대기 (`blocked` 없음) |
+| **Path 1b** | 공식 양식 없을 때 확정값과 신고 메뉴·화면·행/칸 위치를 함께 제공 | 원천세: **구현 완료(2026-07-12)**. 부가세: **Mapping·Preview 오너 승인 완료, Pre-Code Brief·runtime 대기**. 나머지 양식 미확인 세목: 대상 결정·화면 구현 대기 (`blocked` 없음) |
 | **Path 2** | 세무사무소 handoff ZIP | Deferred until full Path 1 beta (1a + 1b) |
 | **Path 3** | 인증·암호화 업로드 파일 | Excluded from current product scope |
 
@@ -241,8 +241,8 @@ assigned to Path 1b because no official form is confirmed. Withholding's 1b
 employee count/gross pay/income tax plus a local income tax reference value,
 and the panel copy was rewritten from 1a-pending framing (binary layout
 wait, conversion-upload guide, disabled download) to the confirmed 1b
-framing. VAT's legal-row field mapping and separate HTML Preview are complete;
-project-owner confirmation and the runtime value-summary screen remain pending.
+framing. VAT's legal-row field mapping and separate HTML Preview are
+project-owner approved; the Pre-Code Brief and runtime value-summary screen remain pending.
 The underlying confirmed VAT facts already exist in the validation read models. Any tax type
 without a confirmed official form is assigned to Path 1b instead of being
 blocked.

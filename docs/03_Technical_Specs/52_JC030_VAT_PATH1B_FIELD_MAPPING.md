@@ -6,8 +6,8 @@
 
 ```text
 [Flow]
-현재: JC-030 부가세 Path 1b — 공식 신고서 필드 매핑 + UI-First Preview
-Gate: HTML Preview 오너 확인 대기
+현재: JC-030 부가세 Path 1b — 공식 신고서 필드 매핑 + UI-First Preview 승인 완료
+Gate: 프로젝트 오너 승인 완료(2026-07-13)
 완료: 부가세 Stage A 1b 판정, 자료대조 Phase 2, VAT provenance, JC-035/037/038/039/041
 다음: Preview 승인 -> Pre-Code Brief -> read model/runtime 구현 -> 브라우저 검증
 제외: 업로드 파일, 암호화 파일, 자동 홈택스 입력·제출, 화면 캡처 기반 클릭별 튜토리얼
@@ -147,7 +147,7 @@ Gate: HTML Preview 오너 확인 대기
 ## 6. Runtime Gap Before Implementation
 
 현재 `VatSummary`는 핵심 합계를 갖지만 신고서 세부 행을 모두 갖지 않는다. Preview
-승인 후 Pre-Code Brief에서 다음 read model을 고정한다.
+다음 Pre-Code Brief에서 아래 read model을 고정한다.
 
 ```ts
 type VatHometaxInputSummary = {
@@ -175,7 +175,7 @@ type VatHometaxInputSummary = {
 - [x] `(27)` 최종세액을 현재 `payableTaxKrw`로 오표시하지 않는 계약을 고정했다.
 - [x] HTML Preview에서 사용자가 한 표로 입력 위치와 값을 확인한다.
 - [x] 모바일·데스크톱에서 텍스트와 값이 겹치지 않는다.
-- [ ] 프로젝트 오너가 Preview를 확인·승인한다.
+- [x] 프로젝트 오너가 Preview를 확인·승인한다.
 - [ ] 승인 후 Pre-Code Brief와 Component/Library Plan을 작성한다.
 
 ## 8. Related Documents

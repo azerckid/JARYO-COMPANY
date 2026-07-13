@@ -6,7 +6,7 @@
 
 ```text
 [Flow]
-판정: 부가세 1a 양식 미확인 → **1b(직접입력 정리) 대상으로 결정**. Field Mapping·Preview 완료, 오너 확인·runtime 대기
+판정: 부가세 1a 양식 미확인 → **1b(직접입력 정리) 대상으로 결정**. Field Mapping·Preview 오너 승인 완료, Pre-Code Brief·runtime 대기
 완료: 공개 자료 감사 — 현재 홈택스 메뉴와 국세청 부가세 첨부서류 엑셀 프로그램 확인
 확인: 현재 메뉴는 파일 변환신고(회계프로그램), 공식 엑셀은 일부 첨부서류 전용
 미확인(1a 조건): 전체 신고 비암호화 양식과 2026년 첨부서류 파일 수용 규격·암호 요구 여부
@@ -140,7 +140,7 @@ https://www.nts.go.kr/comm/nttFileDownload.do?fileKey=0a47eb5b2cc9b85328e401bfcc
 
 ## 5. Stage A Verdict
 
-**판정: 공식 비암호화 전체 신고 양식 미확인 → 부가세는 Path 1b(직접입력 정리) 대상으로 결정. Field Mapping·Preview 완료, 오너 확인·runtime 구현 대기.**
+**판정: 공식 비암호화 전체 신고 양식 미확인 → 부가세는 Path 1b(직접입력 정리) 대상으로 결정. Field Mapping·Preview 오너 승인 완료, Pre-Code Brief·runtime 구현 대기.**
 
 공개 자료 감사는 완료했다. 현재 메뉴는 회계프로그램 파일 변환신고이고, 공식 Excel
 도구는 일부 첨부서류 전용이라 **1a(양식 파일) 조건이 완결되지 않았다.** 따라서 1a는

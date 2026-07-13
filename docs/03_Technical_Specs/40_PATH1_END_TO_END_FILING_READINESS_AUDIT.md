@@ -26,7 +26,7 @@ Encrypted electronic-file generation stays out of scope, and no tax type ends
 as `blocked` — a tax type without an official form is **assigned to Path 1b**.
 Path 1b is a decided routing outcome. As of 2026-07-12 the withholding 1b
 value-summary screen is **implemented**; the VAT 1b Mapping and HTML Preview are
-complete, while project-owner confirmation and runtime implementation are pending.
+project-owner approved, while the Pre-Code Brief and runtime implementation are pending.
 
 ## 1. Current Answer
 
@@ -34,7 +34,7 @@ The common data-preparation foundation is now complete through Reconciliation
 Ledger Phase 2. Path 1a (official upload file) is implemented for one tax type;
 tax types without a confirmed official form are **assigned to Path 1b**
 (direct-entry value summary) rather than being blocked. Withholding's 1b screen
-is implemented; VAT's 1b screen is in the UI-First Gate.
+is implemented; VAT's 1b UI-First Gate is complete and runtime is pending.
 
 | Step | Current state | Evidence | Remaining gap |
 |:---|:---|:---|:---|
@@ -46,7 +46,7 @@ is implemented; VAT's 1b screen is in the UI-First Gate.
 | 세목별 신고 준비 데이터 | Live for core tracks | VAT, payroll/withholding, payment statements, local income, business status read models | A ready data screen is the Path 1b endpoint; Path 1a additionally needs an official upload file |
 | 양식에 채워질 값 확인 | Live for simplified wage and withholding | `lib/efiling-simplified-wage`, `lib/efiling-withholding` | Withholding has no confirmed official form → Path 1b value-summary screen live; VAT Path 1a form is a Stage A upgrade only |
 | 홈택스 업로드용 파일 (Path 1a) | Live for simplified wage only | simplified-wage generate API and upload guide | Withholding is Path 1b (no file, by design); VAT, local income, business status and annual statement 1a files remain conditional on a confirmed form |
-| 홈택스 직접입력 정리 (Path 1b) | **Live for withholding; VAT Mapping·Preview complete** | 확정값 + 메뉴 경로·화면명·행/칸 위치 매핑 | VAT project-owner confirmation and runtime read model/screen are pending |
+| 홈택스 직접입력 정리 (Path 1b) | **Live for withholding; VAT Mapping·Preview approved** | 확정값 + 메뉴 경로·화면명·행/칸 위치 매핑 | VAT Pre-Code Brief and runtime read model/screen are pending |
 | 최종 제출 | User only | Product Baseline, Roadmap 36 | Auto-submit and credential storage remain excluded |
 
 The useful status is therefore qualitative, not a single percentage:
@@ -192,9 +192,9 @@ The authoritative sequence and completion lines are in
      confirmed 1b framing.
    - Start Path 1a W1-W5 only if a new official non-encrypted template and direct
      Hometax acceptance route satisfy the W0 upgrade conditions.
-2. **Complete the VAT Path 1b UI-First Gate and runtime.**
-   - Mapping and HTML Preview are complete; obtain project-owner approval.
-   - After approval, implement the tenant/business/period-scoped read model and
+2. **Implement the approved VAT Path 1b contract.**
+   - Mapping and HTML Preview are project-owner approved.
+   - Write the Pre-Code Brief, then implement the tenant/business/period-scoped read model and
      `홈택스 입력값` runtime screen.
    - Keep `(27)` final payable/refundable tax as a Hometax final check; do not
      relabel SemuAgent's ㉰ subtotal as line (27).

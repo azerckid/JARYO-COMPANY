@@ -105,7 +105,7 @@
 - AI 출처·근거·증빙·workflow 상태는 기존 VAT 작업대에서만 처리하고 Path 1b 화면에서 반복하지 않는다.
 - `(27)` 최종 납부(환급)세액은 홈택스 계산값으로 확인하며, SemuAgent의 ㉰ 금액과 동일하다고 표시하지 않는다.
 - Preview: [VAT Path 1b](./previews/14_vat_path1b.html)
-- 상태: Preview 제작 완료, 프로젝트 오너 확인 대기, runtime 미구현.
+- 상태: Preview 제작·프로젝트 오너 승인 완료(2026-07-13), runtime 미구현.
 
 ## 7. Feedback & Improvements
 - (반영) 신고 패키지 생성 버튼을 승인 전 잠금 상태로 표현: `is-disabled` + `disabled` + `aria-disabled="true"`, muted 스타일, 잠김 라벨.

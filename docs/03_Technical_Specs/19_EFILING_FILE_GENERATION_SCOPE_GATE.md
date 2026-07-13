@@ -9,7 +9,7 @@
 현재: Path 1 세목 확대 최우선 — 세목별 1a(양식 업로드) 우선, 없으면 1b(직접입력 정리)
 구현 완료: 근로소득 간이지급 — Validation + 1a 비암호화 파일 후보·검증·홈택스 안내; 공식 직접 수용은 beta 검증 대상
 1b 완료: 원천세 — 공식 업로드 양식 없음(직접작성/비밀번호 변환파일만) → 직접입력 안내 화면 구현
-1b 진행: 부가세 — 전체 신고 비암호화 양식 미확인 → Field Mapping·Preview 완료, 오너 확인·runtime 대기; 1a는 [Stage A 확인](./43_JC030_VAT_NONENCRYPTED_UPLOAD_TEMPLATE_AUDIT.md) 시
+1b 진행: 부가세 — 전체 신고 비암호화 양식 미확인 → Field Mapping·Preview 오너 승인 완료, Pre-Code Brief·runtime 대기; 1a는 [Stage A 확인](./43_JC030_VAT_NONENCRYPTED_UPLOAD_TEMPLATE_AUDIT.md) 시
 보류: JC-034 Path 2 ZIP 구현
 제외: Path 3 fcrypt·암호화 파일·적합성 검정, 화면 캡처 기반 클릭별 튜토리얼·자동 입력
 ```
