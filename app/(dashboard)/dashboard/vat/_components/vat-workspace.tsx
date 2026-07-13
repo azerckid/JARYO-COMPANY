@@ -2,6 +2,7 @@ import Link from 'next/link'
 import {
   Building2,
   CircleHelp,
+  FileText,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { buttonVariants } from '@/components/ui/button'
@@ -301,6 +302,13 @@ function TaxSummaryHero({
         <p className="flex-1 text-[12.5px] text-company-fg-muted">
           {pendingNote} {taxSummary.isFinal ? '' : '사용자 확정 전까지 예정치입니다.'}
         </p>
+        <Link
+          href={`/dashboard/vat/hometax-input?period=${encodeURIComponent(summary.period.key)}`}
+          className={buttonVariants({ variant: 'outline', size: 'sm' })}
+        >
+          <FileText className="size-3.5" aria-hidden="true" />
+          홈택스 입력값
+        </Link>
         <span className="rounded-full border border-[#fecaca] bg-[#fef2f2] px-2.5 py-1 text-xs font-semibold text-[#dc2626]">
           신고 마감 {taxSummary.filingDeadline} · {formatDday(taxSummary.dDay)}
         </span>

@@ -41,6 +41,12 @@ describe('VAT workspace static contract', () => {
     expect(companyHomeSummarySource).not.toContain("vat: '/dashboard#vat-status'")
   })
 
+  it('links the VAT summary to the same-period Hometax Path 1b screen (S-1B4)', () => {
+    expect(workspaceSource).toContain('/dashboard/vat/hometax-input?period=')
+    expect(workspaceSource).toContain('encodeURIComponent(summary.period.key)')
+    expect(workspaceSource).toContain('홈택스 입력값')
+  })
+
   it('keeps the approved simplified Preview section order in the workspace (S-01, S-115~118)', () => {
     const positions = [
       workspaceSource.indexOf('<TaxSummaryHero'),

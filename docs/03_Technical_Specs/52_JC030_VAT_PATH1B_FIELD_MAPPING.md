@@ -176,7 +176,7 @@ type VatHometaxInputSummary = {
 - [x] HTML Preview에서 사용자가 한 표로 입력 위치와 값을 확인한다.
 - [x] 모바일·데스크톱에서 텍스트와 값이 겹치지 않는다.
 - [x] 프로젝트 오너가 Preview를 확인·승인한다.
-- [ ] 승인 후 Pre-Code Brief와 Component/Library Plan을 작성한다.
+- [x] 승인 후 [Pre-Code Brief](./53_JC030_VAT_PATH1B_PRE_CODE_BRIEF.md)와 Component/Library Plan을 작성한다.
 
 ## 8. Related Documents
 
@@ -184,6 +184,7 @@ type VatHometaxInputSummary = {
 - **Technical_Specs**: [VAT Stage A Audit](./43_JC030_VAT_NONENCRYPTED_UPLOAD_TEMPLATE_AUDIT.md)
 - **Technical_Specs**: [VAT Confirmed Ledger Provenance Audit](./42_VAT_CONFIRMED_LEDGER_PROVENANCE_AUDIT.md)
 - **Technical_Specs**: [Open Backlog Completion Contracts](./22_OPEN_BACKLOG_COMPLETION_CONTRACTS.md)
+- **Technical_Specs**: [VAT Path 1b Pre-Code Brief](./53_JC030_VAT_PATH1B_PRE_CODE_BRIEF.md)
 - **UI_Screens**: [Screen Flow](../02_UI_Screens/00_SCREEN_FLOW.md)
 - **UI_Screens**: [UI Design](../02_UI_Screens/01_UI_DESIGN.md)
 - **UI_Screens**: [VAT Path 1b Prototype Review](../02_UI_Screens/14_VAT_PATH1B_PROTOTYPE_REVIEW.md)

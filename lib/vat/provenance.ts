@@ -129,7 +129,12 @@ type BuildSnapshotParams = {
 }
 
 export type VatConfirmedLedgerBuildResult =
-  | { ok: true; snapshot: VatConfirmedLedgerSnapshot }
+  | {
+      ok: true
+      snapshot: VatConfirmedLedgerSnapshot
+      filingRows: VatFactClassificationRow[]
+      deductionReviews: VatDeductionProvenanceRow[]
+    }
   | { ok: false; issues: VatProvenanceIssue[] }
 
 function rowMonth(transactionDate: string | null) {
@@ -341,6 +346,8 @@ export function buildVatConfirmedLedgerSnapshot(params: BuildSnapshotParams): Va
         deductionReviews: validReviews,
       }),
     }),
+    filingRows,
+    deductionReviews: validReviews,
   }
 }
 
@@ -472,13 +479,11 @@ async function loadVatProvenanceInputs(params: {
   }
 }
 
-export async function loadVatConfirmedLedgerProvenanceState(params: {
-  tenantId: string
-  clientId: string
-  periodKey: string
-}): Promise<VatProvenanceState> {
-  const input = await loadVatProvenanceInputs(params)
-  if (!input.summary) {
+export function buildVatConfirmedLedgerProvenanceState(params: {
+  summary: VatStoredProvenanceSummary | null
+  result: VatConfirmedLedgerBuildResult
+}): VatProvenanceState {
+  if (!params.summary) {
     return vatProvenanceStateSchema.parse({
       status: 'blocked',
       isReady: false,
@@ -487,25 +492,17 @@ export async function loadVatConfirmedLedgerProvenanceState(params: {
       message: '부가세 기간 요약이 없어 확정 원장을 다시 계산할 수 없습니다.',
     })
   }
-
-  const result = buildVatConfirmedLedgerSnapshot({
-    ...params,
-    periodStartMonth: input.period.startMonth,
-    periodEndMonth: input.period.endMonth,
-    rows: input.rows,
-    deductionReviews: input.deductionReviews,
-  })
-  if (!result.ok) {
+  if (!params.result.ok) {
     return vatProvenanceStateSchema.parse({
       status: 'blocked',
       isReady: false,
       canRebuild: false,
-      issueCount: result.issues.length,
-      message: `확정 원장 출처 ${result.issues.length}건을 먼저 확인해야 합니다.`,
+      issueCount: params.result.issues.length,
+      message: `확정 원장 출처 ${params.result.issues.length}건을 먼저 확인해야 합니다.`,
     })
   }
 
-  if (storedSummaryMatchesSnapshot(input.summary, result.snapshot)) {
+  if (storedSummaryMatchesSnapshot(params.summary, params.result.snapshot)) {
     return vatProvenanceStateSchema.parse({
       status: 'verified',
       isReady: true,
@@ -522,6 +519,38 @@ export async function loadVatConfirmedLedgerProvenanceState(params: {
     issueCount: 1,
     message: '확정 원장 값으로 부가세 요약을 다시 계산해야 합니다.',
   })
+}
+
+export async function loadVatConfirmedLedgerReadModel(params: {
+  tenantId: string
+  clientId: string
+  periodKey: string
+}) {
+  const input = await loadVatProvenanceInputs(params)
+  const result = buildVatConfirmedLedgerSnapshot({
+    ...params,
+    periodStartMonth: input.period.startMonth,
+    periodEndMonth: input.period.endMonth,
+    rows: input.rows,
+    deductionReviews: input.deductionReviews,
+  })
+  return {
+    period: input.period,
+    storedSummary: input.summary,
+    result,
+    state: buildVatConfirmedLedgerProvenanceState({
+      summary: input.summary,
+      result,
+    }),
+  }
+}
+
+export async function loadVatConfirmedLedgerProvenanceState(params: {
+  tenantId: string
+  clientId: string
+  periodKey: string
+}): Promise<VatProvenanceState> {
+  return (await loadVatConfirmedLedgerReadModel(params)).state
 }
 
 export async function rebuildVatPeriodSummaryFromConfirmedLedger(params: {

@@ -192,10 +192,9 @@ The authoritative sequence and completion lines are in
      confirmed 1b framing.
    - Start Path 1a W1-W5 only if a new official non-encrypted template and direct
      Hometax acceptance route satisfy the W0 upgrade conditions.
-2. **Implement the approved VAT Path 1b contract.**
-   - Mapping and HTML Preview are project-owner approved.
-   - Write the Pre-Code Brief, then implement the tenant/business/period-scoped read model and
-     `홈택스 입력값` runtime screen.
+2. **Finish verification of the implemented VAT Path 1b contract.**
+   - Mapping, HTML Preview, Pre-Code Brief and runtime screen are implemented.
+   - Verify the tenant/business/period-scoped read model and `홈택스 입력값` screen in desktop/mobile browsers and the full regression suite.
    - Keep `(27)` final payable/refundable tax as a Hometax final check; do not
      relabel SemuAgent's ㉰ subtotal as line (27).
 3. **Keep VAT Stage A as a 1a upgrade check.**
