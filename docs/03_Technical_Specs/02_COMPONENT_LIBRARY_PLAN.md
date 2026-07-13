@@ -149,6 +149,10 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 | Tax Treatment Actions | 커스텀 `VatTaxTreatmentActions` | 기존 `Button` + 행 단위 pending; 적용/다르게/보류/전문가 확인, 확정 행은 변경만 노출 |
 | Tax Treatment Decision Dialog | 커스텀 `VatTaxTreatmentDecisionDialog` | 기존 `Dialog`·`Select`·`Textarea`·`Input`; 근거·안분율·필수 증빙 차단 |
 | Recent Tax Treatment Undo | `sonner` action + 서버 undo mutation | 최신 1건만, 일회용 토큰 hash·canonical current-state 검증·transaction 복원 |
+| VAT Hometax Input CTA | 기존 `Link` + `buttonVariants` | 같은 기간의 별도 Path 1b 화면 진입 |
+| VAT Hometax Input View | 커스텀 `VatHometaxInputView` | 홈택스 경로·준비 상태·신고서 행별 단일 입력표 |
+| VAT Hometax Input State | 커스텀 상태 분기 | blocked/empty/stale/unsupported에서 과거 값 숨김 + 다음 행동 |
+| VAT Hometax Input Table | semantic `table` | 신고서 위치·금액·세액·확인 방식, mobile 행 블록 |
 | Deduction Action Controls | 커스텀 `VatDeductionActions` | `button` + `sonner` 피드백 |
 | Schedule Status List | 커스텀 `VatScheduleList` | `card` + 상태칩 |
 | Confirmed Ledger Rebuild | 커스텀 `VatProvenanceRebuildButton` | `button` + `RefreshCw` + `sonner`; exact inputs가 유효하고 snapshot만 stale일 때만 노출 |
@@ -161,6 +165,7 @@ Component & Library Planning Gate 충족을 위한 계획. React 구현 전, 사
 - 검토 자료 마감 버튼은 자료수집·자료대조·사용자 세무판단·확정 원장 fingerprint 완료 전 `disabled` + `aria-disabled="true"` + visible locknote를 사용한다. 재계산 버튼은 자동 실행하지 않으며, exact inputs가 유효하고 snapshot만 stale인 조건에서만 표시한다. 브라우저별 `title` 툴팁에 의존하지 않는다.
 - 부가세 화면은 회사용 `/dashboard/vat`로 새로 구성하며, GIWA `/dashboard/reviews` 워크스페이스 컴포넌트를 import/render하지 않는다.
 - 자동 홈택스 제출·자동 납부 UI는 만들지 않는다. AI 추천은 사용자 확정 전 기존 VAT mutation을 호출하지 않는다. 부가세 준비값은 부가세 화면에서 끝까지 확인한다.
+- Path 1b `홈택스 입력값`은 기존 VAT 작업대와 별도 read-only 서버 화면으로 구현한다. 신규 UI·table library 없이 기존 Link/button/table 패턴을 재사용하고, AI 근거·증빙 workflow·provider 상태는 반복하지 않는다.
 
 ### 7.5 급여·지급 (UI Design 4.5)
 

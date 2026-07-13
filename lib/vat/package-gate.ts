@@ -227,6 +227,7 @@ export async function loadVatPackageGate({
   hasSummary,
   pendingDeductionCount,
   taxTreatmentGate,
+  provenanceState,
   today,
 }: {
   tenantId: string
@@ -235,9 +236,10 @@ export async function loadVatPackageGate({
   hasSummary: boolean
   pendingDeductionCount: number
   taxTreatmentGate?: VatTaxTreatmentGate
+  provenanceState?: VatProvenanceState
   today?: DateTime
 }): Promise<VatPackageGate> {
-  const [sourceSummary, reconciliationGate, resolvedTaxTreatmentGate, provenanceState] = await Promise.all([
+  const [sourceSummary, reconciliationGate, resolvedTaxTreatmentGate, resolvedProvenanceState] = await Promise.all([
     loadSourceCollectionSummary({ tenantId, periodKey, today }),
     loadReconciliationPath1Gate({ tenantId, periodKey, today }),
     taxTreatmentGate ?? loadVatTaxTreatmentGate({
@@ -246,7 +248,7 @@ export async function loadVatPackageGate({
       periodKey,
       today,
     }),
-    loadVatConfirmedLedgerProvenanceState({ tenantId, clientId, periodKey }),
+    provenanceState ?? loadVatConfirmedLedgerProvenanceState({ tenantId, clientId, periodKey }),
   ])
 
   return buildVatPackageGate({
@@ -256,6 +258,6 @@ export async function loadVatPackageGate({
     reconciliationGate,
     pendingDeductionCount,
     taxTreatmentGate: resolvedTaxTreatmentGate,
-    provenanceState,
+    provenanceState: resolvedProvenanceState,
   })
 }

@@ -1,0 +1,23 @@
+import { redirect } from 'next/navigation'
+import { requireTenantSession } from '@/lib/auth-helpers'
+import { loadVatHometaxInputSummary } from '@/lib/vat/hometax-input-summary'
+import { VatHometaxInputView } from './_components/vat-hometax-input-view'
+
+type PageProps = {
+  searchParams: Promise<{ period?: string }>
+}
+
+export default async function VatHometaxInputPage({ searchParams }: PageProps) {
+  const { period } = await searchParams
+  let tenantId: string
+
+  try {
+    const session = await requireTenantSession()
+    tenantId = session.tenantId
+  } catch {
+    redirect('/sign-in')
+  }
+
+  const summary = await loadVatHometaxInputSummary({ tenantId, periodKey: period })
+  return <VatHometaxInputView summary={summary} />
+}
