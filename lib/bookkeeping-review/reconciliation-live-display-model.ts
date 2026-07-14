@@ -2,6 +2,7 @@ import type { BookkeepingReviewSummary } from './summary'
 import { buildLiveReconciliationLedgerRow } from './reconciliation-live-model'
 import { labelForBookkeepingAccountCategory } from '@/lib/bookkeeping/account-categories'
 import { buildReconciliationPatternSuggestions } from './reconciliation-pattern-suggestions'
+import { applyReconciliationDuplicateReviews } from './reconciliation-duplicate-review'
 import type {
   ReconciliationBatchSuggestionGroup,
   ReconciliationClosingChecklist,
@@ -34,15 +35,17 @@ function rowNeedsExclusionReason(row: ReconciliationLedgerRow): boolean {
 export function buildLiveClosingChecklist(rows: ReconciliationLedgerRow[]): ReconciliationClosingChecklist {
   const evidenceRequiredCount = rows.filter((row) => row.evidenceActionState === 'evidence_required').length
   const explanationRequiredCount = rows.filter((row) => row.evidenceActionState === 'explanation_required').length
+  const duplicateReviewCount = rows.filter((row) => row.duplicateReview != null).length
   const accountUnconfirmedCount = rows.filter(
     (row) => row.blockers.some((blocker) => blocker.code === 'account_unconfirmed'),
   ).length
   const exclusionReasonRequiredCount = rows.filter(rowNeedsExclusionReason).length
-  const taxBlockerCount = evidenceRequiredCount + explanationRequiredCount + accountUnconfirmedCount + exclusionReasonRequiredCount
+  const taxBlockerCount = evidenceRequiredCount + explanationRequiredCount + duplicateReviewCount + accountUnconfirmedCount + exclusionReasonRequiredCount
 
   return {
     evidenceRequiredCount,
     explanationRequiredCount,
+    duplicateReviewCount,
     accountUnconfirmedCount,
     exclusionReasonRequiredCount,
     taxBlockerCount,
@@ -62,6 +65,9 @@ export function buildLiveTaxBlockerSummaries(
       : null,
     checklist.explanationRequiredCount > 0
       ? { code: 'explanation_required' as const, label: '소명 필요', count: checklist.explanationRequiredCount }
+      : null,
+    checklist.duplicateReviewCount > 0
+      ? { code: 'duplicate_review_required' as const, label: '중복 의심', count: checklist.duplicateReviewCount }
       : null,
     checklist.exclusionReasonRequiredCount > 0
       ? { code: 'exclude_reason_required' as const, label: '제외 사유 필요', count: checklist.exclusionReasonRequiredCount }
@@ -128,6 +134,18 @@ export function buildLiveNextActions(rows: ReconciliationLedgerRow[]): Reconcili
     })
   }
 
+  const duplicateReviewRows = sortByAmountDesc(rows.filter((row) => row.duplicateReview != null))
+  if (duplicateReviewRows.length > 0) {
+    actions.push({
+      id: 'live-duplicate-review-required',
+      label: `중복 의심 ${duplicateReviewRows.length}건`,
+      reason: '중복 여부를 확인해야 확정 원장에 이중 반영되지 않습니다',
+      priority: 'filing_blocker',
+      targetRowId: duplicateReviewRows[0]!.id,
+      targetRoute: `${NEXT_ACTION_ROUTE}?source=duplicate_review`,
+    })
+  }
+
   return actions
 }
 
@@ -170,9 +188,10 @@ export function buildLiveReconciliationLedgerDisplayModel(
 ): ReconciliationLedgerDisplayModel {
   const periodMode = inferReconciliationPeriodMode(summary.period.key)
   const patternSuggestions = buildReconciliationPatternSuggestions(summary.rows)
-  const rows = summary.rows.map((row) =>
+  const baseRows = summary.rows.map((row) =>
     buildLiveReconciliationLedgerRow(row, { mode: periodMode, label: summary.period.label }, patternSuggestions.get(row.id) ?? null),
   )
+  const rows = applyReconciliationDuplicateReviews(baseRows)
   const closingChecklist = buildLiveClosingChecklist(rows)
 
   return {

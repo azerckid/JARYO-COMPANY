@@ -52,6 +52,8 @@ export default async function ReconciliationLedgerPage({ searchParams }: PagePro
   return (
     <ReconciliationLedgerDisplayFixtureView
       activeFilter={normalizeReconciliationDisplayFilter(source)}
+      activePeriodKey={summary.period.key}
+      activePeriodLabel={summary.period.label}
       companyName={summary.businessEntity?.name ?? summary.tenant.name}
       displayModel={displayModel}
       initialRowId={row ?? null}

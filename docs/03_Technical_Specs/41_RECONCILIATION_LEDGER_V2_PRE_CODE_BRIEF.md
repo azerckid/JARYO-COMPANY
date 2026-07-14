@@ -457,6 +457,8 @@ why a candidate was suggested.
 
 ## 5.1 Period Scope and Evidence Action State Rules
 
+> 2026-07-14 runtime note: Slice B exposes only the period keys already supported by the shared loader (`month`, `quarter`, `half_year`). `year` and `custom` remain target modes but are not shown until their server query contract exists. See [59_RECONCILIATION_LEDGER_CORE_FLOW_BRIEF.md](./59_RECONCILIATION_LEDGER_CORE_FLOW_BRIEF.md).
+
 자료대조원장은 신고 기간의 성격에 맞는 기간 단위를 가져야 한다. The UI must support these period modes:
 
 - `month`: 원천세 and ordinary monthly bookkeeping checks.

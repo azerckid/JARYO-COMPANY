@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   confirmReconciliationRowAccount,
+  confirmReconciliationRowAsDistinct,
   connectReconciliationRowEvidence,
   disconnectReconciliationRowEvidence,
   revertReconciliationRowState,
@@ -76,6 +77,30 @@ describe('confirmReconciliationRowAccount', () => {
     })
 
     expect(result).toEqual({ ok: true, previous: null })
+  })
+})
+
+describe('confirmReconciliationRowAsDistinct', () => {
+  it('PATCHes only the audit memo and preserves the classification status', async () => {
+    const previous = { finalAccount: null, staffMemo: '기존 메모', status: 'suggested', linkedEvidenceRowId: null }
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true, previous }) })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await confirmReconciliationRowAsDistinct({
+      uploadSessionId: 'session-1',
+      rowId: 'row-1',
+      memo: '기존 메모\n중복 검토: 별도 거래로 확인',
+    })
+
+    expect(result).toEqual({ ok: true, previous })
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/sessions/session-1/account-classification/rows/row-1',
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staffMemo: '기존 메모\n중복 검토: 별도 거래로 확인' }),
+      },
+    )
   })
 })
 

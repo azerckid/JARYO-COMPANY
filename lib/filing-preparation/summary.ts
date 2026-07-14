@@ -307,7 +307,7 @@ export function buildFoundation(
       chipTone: reconciliationGate.isReady ? 'ok' : 'warn',
       output: reconciliationGate.isReady
         ? '증빙·소명·계정항목·제외 사유 확인을 완료했습니다.'
-        : `증빙 ${reconciliationGate.evidenceRequiredCount}건 · 소명 ${reconciliationGate.explanationRequiredCount}건 · 계정 ${reconciliationGate.accountUnconfirmedCount}건 · 제외 사유 ${reconciliationGate.exclusionReasonRequiredCount}건`,
+        : `증빙 ${reconciliationGate.evidenceRequiredCount}건 · 소명 ${reconciliationGate.explanationRequiredCount}건 · 중복 ${reconciliationGate.duplicateReviewCount}건 · 계정 ${reconciliationGate.accountUnconfirmedCount}건 · 제외 사유 ${reconciliationGate.exclusionReasonRequiredCount}건`,
       href: reconciliationGate.targetRoute,
     },
   ]

@@ -40,6 +40,7 @@ export const reconciliationEvidenceActionStateSchema = z.enum([
 export const reconciliationBlockerCodeSchema = z.enum([
   'missing_evidence',
   'ambiguous_match',
+  'duplicate_review_required',
   'account_unconfirmed',
   'explanation_required',
   'exclude_reason_required',
@@ -120,6 +121,7 @@ export const reconciliationBatchSuggestionGroupSchema = z.object({
 export const reconciliationClosingChecklistSchema = z.object({
   evidenceRequiredCount: z.number().int().nonnegative(),
   explanationRequiredCount: z.number().int().nonnegative(),
+  duplicateReviewCount: z.number().int().nonnegative(),
   accountUnconfirmedCount: z.number().int().nonnegative(),
   exclusionReasonRequiredCount: z.number().int().nonnegative(),
   taxBlockerCount: z.number().int().nonnegative(),
@@ -128,6 +130,7 @@ export const reconciliationClosingChecklistSchema = z.object({
 
 export const reconciliationRowPrimaryActionSchema = z.enum([
   'connect_evidence',
+  'review_duplicate',
   'confirm_account',
   'write_explanation',
   'exclude',
@@ -191,6 +194,12 @@ export const reconciliationLedgerRowActionsSchema = z.object({
   canExplain: z.boolean(),
   canExclude: z.boolean(),
   canConfirmMatch: z.boolean(),
+  canReviewDuplicate: z.boolean().optional(),
+})
+
+export const reconciliationDuplicateReviewSchema = z.object({
+  matchedRowIds: z.array(z.string().min(1)).min(1),
+  basisLabel: z.string().min(1),
 })
 
 export const reconciliationLedgerRowSchema = z.object({
@@ -213,6 +222,7 @@ export const reconciliationLedgerRowSchema = z.object({
   evidenceActionState: reconciliationEvidenceActionStateSchema,
   candidates: z.array(reconciliationMatchCandidateSchema),
   patternSuggestion: reconciliationPatternSuggestionSchema.nullable(),
+  duplicateReview: reconciliationDuplicateReviewSchema.nullable().optional(),
   rowConclusion: reconciliationRowConclusionSchema,
   blockers: z.array(
     z.object({
@@ -245,6 +255,7 @@ export type ReconciliationRowPrimaryAction = z.infer<typeof reconciliationRowPri
 export type ReconciliationRowConclusion = z.infer<typeof reconciliationRowConclusionSchema>
 export type ReconciliationMatchCandidate = z.infer<typeof reconciliationMatchCandidateSchema>
 export type ReconciliationPatternSuggestion = z.infer<typeof reconciliationPatternSuggestionSchema>
+export type ReconciliationDuplicateReview = z.infer<typeof reconciliationDuplicateReviewSchema>
 export type ReconciliationLedgerRow = z.infer<typeof reconciliationLedgerRowSchema>
 export type ReconciliationLedgerDisplayModel = z.infer<typeof reconciliationLedgerDisplayModelSchema>
 

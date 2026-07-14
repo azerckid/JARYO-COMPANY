@@ -167,6 +167,7 @@ export function buildLiveReconciliationLedgerRow(
     evidenceActionState,
     candidates,
     patternSuggestion,
+    duplicateReview: null,
     rowConclusion: buildLiveRowConclusion(row, evidenceActionState),
     blockers: row.reconciliation.blockers,
     actions: {
@@ -174,6 +175,7 @@ export function buildLiveReconciliationLedgerRow(
       canExplain: evidenceActionState === 'explanation_required' || evidenceActionState === 'explained_no_evidence',
       canExclude: evidenceActionState !== 'excluded',
       canConfirmMatch: false,
+      canReviewDuplicate: false,
     },
   }
 }

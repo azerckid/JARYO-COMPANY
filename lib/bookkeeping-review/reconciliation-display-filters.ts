@@ -12,6 +12,7 @@ export const reconciliationDisplayFilterValues = [
   'other',
   'evidence_required',
   'explanation_required',
+  'duplicate_review',
   'exclusion_review',
 ] as const
 
@@ -42,6 +43,8 @@ export function filterReconciliationDisplayRows(
     filtered = rows.filter((row) => row.evidenceActionState === 'evidence_required')
   } else if (filter === 'explanation_required') {
     filtered = rows.filter((row) => row.evidenceActionState === 'explanation_required')
+  } else if (filter === 'duplicate_review') {
+    filtered = rows.filter((row) => row.duplicateReview != null)
   } else if (filter === 'exclusion_review') {
     filtered = rows.filter(
       (row) =>
@@ -55,6 +58,27 @@ export function filterReconciliationDisplayRows(
   }
 
   return sortReconciliationRowsByTransactionDateDesc(filtered)
+}
+
+function normalizeSearchText(value: string): string {
+  return value.normalize('NFKC').replace(/[\s,]/g, '').toLowerCase()
+}
+
+export function searchReconciliationDisplayRows(
+  rows: ReconciliationLedgerRow[],
+  query: string,
+): ReconciliationLedgerRow[] {
+  const normalizedQuery = normalizeSearchText(query.trim())
+  if (!normalizedQuery) return rows
+
+  return rows.filter((row) => normalizeSearchText([
+    row.transactionDate ?? '',
+    row.counterparty ?? '',
+    row.description,
+    row.amountKrw === null ? '' : String(row.amountKrw),
+    row.finalAccount ?? '',
+    row.recommendedAccount ?? '',
+  ].join(' ')).includes(normalizedQuery))
 }
 
 export function buildReconciliationDisplaySourceCounts(
@@ -83,9 +107,14 @@ export function countReconciliationDisplayRows(
   return rows.filter(predicate).length
 }
 
-export function reconciliationDisplayFilterHref(filter: ReconciliationDisplayFilter): string {
+export function reconciliationDisplayFilterHref(
+  filter: ReconciliationDisplayFilter,
+  preserved: { period?: string | null; display?: string | null } = {},
+): string {
   const params = new URLSearchParams()
   if (filter !== 'all') params.set('source', filter)
+  if (preserved.period) params.set('period', preserved.period)
+  if (preserved.display) params.set('display', preserved.display)
   const query = params.toString()
   return query ? '/dashboard/bookkeeping/reconciliation-ledger?' + query : '/dashboard/bookkeeping/reconciliation-ledger'
 }

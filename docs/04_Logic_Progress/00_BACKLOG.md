@@ -228,7 +228,9 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [x] `증빙있음` 행에서 `증빙 확인`을 누르면 **찾은 증빙 한 줄**이 먼저 보이고, 그 한 줄을 클릭하면 세금계산서/현금영수증/체크카드 목록 중 해당 출처 목록이 열리며 연결/발견 행이 시각적으로 강조된다.
   - [x] 자료대조원장에 전월/최근 확정 패턴 기반 계정·증빙·제외 근거가 표시되고, 계정은 적용/무시, 증빙·제외는 단건 확인 진입점으로 연결된다.
   - [ ] 자료대조원장 AI/LLM 판단은 실패·타임아웃·quota·provider disagreement 상황에서도 화면 렌더와 사용자 검토를 막지 않고 수동 확인 상태로 fallback된다.
-  - [ ] 자료대조원장 기간 단위가 월/분기/반기/연/사용자 지정으로 전환되고, 기본값이 진입한 신고 맥락에 맞춰진다.
+  - [x] 자료대조원장 기간 단위가 현재 서버 계약인 월/분기/반기로 전환되고 이전·다음 이동이 실제 조회를 바꾼다. 연/사용자 지정은 조회 계약 구현 전까지 숨긴다.
+  - [x] 현재 기간·탭 안에서 거래처·적요·날짜·금액·계정항목 검색이 즉시 적용된다.
+  - [x] 같은 출처·방향·날짜·금액·거래처·적요인 행만 중복 의심으로 표시하고, 사용자가 별도 거래 확인 또는 현재 행 제외를 선택한다. 자동 제외하지 않는다.
   - [x] "증빙없음"이 최종 상태처럼 표시되지 않고 증빙 필요·소명 필요·소명 완료·증빙 예외·제외됨 등 행동/해결 상태로 표시된다.
   - [x] 자료대조원장은 중복 hero/source summary/다음 할 일 카드를 제거한 table-first 구조로 기간·행동 필터와 원장 행을 바로 보여준다.
   - [x] 계정 반복 패턴 일괄 수락은 동일 거래처·동일 근거·동일 계정 그룹에만 제공되고 사용자가 대상 행을 보고 명시 확인한다. 증빙·제외 일괄 수락은 v1 미도입.
@@ -945,10 +947,10 @@ Technical, and QA docs first, then prepare a short implementation brief.
 
 ### JC-042 · 제품 목적 기준 UI 정합화
 
-- Status: `doing` (Slice A 구현·검증 중)
+- Status: `doing` (Slice A 완료 · Slice B 구현·검증 중)
 - Related Concept Docs: [Product Baseline](../01_Concept_Design/01_PRODUCT_BASELINE.md) - 회사 직접사용·자가신고 보조 목적.
 - Related UI Docs: [Screen Flow](../02_UI_Screens/00_SCREEN_FLOW.md) · [UI Design](../02_UI_Screens/01_UI_DESIGN.md) - 실제 업무 화면과 Preview 검토 자료의 경계.
-- Related Technical Docs: [Product Purpose UI Alignment Brief](../03_Technical_Specs/58_PRODUCT_PURPOSE_UI_ALIGNMENT_BRIEF.md).
+- Related Technical Docs: [Product Purpose UI Alignment Brief](../03_Technical_Specs/58_PRODUCT_PURPOSE_UI_ALIGNMENT_BRIEF.md) · [Reconciliation Ledger Core Flow Brief](../03_Technical_Specs/59_RECONCILIATION_LEDGER_CORE_FLOW_BRIEF.md).
 - Related QA Docs: [Runtime UI Trust Test Scenarios](../05_QA_Validation/11_RUNTIME_UI_TRUST_TEST_SCENARIOS.md).
 - Origin: 2026-07-14 전체 UI 목적 정합성 감사. 회사 직접사용 제품의 핵심 흐름과 무관한 데모 블록·내부 개발 용어·회계사무소 잔재가 실제 화면에 남아 있고, 자료대조원장의 일부 핵심 조작과 중복 탐지가 주 사용자 동선에서 약하다는 점을 확인했다.
 - Fixed Order:
@@ -963,10 +965,11 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [x] HTML Preview의 상태 예시는 설계 검토 자료로 보존하되 런타임에 상시 렌더하지 않는 계약을 테스트한다.
   - [x] 브라우저에서 데스크톱·모바일 핵심 화면의 중복 블록 제거와 레이아웃 비겹침을 확인한다.
 - Later Slices:
-  - [ ] Slice B 자료대조원장 조작·중복 탐지.
+  - [x] Slice B 자료대조원장 월·분기·반기 이동, 검색, 보수적 중복 탐지, 별도 거래 확인/중복 제외와 shared Path 1 gate 연동.
   - [ ] Slice C 온보딩·설정·레거시 라우트 정리.
   - [ ] Slice D 공통 컴포넌트·위택스 동등 안내.
 - Document Sync Check (2026-07-14): 전체 UI 감사 결과를 한 번에 섞지 않고 사용자 영향과 위험 순서대로 4개 Slice로 고정했다. 첫 PR은 표시 계층 정리만 수행하며 DB·API·세무 계산·자료대조 mutation을 변경하지 않는다.
+- Document Sync Check (2026-07-14, Slice B): 자료대조원장에 서버가 지원하는 월·분기·반기 전환과 이전·다음 이동, 현재 탭 내 검색, 중복 의심 탭을 연결했다. 중복은 동일 출처·방향·날짜·금액·정규화 거래처·적요가 모두 같은 경우에만 표시하며 자동 제외하지 않는다. 사용자는 별도 거래 확인 감사 메모 또는 현재 행 중복 제외를 선택하고, 미해결 중복 수는 자료대조원장과 신고 준비가 공유하는 Path 1 gate에 포함한다.
 
 ### JC-034 · GIWA handoff 패키지 — Filing Path 2 (ZIP Export v1)
 

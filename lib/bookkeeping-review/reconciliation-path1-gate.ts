@@ -12,6 +12,7 @@ export const reconciliationPath1GateSchema = z.object({
   blockerCount: z.number().int().nonnegative(),
   evidenceRequiredCount: z.number().int().nonnegative(),
   explanationRequiredCount: z.number().int().nonnegative(),
+  duplicateReviewCount: z.number().int().nonnegative(),
   accountUnconfirmedCount: z.number().int().nonnegative(),
   exclusionReasonRequiredCount: z.number().int().nonnegative(),
   taxBlockerCount: z.number().int().nonnegative(),
@@ -28,6 +29,7 @@ export function buildReconciliationPath1Gate(
   // not a de-duplicated transaction-row count.
   const blockerCount = checklist.evidenceRequiredCount
     + checklist.explanationRequiredCount
+    + checklist.duplicateReviewCount
     + checklist.accountUnconfirmedCount
     + checklist.exclusionReasonRequiredCount
 
@@ -37,6 +39,7 @@ export function buildReconciliationPath1Gate(
     blockerCount,
     evidenceRequiredCount: checklist.evidenceRequiredCount,
     explanationRequiredCount: checklist.explanationRequiredCount,
+    duplicateReviewCount: checklist.duplicateReviewCount,
     accountUnconfirmedCount: checklist.accountUnconfirmedCount,
     exclusionReasonRequiredCount: checklist.exclusionReasonRequiredCount,
     taxBlockerCount: checklist.taxBlockerCount,

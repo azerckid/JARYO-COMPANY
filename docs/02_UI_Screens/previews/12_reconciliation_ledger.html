@@ -83,6 +83,12 @@
   .summary .s { color: var(--fg-muted); font-size: 12px; margin-top: 2px; }
 
   .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .period-bar { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .period-copy { min-width: 210px; }
+  .period-copy .label { color: var(--fg-subtle); font-size: 11px; font-weight: 650; }
+  .period-copy .value { margin-top: 2px; font-size: 13px; font-weight: 650; }
+  .period-nav { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+  .icon-btn { width: 32px; height: 32px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--fg-muted); cursor: pointer; font-size: 16px; }
   .tabs { display: inline-flex; background: #f1f1f2; border-radius: 9px; padding: 3px; gap: 2px; }
   .tab { font-size: 12.5px; font-weight: 600; color: var(--fg-muted); padding: 6px 11px; border-radius: 7px; cursor: pointer; }
   .tab.active { background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
@@ -119,6 +125,15 @@
   .row-actions { display: inline-flex; gap: 6px; }
   .mini-btn { font-size: 11.5px; font-weight: 650; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 7px; padding: 4px 9px; cursor: pointer; }
   .mini-btn.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .duplicate-summary { display: grid; gap: 7px; margin-top: 12px; padding: 10px; border: 1px solid #fde68a; border-radius: 8px; background: var(--warn-soft); }
+  .duplicate-summary .trade { display: flex; justify-content: space-between; gap: 16px; font-size: 12px; }
+  dialog { width: min(520px, calc(100vw - 32px)); border: 0; border-radius: 10px; padding: 0; box-shadow: 0 18px 60px rgba(24,24,27,.24); }
+  dialog::backdrop { background: rgba(24,24,27,.38); }
+  .dialog-head, .dialog-body, .dialog-foot { padding: 16px 18px; }
+  .dialog-head { border-bottom: 1px solid var(--border); }
+  .dialog-head h3 { font-size: 15px; }
+  .dialog-head p { color: var(--fg-muted); font-size: 12px; margin-top: 3px; }
+  .dialog-foot { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border); background: #fafafa; }
 
   .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; }
@@ -180,137 +195,110 @@
     <div class="topbar">
       <div><div class="crumb"><a href="00_company_home.html">회사 홈</a> › 기장검토 › 자료대조원장</div><h1>자료대조원장</h1></div>
       <span class="co">샘플컴퍼니(주)</span>
-      <div class="right"><span class="pill">기간 단위 <span class="tag">월 · 분기 · 반기 · 연 · 사용자 지정</span></span><span class="pill">기준 기간 <span class="tag">2026년 1기</span></span></div>
     </div>
 
     <main class="content">
-      <section class="hero">
-        <div>
-          <div class="eyebrow">Path 1 데이터 준비 관문</div>
-          <h2>통장·카드·세금계산서·현금영수증을 한 원장으로 대조하고 확정합니다</h2>
-          <p>자료수집이 끝난 뒤 제일 먼저 보는 화면입니다. 증빙 연결, 중복·사적 사용 제외, 계정항목 확정이 끝난 거래만 세목별 신고 양식·파일에 들어갈 수 있습니다.</p>
-          <div class="progress"><span></span></div>
+      <section class="period-bar">
+        <div class="period-copy"><div class="label">조회 기간</div><div class="value" id="period-label">2026년 부가세 1기 확정 신고</div></div>
+        <div class="tabs" aria-label="기간 단위">
+          <button class="tab" data-period-mode="month">월</button>
+          <button class="tab" data-period-mode="quarter">분기</button>
+          <button class="tab active" data-period-mode="half">반기</button>
         </div>
-        <div class="metrics">
-          <div class="metric"><div class="label">원장 준비율</div><div class="value">81%</div></div>
-          <div class="metric"><div class="label">확정 거래</div><div class="value">324건</div></div>
-          <div class="metric"><div class="label">확인 필요</div><div class="value">18건</div></div>
-          <div class="metric"><div class="label">증빙·소명 필요</div><div class="value">6건</div></div>
-        </div>
-      </section>
-
-      <div class="notice">자료대조원장은 별도 신고 허브가 아니라 기장검토 하위 관문입니다. 월·분기·반기·연·사용자 지정 기간으로 대조 범위를 바꾸며, 여기서 확정된 거래원장을 급여·지급·부가세·연간신고 화면이 읽습니다.</div>
-      <div class="notice">이 Preview는 자료대조원장의 목표 UX 방향을 보여줍니다. 기본 작업 방식은 표의 증빙 상태·계정항목·한 줄 결론 셀에서 바로 판단하고, 필요한 경우 연결 증빙·증빙 확인·증빙 찾기·소명 모달을 여는 구조입니다.</div>
-
-      <div class="section-head"><h2>다음 할 일</h2><span class="hint">세목 파일 생성을 막는 항목부터 처리합니다</span></div>
-      <section class="summary-grid">
-        <div class="summary"><div class="k">1순위 · 부가세 차단</div><div class="v">증빙 필요 4건</div><div class="s">세금계산서/현금영수증 증빙 확인</div></div>
-        <div class="summary"><div class="k">2순위 · 반복 패턴</div><div class="v">12건</div><div class="s">지난달 동일 거래처 · 일괄 확인 가능</div></div>
-        <div class="summary"><div class="k">3순위 · 소명 필요</div><div class="v">2건</div><div class="s">해외 SaaS·증빙 예외 메모</div></div>
-        <div class="summary"><div class="k">자료수집 역링크</div><div class="v">1건</div><div class="s">2026년 1기 세금계산서 추가</div></div>
-        <div class="summary"><div class="k">최근 적용</div><div class="v">취소 가능</div><div class="s">방금 적용한 계정/증빙 1건 취소</div></div>
-      </section>
-
-      <section class="summary-grid">
-        <div class="summary"><div class="k">통장 내역</div><div class="v">126건</div><div class="s">미연결 7건</div></div>
-        <div class="summary"><div class="k">카드 승인</div><div class="v">88건</div><div class="s">계정 확인 5건</div></div>
-        <div class="summary"><div class="k">세금계산서</div><div class="v">64건</div><div class="s">대조 필요 3건</div></div>
-        <div class="summary"><div class="k">현금영수증</div><div class="v">31건</div><div class="s">사적 사용 의심 2건</div></div>
-        <div class="summary"><div class="k">제외 검토</div><div class="v">9건</div><div class="s">업무무관·중복</div></div>
+        <div class="period-nav"><button class="icon-btn" id="period-prev" aria-label="이전 기간">‹</button><button class="icon-btn" id="period-next" aria-label="다음 기간">›</button></div>
       </section>
 
       <div class="section-head"><h2>대조 원장</h2><span class="hint">증빙 상태·계정항목·한 줄 결론 셀에서 바로 판단하고 필요한 모달을 엽니다</span></div>
       <div class="toolbar">
         <div class="tabs">
-          <span class="tab active">전체 <span class="badge">342</span></span>
+          <span class="tab active" data-filter="all">전체 <span class="badge">342</span></span>
           <span class="tab">통장 <span class="badge">126</span></span>
           <span class="tab">카드 <span class="badge">88</span></span>
           <span class="tab">세금계산서 <span class="badge">64</span></span>
           <span class="tab">현금영수증 <span class="badge">31</span></span>
           <span class="tab">증빙 필요 <span class="badge">4</span></span>
           <span class="tab">소명 필요 <span class="badge">2</span></span>
+          <span class="tab" data-filter="duplicate">중복 의심 <span class="badge">2</span></span>
           <span class="tab">제외 검토 <span class="badge">9</span></span>
         </div>
-        <div class="search">거래처, 금액, 적요, 증빙번호 검색</div>
-        <button class="btn">표시 설정</button>
-        <button class="btn primary">선택 3건 확정</button>
+        <input class="search" id="ledger-search" aria-label="자료대조원장 검색" placeholder="거래처, 금액, 적요 검색" />
       </div>
 
       <section class="panel">
         <table>
           <thead>
             <tr>
-              <th>거래일</th><th>출처</th><th>거래처/가맹점</th><th>적요/품목</th><th>공급가액</th><th>세액</th><th>연결 증빙</th><th>계정항목</th><th>거래처</th><th>상태</th><th>처리</th>
+              <th>거래일</th><th>출처</th><th>거래처/가맹점</th><th>적요/품목</th><th>금액</th><th>증빙 상태</th><th>계정항목</th><th>한 줄 결론</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
+            <tr data-search="엘아이티넥스원 브루셀 AI MLOPS PLATFORM LICENSE 25085000">
               <td class="mono">06-30</td>
               <td><span class="source"><span class="mark bank">통</span> 통장</span></td>
               <td><div class="main-text">엘아이티넥스원(주)</div><div class="sub">마이너스 한도 계좌</div></td>
               <td><div class="main-text">브루셀 AI MLOPS PLATFORM LICENSE</div><div class="sub">매출 세금계산서와 입금액 일치</div></td>
-              <td class="amt">25,085,000</td><td class="amt">2,508,500</td>
-              <td><span class="chip ok">세금계산서 연결</span></td>
+              <td class="amt">25,085,000</td>
+              <td><span class="chip ok">증빙있음</span></td>
               <td><span class="select-like">매출 <span>▾</span></span></td>
-              <td><span class="select-like">엘아이티넥스원 <span>▾</span></span></td>
-              <td><span class="chip ok">확정 가능</span></td>
-              <td><span class="row-actions"><button class="mini-btn primary">확정</button><button class="mini-btn">보기</button></span></td>
+              <td>계정과 연결 증빙이 확정되었습니다.</td>
             </tr>
-            <tr class="warn-row">
+            <tr class="warn-row" data-search="AI POWERED INC USA 해외 SaaS 결제 112000">
               <td class="mono">06-28</td>
               <td><span class="source"><span class="mark card">카</span> 카드</span></td>
               <td><div class="main-text">AI POWERED INC USA</div><div class="sub">국민카드 5524****2651</div></td>
               <td><div class="main-text">해외 SaaS 결제</div><div class="sub">USD 80.00 · 해외 여부 확인</div></td>
-              <td class="amt">112,000</td><td class="amt">0</td>
+              <td class="amt">112,000</td>
               <td><span class="chip warn">소명 필요</span></td>
               <td><span class="select-like">소프트웨어비 <span>▾</span></span></td>
-              <td><span class="select-like">거래처 없음 <span>▾</span></span></td>
-              <td><span class="chip warn">계정/거래처 확인</span></td>
-              <td><span class="row-actions"><button class="mini-btn primary">계정 지정</button><button class="mini-btn">소명 입력</button></span></td>
+              <td><button class="mini-btn primary">소명 입력</button></td>
             </tr>
-            <tr class="danger-row">
+            <tr class="danger-row" data-search="주식회사 하드슨에이아이 Managed Cloud NAS 추가 6303000">
               <td class="mono">06-27</td>
               <td><span class="source"><span class="mark tax">세</span> 세금계산서</span></td>
               <td><div class="main-text">주식회사 하드슨에이아이</div><div class="sub">전자세금계산서</div></td>
               <td><div class="main-text">Managed Cloud_NAS 추가</div><div class="sub">입금 또는 카드 결제 연결 필요</div></td>
-              <td class="amt">6,303,000</td><td class="amt">630,300</td>
+              <td class="amt">6,303,000</td>
               <td><span class="chip danger">증빙 필요</span></td>
               <td><span class="select-like">매출 <span>▾</span></span></td>
-              <td><span class="select-like">하드슨AI <span>▾</span></span></td>
-              <td><span class="chip danger">대조 필요</span></td>
-              <td><span class="row-actions"><button class="mini-btn primary">거래 연결</button><button class="mini-btn">보류</button></span></td>
+              <td>입금 거래와 연결해야 합니다.</td>
             </tr>
-            <tr>
+            <tr data-search="최대준 주말 식대 27000">
               <td class="mono">06-25</td>
               <td><span class="source"><span class="mark cash">현</span> 현금영수증</span></td>
               <td><div class="main-text">최대준</div><div class="sub">휴대폰 현금영수증</div></td>
               <td><div class="main-text">주말 식대</div><div class="sub">사적 사용 의심으로 표시됨</div></td>
-              <td class="amt">27,000</td><td class="amt">2,700</td>
-              <td><span class="chip ok">현금영수증</span></td>
+              <td class="amt">27,000</td>
+              <td><span class="chip ok">증빙있음</span></td>
               <td><span class="select-like">복리후생비 <span>▾</span></span></td>
-              <td><span class="select-like">최대준 <span>▾</span></span></td>
-              <td><span class="chip warn">제외 검토</span></td>
               <td><span class="row-actions"><button class="mini-btn">업무사용</button><button class="mini-btn primary">제외</button></span></td>
             </tr>
-            <tr class="warn-row">
-              <td class="mono">06-21</td>
-              <td><span class="source"><span class="mark bank">통</span> 통장</span></td>
-              <td><div class="main-text">무신사페이먼츠</div><div class="sub">입금 내역</div></td>
-              <td><div class="main-text">매출 정산 입금</div><div class="sub">카드 승인 합계와 62,140원 차이</div></td>
-              <td class="amt">3,829,500</td><td class="amt">0</td>
+            <tr class="warn-row" data-duplicate="true" data-search="오피스디포코리아 사무용품 231089">
+              <td class="mono">06-18</td>
+              <td><span class="source"><span class="mark card">카</span> 카드</span></td>
+              <td><div class="main-text">오피스디포코리아</div><div class="sub">법인카드 승인</div></td>
+              <td><div class="main-text">사무용품</div><div class="sub">같은 날짜·금액·거래처·적요 2건</div></td>
+              <td class="amt">231,089</td>
               <td><span class="chip ok">증빙있음</span></td>
-              <td><span class="select-like">매출 <span>▾</span></span></td>
-              <td><span class="select-like">무신사페이먼츠 <span>▾</span></span></td>
-              <td><span class="chip warn">금액 대조</span></td>
-              <td><span class="row-actions"><button class="mini-btn primary">차이 확인</button><button class="mini-btn">메모</button></span></td>
+              <td><span class="select-like">소모품비 <span>▾</span></span></td>
+              <td><button class="mini-btn primary" data-open-duplicate>중복 확인</button></td>
+            </tr>
+            <tr class="warn-row" data-duplicate="true" data-search="오피스디포코리아 사무용품 231089">
+              <td class="mono">06-18</td>
+              <td><span class="source"><span class="mark card">카</span> 카드</span></td>
+              <td><div class="main-text">오피스디포코리아</div><div class="sub">법인카드 승인</div></td>
+              <td><div class="main-text">사무용품</div><div class="sub">같은 날짜·금액·거래처·적요 2건</div></td>
+              <td class="amt">231,089</td>
+              <td><span class="chip ok">증빙있음</span></td>
+              <td><span class="select-like">소모품비 <span>▾</span></span></td>
+              <td><button class="mini-btn primary" data-open-duplicate>중복 확인</button></td>
             </tr>
           </tbody>
         </table>
       </section>
 
-      <section class="detail-grid">
+      <section class="detail-grid two-col">
         <div class="card">
-          <h3>확정 조건</h3>
+          <h3>마감 체크리스트</h3>
           <div class="check-list">
             <div class="line"><span class="k">자료 수집</span><span class="chip ok">완료</span></div>
             <div class="line"><span class="k">증빙·소명 상태</span><span class="chip warn">13건 처리 필요</span></div>
@@ -320,34 +308,84 @@
           </div>
         </div>
         <div class="card">
-          <h3>행 셀 액션·모달 예시</h3>
+          <h3>세목별 차단 이유</h3>
           <div class="gate-list">
-            <div class="line"><span class="k">한 줄 결론 셀</span><span class="chip warn">여비교통비 + 현금영수증 연결 권장</span></div>
-            <div class="line"><span class="k">추천 근거</span><span class="chip ok">지난달 동일 거래처 3건</span></div>
-            <div class="line"><span class="k">증빙 상태 셀</span><span class="chip warn">증빙 확인/찾기 → 모달에서 차액 확인</span></div>
-            <div class="line"><span class="k">부족한 자료</span><span class="chip muted">자료수집으로 이동</span></div>
-          </div>
-        </div>
-        <div class="card">
-          <h3>세목별 양식 생성 가능 여부</h3>
-          <div class="gate-list">
-            <div class="line"><span class="k">부가세 Path 1 양식</span><span class="chip danger">증빙 4건·공제 3건</span></div>
+            <div class="line"><span class="k">부가세</span><span class="chip danger">자료대조 33건</span></div>
             <div class="line"><span class="k">사업장현황신고</span><span class="chip warn">수입금액 2건</span></div>
-            <div class="line"><span class="k">간이지급명세서</span><span class="chip ok">급여 검토로 이동</span></div>
-            <div class="line"><span class="k">지방소득세</span><span class="chip ok">급여 확정값 사용</span></div>
+            <div class="line"><span class="k">공통 원장</span><span class="chip danger">중복 2건</span></div>
           </div>
         </div>
       </section>
 
-      <div class="section-head"><h2>화면 상태 예시</h2><span class="hint">구현 시 공통 state 패턴 재사용</span></div>
-      <section class="states">
-        <div class="state"><div class="s-title">Loading</div><div class="s-body">원천 자료와 대조 결과를 불러오는 동안 표 skeleton을 보여준다.</div></div>
-        <div class="state"><div class="s-title">Empty</div><div class="s-body">자료가 없으면 자료수집 화면으로 안내한다.</div></div>
-        <div class="state"><div class="s-title">Error</div><div class="s-body">대조 상태를 불러오지 못하면 재시도와 자료수집 링크를 제공한다.</div></div>
-        <div class="state"><div class="s-title">No Permission</div><div class="s-body">권한이 없으면 회사 관리자에게 요청하도록 안내한다.</div></div>
-      </section>
     </main>
   </div>
 </div>
+<dialog id="duplicate-dialog">
+  <div class="dialog-head"><h3>중복 거래 확인</h3><p>같은 날짜·금액·거래처·적요인 카드 거래가 2건 있습니다.</p></div>
+  <div class="dialog-body">
+    <div class="duplicate-summary">
+      <div class="trade"><span>06-18 · 오피스디포코리아 · 사무용품</span><strong>231,089원</strong></div>
+      <div class="trade"><span>06-18 · 오피스디포코리아 · 사무용품</span><strong>231,089원</strong></div>
+    </div>
+  </div>
+  <div class="dialog-foot"><button class="btn" id="duplicate-close">취소</button><button class="btn">현재 거래를 중복 제외</button><button class="btn primary">별도 거래로 확인</button></div>
+</dialog>
+<script>
+  const search = document.getElementById('ledger-search');
+  const rows = [...document.querySelectorAll('tbody tr[data-search]')];
+  const allTab = document.querySelector('[data-filter="all"]');
+  const duplicateTab = document.querySelector('[data-filter="duplicate"]');
+  let duplicateOnly = false;
+  function renderRows() {
+    const query = search.value.replace(/[\s,]/g, '').toLowerCase();
+    rows.forEach((row) => {
+      const matchesSearch = row.dataset.search.replace(/[\s,]/g, '').toLowerCase().includes(query);
+      const matchesTab = !duplicateOnly || row.dataset.duplicate === 'true';
+      row.hidden = !matchesSearch || !matchesTab;
+    });
+  }
+  search.addEventListener('input', renderRows);
+  duplicateTab.addEventListener('click', () => {
+    duplicateOnly = true;
+    allTab.classList.remove('active'); duplicateTab.classList.add('active');
+    renderRows();
+  });
+  allTab.addEventListener('click', () => {
+    duplicateOnly = false;
+    duplicateTab.classList.remove('active'); allTab.classList.add('active');
+    renderRows();
+  });
+  const periodState = {
+    month: { year: 2026, value: 6 },
+    quarter: { year: 2026, value: 2 },
+    half: { year: 2026, value: 1 }
+  };
+  let activePeriodMode = 'half';
+  function periodLabel() {
+    const { year, value } = periodState[activePeriodMode];
+    if (activePeriodMode === 'month') return year + '년 ' + value + '월 기장검토';
+    if (activePeriodMode === 'quarter') return year + '년 ' + value + '분기 세무 운영';
+    return year + '년 부가세 ' + value + '기 확정 신고';
+  }
+  function shiftPeriod(delta) {
+    const state = periodState[activePeriodMode];
+    const max = activePeriodMode === 'month' ? 12 : activePeriodMode === 'quarter' ? 4 : 2;
+    state.value += delta;
+    if (state.value < 1) { state.value = max; state.year -= 1; }
+    if (state.value > max) { state.value = 1; state.year += 1; }
+    document.getElementById('period-label').textContent = periodLabel();
+  }
+  document.querySelectorAll('[data-period-mode]').forEach((button) => button.addEventListener('click', () => {
+    document.querySelectorAll('[data-period-mode]').forEach((item) => item.classList.remove('active'));
+    button.classList.add('active');
+    activePeriodMode = button.dataset.periodMode;
+    document.getElementById('period-label').textContent = periodLabel();
+  }));
+  document.getElementById('period-prev').addEventListener('click', () => shiftPeriod(-1));
+  document.getElementById('period-next').addEventListener('click', () => shiftPeriod(1));
+  const dialog = document.getElementById('duplicate-dialog');
+  document.querySelectorAll('[data-open-duplicate]').forEach((button) => button.addEventListener('click', () => dialog.showModal()));
+  document.getElementById('duplicate-close').addEventListener('click', () => dialog.close());
+</script>
 </body>
 </html>

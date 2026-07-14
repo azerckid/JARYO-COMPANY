@@ -35,12 +35,13 @@ function reconciliationGate(overrides: Partial<ReconciliationPath1Gate> = {}): R
   return {
     periodKey: '2026-H1',
     isReady: false,
-    blockerCount: 25,
+    blockerCount: 26,
     evidenceRequiredCount: 7,
     explanationRequiredCount: 5,
+    duplicateReviewCount: 1,
     accountUnconfirmedCount: 11,
     exclusionReasonRequiredCount: 2,
-    taxBlockerCount: 25,
+    taxBlockerCount: 26,
     targetRoute: '/dashboard/bookkeeping/reconciliation-ledger',
     ...overrides,
   }
@@ -189,8 +190,8 @@ describe('reconciliation Path 1 gate integration', () => {
 
     expect(bookkeeping).toEqual({
       domain: 'bookkeeping_review',
-      count: 25,
-      label: '자료대조 확인 필요 25건',
+      count: 26,
+      label: '자료대조 확인 필요 26건',
     })
     expect(buildFilingPreparationReadiness(replaced)).toBe(75)
   })
@@ -201,8 +202,8 @@ describe('reconciliation Path 1 gate integration', () => {
     const bookkeeping = cards.find((card) => card.id === 'bookkeeping_review')!
 
     expect(bookkeeping.title).toBe('자료대조원장')
-    expect(bookkeeping.chipLabel).toBe('확인 필요 25건')
-    expect(bookkeeping.output).toBe('증빙 7건 · 소명 5건 · 계정 11건 · 제외 사유 2건')
+    expect(bookkeeping.chipLabel).toBe('확인 필요 26건')
+    expect(bookkeeping.output).toBe('증빙 7건 · 소명 5건 · 중복 1건 · 계정 11건 · 제외 사유 2건')
     expect(bookkeeping.href).toBe('/dashboard/bookkeeping/reconciliation-ledger')
   })
 
@@ -212,6 +213,7 @@ describe('reconciliation Path 1 gate integration', () => {
       blockerCount: 0,
       evidenceRequiredCount: 0,
       explanationRequiredCount: 0,
+      duplicateReviewCount: 0,
       accountUnconfirmedCount: 0,
       exclusionReasonRequiredCount: 0,
       taxBlockerCount: 0,
