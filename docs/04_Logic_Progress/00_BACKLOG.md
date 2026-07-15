@@ -1069,6 +1069,18 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [x] v1 앱에서 수임료·소개비·결제·사무소 비교·자동배정을 제외하고 파일럿 비용·계약은 외부 관리하며 수익모델은 효과 검증 후 별도 결정
   - [x] 상담 응답은 파트너 사무소 영업 책임으로 두고 앱은 최초 전달·알림·상태 동기화·신청 취소만 제공하며 SLA·독촉·운영자 개입·재배정 제외
   - [x] A2A-2~A2A-6 질의응답·오너 승인 완료
+  - [x] SemuAgent 사이드 네비게이션 하단 `세무사무소 연결`에서 상담·수임 연결을 관리하고, 실제 신고자료 전송은 각 세목 Ready 화면에서 분리 제공
+  - [x] 부가세 `세무사무소로 보내기`는 즉시 전송·작은 모달 대신 별도 전송 확인 화면에서 수신자·기간·준비값·원본·예외·Ready를 검토하고 최종 승인
+  - [x] JARYO 신규 `SemuAgent 수신` 전체 목록을 업무 입구로 두고, 실제 검토는 연결된 고객사 아래 신규 `SemuAgent 신고자료 상세`에서 처리
+  - [x] JARYO 수신 목록과 고객사 상세는 같은 transfer를 조회하고, 기존 파일 중심 `자료 검토`와 A2A 신고 snapshot 작업공간을 분리
+  - [x] JARYO 신고자료 상세는 고객사·세목·기간·Ready·준비값·원본 건수·예외·핵심 액션만 요약하고 개별 원본·거래 행은 탭/펼쳐보기로 제공
+  - [x] SemuAgent 전송 확인과 JARYO 수신 상세는 같은 versioned 표시 계약의 읽기 전용 snapshot viewer를 사용하고 제품별 mutation은 viewer 밖으로 분리
+  - [x] 공통 viewer를 iframe·상대 DB 직접 조회·전체 runtime page 복사로 구현하지 않고 versioned schema와 제품별 adapter로 구성
+  - [x] 전송 승인 시 실제 사용 원본·정리자료를 JARYO 전용 저장소로 직접 복사하고, 원본별 hash·source metadata 검증 실패는 검토 대기 없이 기술 오류로 처리
+  - [x] 수신 후 JARYO 검토는 고정된 JARYO 사본만 읽으며 SemuAgent 실시간 링크·연결 종료 후 hot link에 의존하지 않음
+  - [x] 사업자와 사무소 담당자의 로그인·세션을 양쪽 제품이 공유하지 않고, SemuAgent 서버의 권한·Ready 검증 뒤 파트너별 서명된 서버 간 요청만 JARYO 수신 API가 처리
+  - [x] JARYO는 파트너 인증·요청 서명·contract version·활성 연결 ID·수신 tenant·사업자 매핑을 모두 검증하고 종료·폐기된 파트너 인증은 이후 전송을 차단
+  - [x] A2A 공통 계약은 transfer·연결·사업자·세목·기간·version·fingerprint·hash를 담은 envelope와 세목별 payload를 분리하고, 첫 부가세 payload 이후 세목은 envelope 변경 없이 확장
   - [ ] 공통 versioned schema·API·idempotency key·fingerprint·파일 hash 계약 승인
   - [ ] SemuAgent 전송·JARYO 수신/검토 HTML Preview 오너 승인
   - [ ] Pre-Code Brief·Component & Library Plan·QA 시나리오 승인
@@ -1139,7 +1151,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [ ] 보류·전문가 확인·필수 증빙·안분 근거 미완료와 stale fingerprint는 UI·API 양쪽에서 전송을 차단한다.
   - [ ] upstream에서 완료된 예외는 이유·확인자·확인시각과 함께 전달하고 blocker로 중복 계산하지 않는다.
   - [ ] 부가세 전용 필드를 공통 계약에 하드코딩하지 않고 후속 세목 확장 경계를 유지한다.
-- Document Sync Check (2026-07-16): A2A-0~A2A-6 제품 질의응답을 완료했다. 직접 A2A를 Path 2 주 경로로, ZIP을 fallback으로 고정했다. 전송은 사업자×세목×기간×snapshot의 독립 이벤트이며 실제 사용 자료만 포함하고, 첫 세목 부가세 Ready는 기존 VAT package gate를 재사용한다. 수신 승인·고유 연결 ID·부분 수신 금지·version 대체·세무 판단/보완/기술 오류 경계, 사무소 조정 설명·별도 adjustment·예외 보완·멱등 재시도·최소 신고 완료 상태, 수임계약 단계 개인정보 처리·연결 종료/보관, v1 비용 기능 제외와 사무소 응답 책임을 승인했다. 다음은 A2A-7 양쪽 UI Preview·공통 versioned schema/API·Pre-Code·Component Plan·QA 승인이다. runtime 구현은 A2A-7 완료 전까지 시작하지 않는다.
+- Document Sync Check (2026-07-16): A2A-0~A2A-6 제품 질의응답을 완료했다. 직접 A2A를 Path 2 주 경로로, ZIP을 fallback으로 고정했다. 전송은 사업자×세목×기간×snapshot의 독립 이벤트이며 실제 사용 자료만 포함하고, 첫 세목 부가세 Ready는 기존 VAT package gate를 재사용한다. 수신 승인·고유 연결 ID·부분 수신 금지·version 대체·세무 판단/보완/기술 오류 경계, 사무소 조정 설명·별도 adjustment·예외 보완·멱등 재시도·최소 신고 완료 상태, 수임계약 단계 개인정보 처리·연결 종료/보관, v1 비용 기능 제외와 사무소 응답 책임을 승인했다. A2A-7 UI 결정으로 SemuAgent 연결 관리/세목별 전송을 분리하고 부가세 전송은 별도 확인 화면에서 최종 승인한다. JARYO는 신규 전체 `SemuAgent 수신` 목록과 고객사별 `SemuAgent 신고자료 상세`의 2단계 구조를 사용하며 같은 transfer를 조회하고 기존 파일 중심 자료 검토와 분리한다. 신고자료 상세는 핵심 요약만 먼저 보여주고 개별 원본·거래 행은 필요할 때 펼친다. 양쪽 표시 영역은 동일한 versioned 계약의 읽기 전용 snapshot viewer를 사용하고 제품별 액션은 분리한다. 전송 시 원본·정리자료를 JARYO 전용 저장소에 복사하고 hash 검증 실패는 기술 오류로 막으며, 이후 검토는 JARYO 고정 사본만 사용한다. 사용자 로그인은 공유하지 않고 파트너별 서명된 서버 간 인증으로 JARYO가 partner·connection·tenant·business mapping을 fail-closed 검증한다. 공통 계약은 metadata envelope와 세목별 payload를 분리해 부가세 이후 세목을 안전하게 확장한다. 다음은 양쪽 UI Preview·공통 versioned schema/API·Pre-Code·Component Plan·QA 승인이다. runtime 구현은 A2A-7 완료 전까지 시작하지 않는다.
 
 ### JC-034 · GIWA handoff 수동 fallback — ZIP Export
 
