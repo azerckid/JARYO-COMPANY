@@ -24,7 +24,7 @@ export default function OnboardingPage() {
         if (!active) return
         if (orgs && orgs.length > 0) {
           await organization.setActive({ organizationId: orgs[0].id })
-          if (active) router.replace('/dashboard')
+          if (active) router.replace('/dashboard/sebiseo')
           return
         }
         setCheckingExisting(false)
@@ -61,7 +61,7 @@ export default function OnboardingPage() {
 
       const { orgId } = await res.json()
       await organization.setActive({ organizationId: orgId })
-      router.push('/dashboard')
+      router.push('/dashboard/sebiseo')
     } catch {
       setError('서버 오류가 발생했습니다')
       setLoading(false)

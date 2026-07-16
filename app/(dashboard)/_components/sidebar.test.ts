@@ -11,6 +11,17 @@ const paymentStatementSource = readFileSync(join(workspaceRoot, 'app/(dashboard)
 const yearEndSettlementSource = readFileSync(join(workspaceRoot, 'app/(dashboard)/dashboard/filing-preparation/year-end-settlement/_components/year-end-settlement-review.tsx'), 'utf8')
 
 describe('dashboard sidebar cadence navigation (JC-036)', () => {
+  it('places 세비서 above 회사 홈 as the first nav item (JC-043)', () => {
+    expect(sidebarSource).toContain("href: '/dashboard/sebiseo'")
+    expect(sidebarSource).toContain("label: '세비서'")
+    expect(sidebarSource).toContain("href: '/dashboard'")
+    expect(sidebarSource).toContain("label: '회사 홈'")
+    const sebiseoAt = sidebarSource.indexOf("href: '/dashboard/sebiseo'")
+    const homeAt = sidebarSource.indexOf("label: '회사 홈'")
+    expect(sebiseoAt).toBeGreaterThan(-1)
+    expect(homeAt).toBeGreaterThan(sebiseoAt)
+  })
+
   const payrollChildRoutes = [
     {
       href: '/dashboard/payroll',
