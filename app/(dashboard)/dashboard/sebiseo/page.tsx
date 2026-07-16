@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth-helpers'
+import { loadSourceCollectionSummary } from '@/lib/source-collection/summary'
+import { buildSebiseoPeriodOptions } from '@/lib/sebiseo/period-options'
 import { now } from '@/lib/time'
 import { buildUpcomingSchedule } from '@/lib/tax-calendar'
 import { SebiseoWorkspace } from './_components/sebiseo-workspace'
@@ -12,8 +14,19 @@ export default async function SebiseoPage() {
   if (!tenantId) redirect('/onboarding')
 
   // 첫 화면 로드에서 LLM provider를 호출하지 않는다(JC-043 Trust Contract).
-  // 회사별 준비 상태가 아닌 공통 법정 세무 일정 1건만 정적 규칙 캘린더에서 읽는다.
   const [upcoming = null] = buildUpcomingSchedule(now('Asia/Seoul'), 1)
+  const periodPayload = buildSebiseoPeriodOptions({ today: now('Asia/Seoul') })
+  const summary = await loadSourceCollectionSummary({
+    tenantId,
+    periodKey: periodPayload.defaultKey,
+  })
 
-  return <SebiseoWorkspace upcoming={upcoming} />
+  return (
+    <SebiseoWorkspace
+      upcoming={upcoming}
+      businessEntity={summary.businessEntity}
+      periodOptions={periodPayload.options}
+      defaultPeriodKey={periodPayload.defaultKey}
+    />
+  )
 }

@@ -1,7 +1,7 @@
 # Conversational Tax Workspace Product Direction
 > Created: 2026-07-16 01:43
-> Last Updated: 2026-07-17 04:30
-> Status: CUI-0/CUI-1/CUI-2(셸) 승인·머지 완료(PR #265) · CUI-3 Brief/QA review fix 반영·오너 본문 승인 대기 · 업로드·대화 runtime은 Brief 승인 전 미착수 · §3 페르소나·가드레일은 제품 방향에 포함
+> Last Updated: 2026-07-17 04:40
+> Status: CUI-0/CUI-1/CUI-2 완료 · CUI-3 Brief 승인(PR #266) · CUI-3a(기간 확인·업로드) runtime 진행 · CUI-3b chat API 미착수 · §3 페르소나·가드레일은 제품 방향에 포함
 
 ## 1. Purpose
 

@@ -1013,8 +1013,10 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [x] CUI-2 UI 셸 runtime 머지(PR #265) · trust fix 포함.
   - [x] CUI-3 Pre-Code Brief·Component & Library Plan draft 작성([62](../03_Technical_Specs/62_JC043_CUI3_SEBISEO_UPLOAD_CHAT_PRE_CODE_BRIEF.md))
   - [x] CUI-3 QA 시나리오 draft 작성([12](../05_QA_Validation/12_JC043_CUI3_SEBISEO_TEST_SCENARIOS.md))
-  - [ ] CUI-3 Brief·QA 오너 승인(§10 Open Confirmations 포함)
-  - [ ] CUI-3 runtime 착수(승인 후 3a→3d)
+  - [x] CUI-3 Brief·QA 오너 승인(PR #266 머지, §10 결정 포함)
+  - [ ] CUI-3a runtime: 기간 확인 UI + 자료수집 업로드 경로 연결
+  - [ ] CUI-3b runtime: `POST /api/sebiseo/chat`
+  - [ ] CUI-3c~3d: 라우팅 CTA · QA 통과
 - Acceptance Criteria:
   - [x] 사이드바 최상단이 세비서이고 회사 홈이 그 아래에 유지된다.
   - [x] 로그인·온보딩 완료 후 `/dashboard/sebiseo`로 진입한다.
@@ -1035,6 +1037,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - Document Sync Check (2026-07-17, CUI-2 trust fix): 가짜 DB 상태 데모 대화를 중립 첫 화면으로 교체하고, composer 컨트롤을 `disabled`+준비 중 안내로 고정했다. 일정 카드는 `세무 일정(참고)`로 하향해 공통 법정 일정임을 명시한다. Concept 04 Status에서 `runtime change not approved`를 CUI-2 셸 진행 / CUI-3+ 미승인으로 갱신했다.
 - Document Sync Check (2026-07-17, CUI-2 merge + CUI-3 docs): PR #265 머지 완료. CUI-3 Pre-Code Brief(62)·QA(12) draft와 Concept/Screen Flow/Backlog 링크를 추가했다. runtime 업로드·대화는 Brief 오너 승인 전 착수하지 않는다.
 - Document Sync Check (2026-07-17, CUI-3 review fix): Brief에 업로드 전 적용 기간 확인·chat 요청 계약(history≤8·2000자·redaction 시점·파일 원문 미포함)·서버 MIME 정본(CSV/ZIP 제외)을 반영했다. 자료수집 클라이언트 accept/문구를 서버와 맞췄다. QA P-03은 visible 안내로 수정. 오너 결정 4항은 Brief §10에 기록.
+- Document Sync Check (2026-07-17, CUI-3a): Brief 승인 후 세비서에 기간 확인 UI·`staff_direct` 업로드 연결을 착수했다. Instant/Mic/Voice·chat API는 CUI-3b 이후.
 
 ### JC-044 · SemuAgent↔JARYO 직접 A2A 전달
 
