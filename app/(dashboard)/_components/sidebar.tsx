@@ -14,6 +14,13 @@ import type { FilingPrepBusinessType } from '@/lib/filing-preparation/summary'
 import { SidebarNavLink } from './sidebar-nav-link'
 import { SidebarSignOutButton } from './sidebar-sign-out-button'
 
+// JC-043: 세비서를 사이드바 최상단·로그인 후 첫 화면으로 둔다. 회사 홈은 그 아래 유지.
+const SEBISEO_NAV = {
+  href: '/dashboard/sebiseo',
+  label: '세비서',
+  glyph: '✦',
+} as const
+
 const HOME_NAV = {
   href: '/dashboard',
   label: '회사 홈',
@@ -159,6 +166,10 @@ function SidebarContent({
       </div>
 
       <nav className="flex flex-1 flex-col gap-1">
+        <SidebarNavLink href={SEBISEO_NAV.href}>
+          <NavGlyph>{SEBISEO_NAV.glyph}</NavGlyph>
+          <span className="min-w-0 flex-1 truncate">{SEBISEO_NAV.label}</span>
+        </SidebarNavLink>
         <SidebarNavLink href={HOME_NAV.href}>
           <NavGlyph>{HOME_NAV.glyph}</NavGlyph>
           <span className="min-w-0 flex-1 truncate">{HOME_NAV.label}</span>

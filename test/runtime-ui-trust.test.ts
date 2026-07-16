@@ -55,10 +55,10 @@ describe('runtime UI trust boundaries', () => {
     const onboarding = source('app/onboarding/page.tsx')
     const onboardingRoute = source('app/api/onboarding/route.ts')
 
-    expect(signIn).toContain("router.push('/dashboard')")
+    expect(signIn).toContain("router.push('/dashboard/sebiseo')")
     expect(signIn).not.toContain("router.push('/dashboard/clients')")
-    expect(onboarding).toContain("router.replace('/dashboard')")
-    expect(onboarding).toContain("router.push('/dashboard')")
+    expect(onboarding).toContain("router.replace('/dashboard/sebiseo')")
+    expect(onboarding).toContain("router.push('/dashboard/sebiseo')")
     expect(onboarding).not.toContain('서브도메인')
     expect(onboarding).not.toContain('setSubdomain')
     expect(onboardingRoute).toContain('buildCompanyOrganizationSlug')
