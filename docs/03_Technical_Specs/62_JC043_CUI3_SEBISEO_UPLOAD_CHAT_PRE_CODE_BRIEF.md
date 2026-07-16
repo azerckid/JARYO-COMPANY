@@ -1,8 +1,8 @@
 # JC-043 CUI-3 · 세비서 업로드·대화·작업 라우팅 Pre-Code Brief
 > Created: 2026-07-17 04:20
-> Last Updated: 2026-07-17 04:30
+> Last Updated: 2026-07-17 04:40
 > Backlog: JC-043 · CUI-3
-> Status: draft · review fixes applied · **owner approval required before runtime implementation**
+> Status: Brief approved (PR #266) · CUI-3a runtime in progress · CUI-3b+ not started
 > Related Concept: [04_CONVERSATIONAL_TAX_WORKSPACE_PRODUCT_DIRECTION](../01_Concept_Design/04_CONVERSATIONAL_TAX_WORKSPACE_PRODUCT_DIRECTION.md)
 > Related Preview: [19_sebiseo.html](../02_UI_Screens/previews/19_sebiseo.html)
 > Related Source Collection: [05_SOURCE_COLLECTION_PRE_CODE_BRIEF](./05_SOURCE_COLLECTION_PRE_CODE_BRIEF.md)

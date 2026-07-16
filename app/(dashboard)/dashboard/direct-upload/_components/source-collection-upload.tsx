@@ -5,21 +5,14 @@ import { useRouter } from 'next/navigation'
 import { upload } from '@vercel/blob/client'
 import { RefreshCw, Upload } from 'lucide-react'
 import { FilePasswordInput } from '@/components/upload/file-password-input'
+import {
+  UPLOAD_ALLOWED_ACCEPT,
+  UPLOAD_ALLOWED_TYPES_HINT,
+  UPLOAD_MAX_FILE_BYTES,
+} from '@/lib/upload/allowed-content-types'
 import { verifyUploadClientTokenAvailable } from '@/lib/upload/client-token-preflight'
 import { resolveUploadedFileDisplay } from '@/lib/upload/file-display'
 import { cn } from '@/lib/utils'
-
-// Keep in sync with app/api/upload/route.ts ALLOWED_CONTENT_TYPES (server is source of truth).
-const ACCEPTED_TYPES = [
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-excel',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-].join(',')
-
-const MAX_FILE_BYTES = 50 * 1024 * 1024
 
 type UploadSession = {
   id: string
@@ -143,7 +136,7 @@ export function SourceCollectionUploadDropzone({
     setError(null)
     setMessage(null)
 
-    const oversized = targets.filter((file) => file.size > MAX_FILE_BYTES)
+    const oversized = targets.filter((file) => file.size > UPLOAD_MAX_FILE_BYTES)
     if (oversized.length > 0) {
       setError(`파일당 최대 50MB까지 업로드할 수 있습니다. (${oversized[0].name})`)
       return
@@ -263,7 +256,7 @@ export function SourceCollectionUploadDropzone({
             세금계산서 · 통장 거래내역 · 카드 매입내역 · 영수증 · 급여 파일 · 홈택스 내보내기 파일을 끌어다 놓거나 선택하세요.
           </p>
           <p className="mt-2 text-[11.5px] text-company-fg-subtle">
-            지원 형식: PDF · XLSX · XLS · 이미지(JPG/PNG/WebP) · 최대 50MB
+            {UPLOAD_ALLOWED_TYPES_HINT}
           </p>
         </div>
         <button
@@ -278,7 +271,7 @@ export function SourceCollectionUploadDropzone({
           ref={inputRef}
           type="file"
           multiple
-          accept={ACCEPTED_TYPES}
+          accept={UPLOAD_ALLOWED_ACCEPT}
           className="hidden"
           disabled={!canSelectFiles}
           onChange={(event) => {

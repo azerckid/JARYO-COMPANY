@@ -8,6 +8,10 @@ import { db } from '@/lib/db'
 import { sourceBatch, uploadFile, uploadSession } from '@/lib/db/schema'
 import { verifyToken } from '@/lib/session'
 import { now, toDBString } from '@/lib/time'
+import {
+  UPLOAD_ALLOWED_CONTENT_TYPES,
+  UPLOAD_MAX_FILE_BYTES,
+} from '@/lib/upload/allowed-content-types'
 import { isMutableUploadSessionStatus, markSessionFilesRevised } from '@/lib/upload-session-revision'
 
 export const maxDuration = 60
@@ -24,17 +28,6 @@ const blobResultSchema = z.object({
   pathname: z.string().min(1),
   contentType: z.string().min(1),
 })
-
-const ALLOWED_CONTENT_TYPES = [
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-excel',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]
-
-const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
 function getFileType(contentType: string): 'pdf' | 'excel' | 'image' | 'other' {
   if (contentType === 'application/pdf') return 'pdf'
@@ -110,8 +103,8 @@ export async function POST(req: Request): Promise<Response> {
           .limit(1)
 
         return {
-          allowedContentTypes: ALLOWED_CONTENT_TYPES,
-          maximumSizeInBytes: MAX_FILE_SIZE,
+          allowedContentTypes: [...UPLOAD_ALLOWED_CONTENT_TYPES],
+          maximumSizeInBytes: UPLOAD_MAX_FILE_BYTES,
           tokenPayload: JSON.stringify({
             sessionId: session.id,
             tenantId: session.tenantId,
