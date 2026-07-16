@@ -209,16 +209,16 @@
   }
   .composer .plus {
     width: 36px; height: 36px; border-radius: 999px;
-    display: grid; place-items: center; color: #ececec; flex: none;
+    display: grid; place-items: center; color: #6e6e6e; flex: none;
+    opacity: .5; cursor: not-allowed;
   }
-  .composer .plus:hover { background: #2f2f2f; }
   .composer .plus svg {
     width: 20px; height: 20px; stroke: currentColor; fill: none;
     stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
   }
   .composer .field {
     flex: 1; min-width: 0;
-    color: var(--chat-fg-subtle);
+    color: #6e6e6e;
     font-size: 15px;
     padding: 8px 6px;
   }
@@ -228,9 +228,9 @@
   .mode {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 6px 10px; border-radius: 999px;
-    color: #b4b4b4; font-size: 13px; font-weight: 500;
+    color: #6e6e6e; font-size: 13px; font-weight: 500;
+    opacity: .5; cursor: not-allowed;
   }
-  .mode:hover { background: #2f2f2f; color: #ececec; }
   .mode .chev {
     width: 14px; height: 14px;
     stroke: currentColor; fill: none; stroke-width: 1.5;
@@ -238,20 +238,46 @@
   }
   .round-btn {
     width: 36px; height: 36px; border-radius: 999px;
-    display: grid; place-items: center; color: #b4b4b4;
+    display: grid; place-items: center; color: #6e6e6e;
+    opacity: .5; cursor: not-allowed;
   }
-  .round-btn:hover { background: #2f2f2f; color: #ececec; }
   .round-btn svg {
     width: 18px; height: 18px; stroke: currentColor; fill: none;
     stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
   }
   .voice-btn {
     width: 36px; height: 36px; border-radius: 999px;
-    background: #fff; color: #0d0d0d;
+    background: #3a3a3a; color: #8e8e8e;
     display: grid; place-items: center;
+    opacity: .6; cursor: not-allowed;
   }
-  .voice-btn:hover { background: #e8e8e8; }
   .voice-btn svg { width: 16px; height: 16px; }
+  .coming-soon-note {
+    text-align: center;
+    color: var(--chat-fg-subtle);
+    font-size: 12px;
+    margin: -4px 0 10px;
+  }
+  .welcome {
+    width: min(768px, 100%);
+    margin: 24px auto 0;
+    color: var(--chat-fg);
+    font-size: 15.5px;
+    line-height: 1.7;
+  }
+  .welcome h2 {
+    margin: 0 0 14px;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .welcome p { margin: 0 0 14px; }
+  .status-card .note {
+    margin-top: 6px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: #6e6e6e;
+  }
 
   @media (max-width: 980px) {
     .app { grid-template-columns: 1fr; }
@@ -302,74 +328,41 @@
     <section class="chat-main">
       <div class="chat-top">세비서</div>
 
-      <!-- Persistent tax-status summary: always visible -->
-      <div class="status-strip" aria-label="핵심 상태 요약">
+      <!-- Reference statutory schedule only — not company prep status -->
+      <div class="status-strip" aria-label="참고 세무 일정">
         <div class="status-card">
-          <div class="label">다가오는 신고</div>
+          <div class="label">세무 일정(참고)</div>
           <div class="value">7/25</div>
           <div class="meta">부가세 1기 확정 · D-8</div>
+          <div class="note">공통 세무 일정입니다. 회사별 준비 상태가 아닙니다.</div>
         </div>
       </div>
 
-      <div class="thread">
-        <div class="msg user">
-          <div class="bubble">6월 카드랑 통장 파일 올렸는데, 다음에 뭐 하면 돼?</div>
-        </div>
-
-        <div class="msg assistant">
-          <div class="body">
-            <p>자료수집에 파일이 들어오면, 정규화 후 자료대조원장에서 누락·불일치 항목을 확인하는 순서가 일반적입니다.</p>
-            <p>지금은 예외·누락 거래가 있으니, 기장검토 &gt; 자료대조원장에서 해당 건부터 보시는 것을 권합니다. <b>확정은 표에서 직접</b> 하시고, 저는 안내와 다음 단계 연결만 돕습니다.</p>
-            <p>원하시면 “자료대조원장 열기” 또는 “부가세에서 수정할 항목 보여줘”라고 말씀해 주세요.</p>
-          </div>
-          <!-- Lucide paths matching ChatGPT icon set (non-functional) -->
-          <div class="actions" aria-label="메시지 액션">
-            <button class="icon-btn" type="button" title="복사" aria-label="복사">
-              <!-- copy -->
-              <svg viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-            </button>
-            <button class="icon-btn" type="button" title="좋아요" aria-label="좋아요">
-              <!-- thumbs-up -->
-              <svg viewBox="0 0 24 24"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>
-            </button>
-            <button class="icon-btn" type="button" title="싫어요" aria-label="싫어요">
-              <!-- thumbs-down -->
-              <svg viewBox="0 0 24 24"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/></svg>
-            </button>
-            <button class="icon-btn" type="button" title="공유" aria-label="공유">
-              <!-- share: square + arrow up (ChatGPT style) -->
-              <svg viewBox="0 0 24 24"><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/><path d="M12 3v13"/><path d="m8 7 4-4 4 4"/></svg>
-            </button>
-            <button class="icon-btn" type="button" title="다시 생성" aria-label="다시 생성">
-              <!-- refresh-cw (single cycle) -->
-              <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3.2-6.9"/><path d="M21 3v6h-6"/></svg>
-            </button>
-            <button class="icon-btn" type="button" title="더보기" aria-label="더보기">
-              <!-- ellipsis horizontal -->
-              <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.15" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.15" fill="currentColor" stroke="none"/></svg>
-            </button>
-          </div>
-        </div>
+      <div class="welcome">
+        <h2>무엇을 도와드릴까요?</h2>
+        <p>세무·회계 업무 안내를 돕는 세비서입니다. 지금은 대화·파일 업로드·음성 입력이 준비 중입니다.</p>
+        <p>왼쪽 메뉴에서 자료수집·기장검토·부가세·연간신고 화면으로 바로 이동할 수 있습니다. <b>확정과 신고는 각 표·화면에서 직접</b> 진행해 주세요.</p>
       </div>
 
       <div class="composer-wrap">
         <div class="disclaimer">세비서도 실수할 수 있습니다. 중요한 정보는 다시 확인하세요.</div>
-        <div class="composer" role="group" aria-label="메시지 입력">
-          <button class="plus" type="button" title="첨부" aria-label="첨부">
+        <div class="coming-soon-note">대화·첨부·음성은 준비 중입니다.</div>
+        <div class="composer" role="group" aria-label="메시지 입력 (준비 중)">
+          <button class="plus" type="button" disabled aria-disabled="true" title="준비 중 · 곧 연결됩니다" aria-label="첨부 · 준비 중 · 곧 연결됩니다">
             <!-- plus -->
             <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
           </button>
-          <div class="field">세비서에게 묻기</div>
+          <div class="field">세비서에게 묻기 (준비 중)</div>
           <div class="trail">
-            <button class="mode" type="button" title="모드">
+            <button class="mode" type="button" disabled aria-disabled="true" title="준비 중 · 곧 연결됩니다" aria-label="Instant · 준비 중 · 곧 연결됩니다">
               Instant
               <svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
             </button>
-            <button class="round-btn" type="button" title="음성 입력" aria-label="음성 입력">
+            <button class="round-btn" type="button" disabled aria-disabled="true" title="준비 중 · 곧 연결됩니다" aria-label="음성 입력 · 준비 중 · 곧 연결됩니다">
               <!-- mic -->
               <svg viewBox="0 0 24 24"><path d="M12 19v3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><rect width="4" height="12" x="10" y="2" rx="2"/></svg>
             </button>
-            <button class="voice-btn" type="button" title="음성 모드" aria-label="음성 모드">
+            <button class="voice-btn" type="button" disabled aria-disabled="true" title="준비 중 · 곧 연결됩니다" aria-label="음성 모드 · 준비 중 · 곧 연결됩니다">
               <!-- audio-lines style waveform -->
               <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
                 <rect x="4" y="9" width="2.2" height="6" rx="1.1"/>

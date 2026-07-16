@@ -992,7 +992,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - Status: `in_progress` (CUI-2 UI 셸 runtime 착수. LLM·업로드 오케스트레이션은 후속)
 - Related Concept Docs: [Conversational Tax Workspace Product Direction](../01_Concept_Design/04_CONVERSATIONAL_TAX_WORKSPACE_PRODUCT_DIRECTION.md) - 대화 진입과 구조화 확정의 역할 정본.
 - Related UI Docs: [Screen Flow](../02_UI_Screens/00_SCREEN_FLOW.md) · [UI Design](../02_UI_Screens/01_UI_DESIGN.md) - 세비서 첫 진입과 회사 홈 유지 경계.
-- Related HTML Preview: [세비서 Preview](../02_UI_Screens/previews/19_sebiseo.html) - 오너 피드백 반영(채팅 이력 레일 제외, 다가오는 신고 1카드, #171717, ChatGPT형 아이콘).
+- Related HTML Preview: [세비서 Preview](../02_UI_Screens/previews/19_sebiseo.html) - 오너 피드백·trust fix 반영(채팅 이력 레일 제외, 참고 세무 일정 1카드, 중립 첫 화면, #171717, ChatGPT형 아이콘 disabled).
 - Related Technical Docs: N/A - CUI-1 승인 후 기존 upload·AI·read model 재사용 계약을 Pre-Code Brief로 작성한다.
 - Related QA Docs: N/A - Pre-Code Brief 승인 후 상태·보안·성능·브라우저 시나리오를 작성한다.
 - Component & Library Plan: N/A - CUI-1 승인 후 기존 shadcn·streaming·upload·state 자산의 재사용/신규/제외 목록을 Pre-Code Brief에 고정한다.
@@ -1015,7 +1015,9 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - Acceptance Criteria:
   - [x] 사이드바 최상단이 세비서이고 회사 홈이 그 아래에 유지된다.
   - [x] 로그인·온보딩 완료 후 `/dashboard/sebiseo`로 진입한다.
-  - [x] 첫 화면에 다가오는 신고 카드 1건과 ChatGPT형 입구 셸이 있다(확인 필요/Ready 카드는 1차 제외).
+  - [x] 첫 화면에 참고 세무 일정 카드 1건과 ChatGPT형 입구 셸이 있다(확인 필요/Ready 카드는 1차 제외).
+  - [x] 일정 카드는 공통 법정 일정임을 명시하고, 가짜 DB 상태 데모 대화를 쓰지 않는다.
+  - [x] 미연결 composer 컨트롤은 disabled이며 준비 중 안내를 제공한다.
   - [x] 최초 화면 로드는 LLM provider를 호출하지 않는다.
   - [ ] 첫 화면에서 대화·파일 업로드와 미확정 상태를 함께 다룰 수 있다(CUI-3~4).
   - [ ] 업로드는 기존 tenant-scoped 자료수집 저장·파싱·정규화 경로를 재사용한다.
@@ -1026,7 +1028,8 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [ ] 사이드 네비게이션과 직접 작업공간 진입을 유지한다.
   - [ ] 데스크톱·모바일·키보드·스크린리더·오류·빈 상태 E2E를 통과한다.
 - Document Sync Check (2026-07-16): Concept 04에 대화 중심 첫 화면을 제품 방향으로 고정했다. 현행 회사 홈 runtime은 변경하지 않으며, UI-First Gate와 단계별 오너 확인을 새 작업 에픽의 선행조건으로 둔다.
-- Document Sync Check (2026-07-17, CUI-1/CUI-2 shell): Preview `19_sebiseo.html`과 runtime `/dashboard/sebiseo` UI 셸을 추가했다. SemuAgent 사이드바만 유지(채팅 이력 레일 없음), 다가오는 신고 1카드, `#171717` 입구, ChatGPT형 아이콘(비활성), 고지 문구 확정. 회사 홈 페이지는 유지. LLM·업로드·mutation은 후속.
+- Document Sync Check (2026-07-17, CUI-1/CUI-2 shell): Preview `19_sebiseo.html`과 runtime `/dashboard/sebiseo` UI 셸을 추가했다. SemuAgent 사이드바만 유지(채팅 이력 레일 없음), 참고 세무 일정 1카드, `#171717` 입구, ChatGPT형 아이콘(비활성), 고지 문구 확정. 회사 홈 페이지는 유지. LLM·업로드·mutation은 후속.
+- Document Sync Check (2026-07-17, CUI-2 trust fix): 가짜 DB 상태 데모 대화를 중립 첫 화면으로 교체하고, composer 컨트롤을 `disabled`+준비 중 안내로 고정했다. 일정 카드는 `세무 일정(참고)`로 하향해 공통 법정 일정임을 명시한다. Concept 04 Status에서 `runtime change not approved`를 CUI-2 셸 진행 / CUI-3+ 미승인으로 갱신했다.
 
 ### JC-044 · SemuAgent↔JARYO 직접 A2A 전달
 
