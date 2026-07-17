@@ -1,6 +1,6 @@
 # JC-043 CUI-4 · 세비서 업로드 결과 카드 Pre-Code Brief
 > Created: 2026-07-17 18:55
-> Last Updated: 2026-07-17 19:20
+> Last Updated: 2026-07-17 19:55
 > Backlog: JC-043 · CUI-4
 > Status: **Draft — 오너 승인 대기** (runtime 착수 금지)
 > Related Concept: [04_CONVERSATIONAL_TAX_WORKSPACE_PRODUCT_DIRECTION](../01_Concept_Design/04_CONVERSATIONAL_TAX_WORKSPACE_PRODUCT_DIRECTION.md)
@@ -66,7 +66,7 @@ CUI-3 trust 계약은 유지한다. 첫 화면 로드 시 LLM provider 호출은
    - **가짜 건수·추정 진행률 금지.** DB에 없는 숫자를 채우지 않는다.
 
 3. **결과 카드 UI (Preview 정합)**
-   - 라벨: `{periodLabel} · 직접 업로드` — §4.2.1에서 역산한 `periodKey`의 표시 라벨.
+   - 라벨: `{periodLabel} · 직접 업로드` — §4.2.1 역산 key를 §4.2.2 순수 표시 헬퍼로 변환. `buildSebiseoPeriodOptions()`/`findSebiseoPeriodOption()`에 **의존하지 않는다**.
    - 제목: `자료 {totalCount}건을 정리했습니다` (파일 단위. 거래 건수 아님).
    - 메타: 0이 아닌 버킷만 `정상 N건 · 확인 필요 N건 · …` 형태로 연결.
    - 상태 배지: `needsReviewCount > 0`이면 `확인 필요 {needsReviewCount}` (Preview와 동일 톤).
@@ -131,7 +131,7 @@ CUI-3 trust 계약은 유지한다. 첫 화면 로드 시 LLM provider 호출은
 SebiseoUploadResultCard = {
   sessionId: string
   periodKey: string          // company-home period key
-  periodLabel: string        // "2026년 하반기" 등
+  periodLabel: string        // §4.2.2 — "2026년 하반기" 등. findSebiseoPeriodOption 금지
   totalCount: number
   okCount: number
   needsReviewCount: number
@@ -150,7 +150,7 @@ SebiseoUploadResultCard = {
 2) 활성 businessEntityId (client 1건, source-collection과 동일)
 3) upload_session WHERE tenant_id, client_id, source='staff_direct', deleted_at IS NULL
    ORDER BY created_at DESC LIMIT 1
-4) accountingPeriod → periodKey (§4.2.1). 실패면 null 반환(카드 숨김)
+4) accountingPeriod → periodKey (§4.2.1) → periodLabel (§4.2.2). 어느 단계든 실패면 null(카드 숨김)
 5) upload_file WHERE upload_session_id = session.id AND tenant_id
 6) status별 count → SebiseoUploadResultCard | null
 ```
@@ -161,7 +161,7 @@ SebiseoUploadResultCard = {
 | 사업장 격리 | `clientId = businessEntityId` |
 | 타 테넌트 `sessionId` | CTA·서버 모두 404/redirect 처리 (기존 direct-upload와 동일) |
 | storage key·blob URL | 노출 금지 · `file-display` safe title만(카드 제목에는 파일명 나열 생략 가능) |
-| period 역산 | §4.2.1 신규 헬퍼만 사용. 임의 문자열 조합·추정 금지 · 실패 시 fail-closed |
+| period 역산·표시 | §4.2.1·§4.2.2 신규 헬퍼만 사용. 옵션 후보 목록·추정·defaultKey 대체 금지 · 실패 시 fail-closed |
 
 #### 4.2.1 `accountingPeriod` → `periodKey` 역산 (신규 헬퍼 · 필수)
 
@@ -196,19 +196,60 @@ resolveSebiseoPeriodKeyFromAccountingPeriod(value: string): string | null
 - CTA href를 추정 기간으로 채우거나 기본 `defaultKey`로 대체하지 **않는다**.
 - 로그는 운영 디버그용으로만 남기고 사용자에게 오류 배너를 강제하지 않는다(조용히 숨김).
 
+#### 4.2.2 `periodKey` → 표시 라벨 (순수 헬퍼 · 필수)
+
+최근 세션은 **기간 후보 제한 없이** 고른다(§2.1). 반면 `buildSebiseoPeriodOptions()`는
+현재·직전 월과 최근 반기만 만든다. 따라서 과거 연도 세션(예: `2025-H1`)은
+`findSebiseoPeriodOption(options, key)`로 라벨을 찾지 못할 수 있다.
+
+카드 eyebrow/라벨은 **옵션 목록에 의존하지 않는** 순수 표시 헬퍼만 사용한다.
+
+| 입력 (`periodKey`) | 출력 (`periodLabel`) |
+|:---|:---|
+| `YYYY-MM` (예: `2026-07`) | `{YYYY}년 {M}월` (예: `2026년 7월`) — 월은 선행 0 제거 |
+| `YYYY-H1` (예: `2026-H1`) | `{YYYY}년 상반기` |
+| `YYYY-H2` (예: `2026-H2`) | `{YYYY}년 하반기` |
+| 그 외 | `null` → 카드 숨김 |
+
+```text
+formatSebiseoPeriodLabel(periodKey: string): string | null
+
+1) trim
+2) if match /^(\d{4})-(0[1-9]|1[0-2])$/ → `${year}년 ${Number(month)}월`
+3) if match /^(\d{4})-H1$/ → `${year}년 상반기`
+4) if match /^(\d{4})-H2$/ → `${year}년 하반기`
+5) else → null
+```
+
+**금지:**
+
+- `buildSebiseoPeriodOptions()` / `findSebiseoPeriodOption()`으로 카드 라벨 조회
+- 업로드 confirm UI의 `confirmLabel`/`detailLabel`/`periodLabel` 문자열을 카드에 재사용
+  (후보에 없는 key면 실패하므로)
+- 라벨을 못 찾을 때 `defaultKey`·오늘 날짜·임의 문구로 대체
+
+**Fail-closed:** §4.2.1 역산이 성공해도 §4.2.2가 `null`이면 카드를 숨긴다.
+
 **구현·테스트 위치:**
 
 | 자산 | 책임 |
 |:---|:---|
-| `lib/sebiseo/period-options.ts` | `resolveSebiseoPeriodKeyFromAccountingPeriod` 추가(client-safe 유지, `lib/db` 금지) |
-| `lib/sebiseo/period-options.test.ts` | 월·H1·H2 happy path + 연도 불일치·비표준 범위·빈값·임의 문자열 → `null` |
+| `lib/sebiseo/period-options.ts` | `resolveSebiseoPeriodKeyFromAccountingPeriod` + `formatSebiseoPeriodLabel` 추가(client-safe, `lib/db` 금지) |
+| `lib/sebiseo/period-options.test.ts` | 역산: 월·H1·H2 + 비표준 → `null`. 표시: `2026-07`/`2026-H1`/`2026-H2` + **과거 연도**(`2025-03`, `2025-H1`, `2024-H2`) + 비표준 → `null` |
 
-라벨(`periodLabel` / 카드 eyebrow)은 역산된 `periodKey`로 `findSebiseoPeriodOption` 또는
-동등한 표시 헬퍼에서만 얻는다. key 없이 라벨만 임의 생성하지 않는다.
+카드 파이프라인:
 
-Impact Scope: `lib/source-collection/summary.ts`를 직접 수정하지 않고, **공유 status 라벨·period 헬퍼만 import**한다.
+```text
+session.accountingPeriod
+  → resolveSebiseoPeriodKeyFromAccountingPeriod → periodKey | null
+  → formatSebiseoPeriodLabel(periodKey) → periodLabel | null
+  → 둘 다 non-null일 때만 SebiseoUploadResultCard 구성
+```
+
+Impact Scope: `lib/source-collection/summary.ts`를 직접 수정하지 않고, **공유 status 라벨만 import**한다.
 summary 변경이 필요하면 세비서 전용 thin wrapper로 격리하고 자료수집 회귀 테스트를 돌린다.
-`period-options` 역산 헬퍼는 **세비서·CTA 전용**이며 company-home `normalizePeriodKey`를 바꾸지 않는다.
+`period-options` 역산·표시 헬퍼는 **세비서 결과 카드·CTA 전용**이며 company-home `normalizePeriodKey`와
+업로드 confirm 후보 목록을 바꾸지 않는다.
 
 ### 4.3 Source Collection Session Deep Link Contract (CTA 정본)
 
@@ -331,13 +372,14 @@ redirect(`/dashboard/direct-upload?period={resolvedPeriodKey}`)
 | `lib/source-collection/summary.ts` status 라벨·period 빌더 | 집계 라벨 정합 |
 | `lib/company-home/summary` period helpers | `periodKey`·라벨 |
 | `lib/upload/file-display` | 파일명 노출 시 safe title |
-| `lib/sebiseo/period-options` | 업로드 기간 확인(기존 순방향) + §4.2.1 역산 헬퍼 추가 |
+| `lib/sebiseo/period-options` | 업로드 기간 확인(기존 순방향 후보) + §4.2.1 역산 + §4.2.2 순수 표시 라벨 |
 
 ### 7.2 New
 
 | 자산 | 책임 |
 |:---|:---|
 | `resolveSebiseoPeriodKeyFromAccountingPeriod` | `accountingPeriod` → `periodKey` · fail-closed · unit test |
+| `formatSebiseoPeriodLabel` | `periodKey` → 표시 라벨 · 옵션 목록 비의존 · 과거 연도 포함 unit test |
 | `lib/sebiseo/upload-result.ts` | read model + Zod schema + unit test |
 | `sebiseo-upload-result-card.tsx` | 카드 UI |
 | `sebiseo/page.tsx` · `sebiseo-workspace.tsx` | prop 전달·refresh·카드 슬롯 |
@@ -356,7 +398,7 @@ redirect(`/dashboard/direct-upload?period={resolvedPeriodKey}`)
 
 | Slice | 산출물 | 완료선 |
 |:---|:---|:---|
-| **CUI-4a** | `resolveSebiseoPeriodKeyFromAccountingPeriod` + `loadSebiseoUploadResultCard` + Zod + unit test + 카드 UI + page prop + §4.3 import 표 세션 필터 | tenant/사업장/기간 격리. 역산 실패·세션 없음 → 미표시. CTA landing 시 표 혼입 0 |
+| **CUI-4a** | §4.2.1·§4.2.2 period 헬퍼 + `loadSebiseoUploadResultCard` + Zod + unit test + 카드 UI + page prop + §4.3 import 표 세션 필터 | tenant/사업장/기간 격리. 역산·표시 실패·세션 없음 → 미표시. 과거 연도 라벨 OK. CTA landing 시 표 혼입 0 |
 | **CUI-4b** | 업로드 직후 `router.refresh()`·system 링크 제거·CTA 일원화 | submit 후 카드가 같은 `sessionId`로 갱신 |
 | **CUI-4c** | QA 시나리오 + 회귀 | [QA 13](../05_QA_Validation/13_JC043_CUI4_SEBISEO_UPLOAD_RESULT_CARD_TEST_SCENARIOS.md) 통과 · 자료수집 S-60~S-64 회귀 |
 
@@ -369,6 +411,9 @@ redirect(`/dashboard/direct-upload?period={resolvedPeriodKey}`)
 - [ ] 세션·파일이 없으면 카드를 렌더하지 않는다.
 - [ ] `accountingPeriod` → `periodKey` 역산이 실패하면 카드를 숨긴다(기본 period로 CTA를 추정하지 않음).
 - [ ] 월(`YYYY-MM`)·반기(`YYYY-01~YYYY-06`→H1, `YYYY-07~YYYY-12`→H2) 역산과 비표준 입력 `null` 단위 테스트가 있다.
+- [ ] 카드 라벨은 `formatSebiseoPeriodLabel`만 사용한다. `findSebiseoPeriodOption`/후보 목록에 의존하지 않는다.
+- [ ] `2026-07`→`2026년 7월`, `2026-H1`→`2026년 상반기`, `2026-H2`→`2026년 하반기`, 그 외→`null`(카드 숨김).
+- [ ] 과거 연도(`2025-03`, `2025-H1`, `2024-H2`) 표시 라벨 단위 테스트가 있다.
 - [ ] CTA는 `/dashboard/direct-upload?period={periodKey}&sessionId={sessionId}`만 사용한다.
 - [ ] `needsReviewCount > 0`일 때 CTA 라벨이 `확인 필요 N건 보기`이다.
 - [ ] 카드·채팅 클릭으로 확정·수정·AI 재실행·재분석 mutation이 발생하지 않는다.
@@ -392,6 +437,7 @@ redirect(`/dashboard/direct-upload?period={resolvedPeriodKey}`)
 | 5 | 신규 API | 없음 (server read + `router.refresh()`) | **승인 대기** |
 | 6 | CTA landing import 표 | 유효 `sessionId`일 때 해당 세션 파일만 표시 · 무효 sessionId strip redirect | **승인 대기** |
 | 7 | period 역산 | §4.2.1 표·의사코드 · 실패 시 카드 숨김(fail-closed) · `period-options`에 헬퍼+테스트 추가 | **승인 대기** |
+| 8 | period 표시 라벨 | §4.2.2 순수 헬퍼 · 옵션 후보 비의존 · 과거 연도 포함 · 실패 시 카드 숨김 | **승인 대기** |
 
 ## 11. Document Sync (구현 전)
 

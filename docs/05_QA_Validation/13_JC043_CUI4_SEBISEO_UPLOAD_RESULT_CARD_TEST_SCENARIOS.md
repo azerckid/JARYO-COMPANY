@@ -1,6 +1,6 @@
 # JC-043 CUI-4 · 세비서 업로드 결과 카드 QA 시나리오
 > Created: 2026-07-17 19:15
-> Last Updated: 2026-07-17 19:20
+> Last Updated: 2026-07-17 19:55
 > Backlog: JC-043 · CUI-4
 > Status: **Draft** — Brief 63 승인·runtime 구현 후 실행
 > Related Brief: [63_JC043_CUI4_SEBISEO_UPLOAD_RESULT_CARD_PRE_CODE_BRIEF](../03_Technical_Specs/63_JC043_CUI4_SEBISEO_UPLOAD_RESULT_CARD_PRE_CODE_BRIEF.md)
@@ -51,4 +51,5 @@ Out of scope: 기장검토 거래 건수 카드, CUI-5 확정, 법령 참고 int
 - **R-04**는 CUI-4 핵심 계약. Preview HTML만으로는 검증 불가 — runtime 필수.
 - R-04 fixture는 **`S1.createdAt > S2.createdAt`** 을 명시해야 “최근 세션 1건” 선택과 표 필터 검증이 흔들리지 않는다. 업로드 시각이 뒤집히면 S2가 카드에 잡혀 시나리오가 깨진다.
 - localhost Blob callback 한계는 CUI-3d와 동일. `needs_review` 실측은 staging DB 권장.
-- period 역산 단위 테스트(월·H1·H2·fail-closed)는 Brief §4.2.1 / CUI-4a에 포함. QA 표의 별도 ID는 두지 않는다.
+- period 역산·표시 단위 테스트(월·H1·H2·과거 연도·fail-closed)는 Brief §4.2.1·§4.2.2 / CUI-4a에 포함. QA 표의 별도 ID는 두지 않는다.
+- 카드 라벨은 `formatSebiseoPeriodLabel`만 사용한다. `buildSebiseoPeriodOptions` 후보에 없는 과거 세션도 라벨이 나와야 한다.
