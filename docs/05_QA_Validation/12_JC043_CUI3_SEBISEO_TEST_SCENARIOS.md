@@ -2,7 +2,7 @@
 > Created: 2026-07-17 04:20
 > Last Updated: 2026-07-17 (CUI-3d QA pass)
 > Backlog: JC-043 · CUI-3
-> Status: CUI-3a(PR #267)·CUI-3b(PR #268)·CUI-3c(PR #269) 머지 완료 · CUI-3d QA 진행 중 — Trust/Dialogue/Routing/Security 브라우저 검증 완료, **업로드 매트릭스(U-01~U-11)와 테넌트 격리(I-01~I-03·I-05)는 잔여**
+> Status: CUI-3a(PR #267)·CUI-3b(PR #268)·CUI-3c(PR #269) 머지 완료 · CUI-3d QA 진행 중 — Trust/Dialogue/Routing/Security/**테넌트 격리(A/B fixture 통합 테스트)** 완료, **실파일 업로드 매트릭스는 잔여**
 > Related Brief: [62_JC043_CUI3_SEBISEO_UPLOAD_CHAT_PRE_CODE_BRIEF](../03_Technical_Specs/62_JC043_CUI3_SEBISEO_UPLOAD_CHAT_PRE_CODE_BRIEF.md)
 > Related Source Collection QA: [03_SOURCE_COLLECTION_TEST_SCENARIOS](./03_SOURCE_COLLECTION_TEST_SCENARIOS.md)
 
@@ -41,10 +41,10 @@ CUI-2 셸 trust 계약을 깨지 않으면서, 기존 자료수집 mutation·ten
 | U-02 | 허용 XLSX · 기간 확인 완료 | 첨부 후 submit | status uploaded→analyzing(또는 파이프라인 동등 전이) | Pending |
 | U-03 | 미지원 형식(CSV/ZIP 포함) | 첨부 시도 | 거부 메시지, DB 행 없음 | Pending |
 | U-04 | >50MB | 첨부 시도 | 거부, DB 행 없음 | Pending |
-| U-05 | 분석 실패 파일 | 재시도 CTA | 기존 retry API 호출, 상태 갱신 | Pending |
+| U-05 | 분석 실패 파일 | 재시도 CTA | 기존 retry API 호출, 상태 갱신 | PARTIAL·단위(자료수집 S-42 `summary.test.ts` — 실패 파일이 retryable로 표시됨. 실제 retry API 호출은 잔여) |
 | U-06 | 암호 Excel | 비밀번호 제출 | 기존 password API, 비밀번호가 thread/history에 평문 잔존하지 않음 | Pending |
 | U-07 | 업로드 진행 중 | 사이드바로 자료수집 이동 | 전체 앱 비차단, 동일 파일 상태 확인 가능 | Pending |
-| U-08 | 세비서에서 올린 파일 | `/dashboard/direct-upload` | safe title만 표시, storage key·blob URL 없음 | Pending |
+| U-08 | 세비서에서 올린 파일 | `/dashboard/direct-upload` | safe title만 표시, storage key·blob URL 없음 | PASS·단위(자료수집 S-40 `summary.test.ts` — safe title 도출·원본 파일명 미노출. 세비서·자료수집이 같은 read model 사용) |
 | U-09 | 파일 선택 직후 | 기간 확인 UI | `적용 기간: …` 표시, 확인 전 `staff-direct-upload` 호출 0 | Pending |
 | U-10 | 기간 확인에서 취소 | 취소 | 세션·파일 DB 행 없음 | Pending |
 | U-11 | 기본 후보가 H2인 7월 | 변경 → 1기/H1 선택 후 확인 | 세션 `accountingPeriod`가 선택한 기간 | Pending |
@@ -88,11 +88,11 @@ S-61은 CSV/ZIP을 **미지원으로 거부**하는 기대로 해석한다.
 
 | # | Given | When | Then | Result |
 |:---|:---|:---|:---|:---:|
-| I-01 | tenant A 세션 | tenant B `clientId`로 세션 생성 시도 | 거부 | Blocked·2nd account |
-| I-02 | tenant A | 세비서 thread/상태 | tenant B 파일·건수 미노출 | Blocked·2nd account |
-| I-03 | 사업장 A | 집계/상태 | 사업장 B 파일 미포함 | Blocked·2nd 사업장 |
+| I-01 | tenant A 세션 | tenant B `clientId`로 세션 생성 시도 | 거부 | PASS·통합(A/B fixture, `route.tenant-scope.test.ts` — 교차 404, 동일 tenant는 통과해 403) |
+| I-02 | tenant A | 세비서 thread/상태 | tenant B 파일·건수 미노출 | PASS·통합(A/B fixture, `summary-tenant-scope.test.ts`) |
+| I-03 | 사업장 A | 집계/상태 | 사업장 B 파일 미포함 | PASS·통합(타 tenant·동일 tenant 타 사업장 batch 모두 제외 확인) |
 | I-04 | 비로그인 | `/dashboard/sebiseo` | `/sign-in` | PASS·런타임(307 → `/sign-in`) |
-| I-05 | 로그인·회사 없음 | 진입 | 온보딩 또는 기존 회사 등록 안내 | Blocked·회사 없는 계정 |
+| I-05 | 로그인·회사 없음 | 진입 | 온보딩 또는 기존 회사 등록 안내 | PASS·통합(회사 없음 fixture → businessEntity null·빈 요약) + 구현(`page.tsx` activeOrganizationId 없으면 `/onboarding`, 사업장 없으면 등록 안내 문구) |
 | I-06 | `POST /api/sebiseo/chat` | 세션 없음 | 401/리다이렉트 정책과 동일 | PASS·런타임(401 Unauthorized) |
 
 ## 7. Security And Non-Goals
@@ -116,10 +116,10 @@ S-61은 CSV/ZIP을 **미지원으로 거부**하는 기대로 해석한다.
 ## 9. Exit Criteria For CUI-3
 
 - [x] T-01~T-06 회귀 PASS (2026-07-17 브라우저)
-- [ ] U-01~U-12 및 자료수집 S-60~S-64 회귀 PASS — U-12만 PASS, **U-01~U-11 잔여**(실파일 업로드 매트릭스·암호 Excel fixture 필요)
+- [ ] U-01~U-12 및 자료수집 S-60~S-64 회귀 PASS — U-08·U-12 PASS, U-05 PARTIAL, **U-01~U-04·U-06·U-07·U-09~U-11 잔여**(실파일 업로드 매트릭스·암호 Excel fixture 필요)
 - [x] C-01~C-13 PASS
 - [x] R-01~R-08 PASS
-- [ ] I-01~I-06 PASS — I-04·I-06 PASS, **I-01~I-03·I-05 잔여**(2번째 tenant/사업장·회사 없는 계정 필요)
+- [x] I-01~I-06 PASS (I-01·I-02·I-03·I-05 A/B fixture 통합 테스트, I-04·I-06 런타임)
 - [x] N-01~N-05 PASS
 - [ ] Brief §9 Acceptance Criteria 체크 완료
 - [x] Document Sync(Concept/Backlog/Screen Flow/Preview) 완료
@@ -128,10 +128,10 @@ S-61은 CSV/ZIP을 **미지원으로 거부**하는 기대로 해석한다.
 
 | 항목 | 사유 | 필요한 것 |
 |:---|:---|:---|
-| U-01·U-02·U-05·U-07·U-08·U-11 | 실제 파일 업로드 후 DB 행·상태 전이 확인 필요 | 테스트 파일 + dev DB 조회(turso 재로그인) |
+| U-01·U-02·U-07·U-11 | 실제 파일 업로드 후 DB 행·상태 전이 확인 필요 | 테스트 파일 + dev DB 조회(turso 재로그인) |
+| U-05 | 재시도 CTA 노출은 S-42로 커버됨. 실제 retry API 호출·상태 갱신만 잔여 | 분석 실패 파일 |
 | U-03·U-04·U-09·U-10 | 거부·기간 확인 게이트는 브라우저에서 파일 선택 필요 | 테스트 파일(미지원 형식·>50MB) |
 | U-06 | 암호 걸린 Excel fixture 필요 | 암호 xlsx 준비 |
-| I-01·I-02·I-03·I-05 | 테넌트/사업장 격리는 **2번째 계정**이 있어야 검증 가능. 에이전트는 계정 생성·비밀번호 입력을 하지 않는다 | 오너가 2번째 tenant·사업장·회사 없는 계정 제공 또는 직접 검증 |
 | P-01·P-03 | 업로드 비차단·키보드 포커스 스모크 | 브라우저 추가 확인 |
 
 ## 10. Related Documents
