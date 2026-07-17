@@ -2,7 +2,7 @@
 > Created: 2026-07-17 04:20
 > Last Updated: 2026-07-17 05:10
 > Backlog: JC-043 · CUI-3
-> Status: Brief approved (PR #266) · CUI-3a merged (PR #267) · CUI-3b merged + E2E verified (PR #268) · CUI-3c code/자동검증 완료, 브라우저에서 버튼 렌더 확인, PR 검토 대기 · CUI-3d 미착수
+> Status: Brief approved (PR #266) · CUI-3a merged (PR #267) · CUI-3b merged + E2E (PR #268) · CUI-3c merged (PR #269) · CUI-3d QA 진행 중 — Trust/Dialogue/Routing/Security 브라우저 검증 완료, 업로드 매트릭스(U-01~U-11)·테넌트 격리(I-01~I-03·I-05) 잔여
 > Related Concept: [04_CONVERSATIONAL_TAX_WORKSPACE_PRODUCT_DIRECTION](../01_Concept_Design/04_CONVERSATIONAL_TAX_WORKSPACE_PRODUCT_DIRECTION.md)
 > Related Preview: [19_sebiseo.html](../02_UI_Screens/previews/19_sebiseo.html)
 > Related Source Collection: [05_SOURCE_COLLECTION_PRE_CODE_BRIEF](./05_SOURCE_COLLECTION_PRE_CODE_BRIEF.md)
