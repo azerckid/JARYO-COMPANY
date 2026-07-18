@@ -38,7 +38,10 @@ import { lookupSimplifiedIncomeTax } from '@/lib/payroll/simplified-tax-table'
 import {
   buildReconciliationBankSampleRows,
 } from './reconciliation-bank-sample'
-import { FIRST_RUN_SAMPLE_EMPLOYEES } from './payroll-sample-employees'
+import {
+  FIRST_RUN_SAMPLE_EMPLOYEES,
+  type SampleEmployeeSpec,
+} from './payroll-sample-employees'
 
 export const FIRST_RUN_SAMPLE_SEED_VERSION = '2026-07-11.v3'
 export const FIRST_RUN_SAMPLE_PERIOD_KEY = '2026-H1'
