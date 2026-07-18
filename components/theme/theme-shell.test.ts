@@ -47,8 +47,10 @@ describe('JC-045 T1 theme shell contracts', () => {
     expect(modeSource).toContain("'다크'")
   })
 
-  it('keeps Sebiseo fixed charcoal palette for T2 (no T1 migration)', () => {
-    expect(sebiseoWorkspaceSource).toContain('bg-[#171717]')
+  it('migrates Sebiseo canvas to shared company tokens (T2)', () => {
+    expect(sebiseoWorkspaceSource).toContain('bg-company-bg')
+    expect(sebiseoWorkspaceSource).toContain('text-foreground')
+    expect(sebiseoWorkspaceSource).not.toContain('bg-[#171717]')
     expect(sebiseoWorkspaceSource).not.toContain('ThemeModeMenu')
     expect(sebiseoWorkspaceSource).not.toContain('useTheme')
   })
