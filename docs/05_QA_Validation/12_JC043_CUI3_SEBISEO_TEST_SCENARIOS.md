@@ -32,6 +32,7 @@ CUI-2 셸 trust 계약을 깨지 않으면서, 기존 자료수집 mutation·ten
 | T-04 | 일정 카드 | 렌더 | `세무 일정(참고)` + 회사별 준비 상태 아님 문구 | PASS·브라우저 |
 | T-05 | 사이드바 | 렌더 | 세비서 최상단, 회사 홈 바로 아래 | PASS·브라우저 |
 | T-06 | composer 하단 | 렌더 | Instant/음성 **visible** “준비 중” 안내 문구가 포커스 없이 보임 | PASS·구현 |
+| T-07 | 이번 달 세무 일정 | 이번달 세무 일정이 무엇인가? 전송 | 앱 등록 공통 일정 답변. LLM·문서 검색·요청 제한 호출 0회 | PASS·unit |
 
 ## 3. Upload Via Existing Source Collection Path
 

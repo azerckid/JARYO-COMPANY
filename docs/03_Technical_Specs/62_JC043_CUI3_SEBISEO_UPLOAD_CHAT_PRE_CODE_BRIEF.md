@@ -33,7 +33,10 @@ CUI-2 trust 계약은 유지한다. 가짜 DB 상태 문구를 다시 넣지 않
 | Composer | 첨부·Instant·Mic·Voice·입력 영역이 **disabled** |
 | LLM | 페이지 로드 시 provider 호출 없음 |
 | Upload | 세비서에서 미연결 · 회사는 `/dashboard/direct-upload`에서만 업로드 |
+
 | Chat history | 없음(레일·DB 없음) |
+
+이번 달 세무 일정처럼 앱에 등록된 공통 일정 조회는 일반 세무상담으로 거절하지 않는다. 이 질문은 고정 일정 데이터에서 직접 답하며 LLM 호출·문서 검색·요청 제한을 사용하지 않는다. 회사별 해당 여부와 준비 상태는 단정하지 않는다.
 
 ## 2. Product Contract (CUI-3)
 
