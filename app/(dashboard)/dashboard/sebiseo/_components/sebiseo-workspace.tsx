@@ -227,15 +227,6 @@ export function SebiseoWorkspace({
 
       <div className="flex-1 overflow-auto px-6 pb-[150px]">
         <div className="mx-auto w-full max-w-[768px] space-y-3.5 pt-6 text-[15.5px] leading-[1.7] text-foreground">
-          <p className="text-xl font-semibold tracking-tight">무엇을 도와드릴까요?</p>
-          <p>
-            세무·회계 업무 안내를 돕는 세비서입니다. 대화와 파일 첨부를 사용할 수 있고,
-            Instant·음성은 아직 준비 중입니다.
-          </p>
-          <p>
-            왼쪽 메뉴에서 자료수집·기장검토·부가세·연간신고 화면으로 바로 이동할 수 있습니다.{' '}
-            <span className="font-semibold">확정과 신고는 각 표·화면에서 직접</span> 진행해 주세요.
-          </p>
           {!businessEntity ? (
             <p className="rounded-xl border border-company-border bg-company-surface px-3.5 py-3 text-[13px] text-company-fg-muted">
               사업장이 없어 파일을 올릴 수 없습니다. 온보딩·설정에서 사업장을 등록해 주세요.
