@@ -51,27 +51,27 @@
         └─ 회사 홈은 상태 대시보드로 유지(필수 첫 화면 아님)
 ```
 
-### 2.1 대화형 첫 화면 방향 (JC-043 · CUI-3 완료 · CUI-4 Brief 승인 · CUI-4a runtime 대기)
+### 2.1 대화형 첫 화면 방향 (JC-043 · CUI-4 Closeout 완료 · 첫 세로 여정 Preview)
 
-CUI-2(PR #265)는 `/dashboard/sebiseo` 진입 셸·내비·참고 일정, CUI-3a(PR #267)는
-기간 확인 후 기존 자료수집 업로드 연결까지다. CUI-3b는
-[Pre-Code Brief 62](../03_Technical_Specs/62_JC043_CUI3_SEBISEO_UPLOAD_CHAT_PRE_CODE_BRIEF.md)의
-ephemeral·redaction·화이트리스트 계약으로 제품 사용 안내 대화만 연결한다.
-CUI-4는 최근 업로드 세션 1건의 실제 DB 파일 상태만 카드로 요약하고 `period + sessionId`로 좁힌 자료수집 화면을 연다. [Pre-Code Brief 63](../03_Technical_Specs/63_JC043_CUI4_SEBISEO_UPLOAD_RESULT_CARD_PRE_CODE_BRIEF.md)은 PR #272로 오너 승인됐다. CUI-4a부터 runtime을 착수한다. 카드나 대화에서 확정하지 않으며 구조화 확정은 CUI-5다. 사이드 네비게이션은 대체하지 않는다.
+CUI-4는 최근 업로드 세션 1건의 실제 DB **파일** 상태를 카드로 요약하고 `period + sessionId`로
+좁힌 자료수집 화면을 연다. QA 13 R-01~R-12 Preview 실측이 완료됐다.
+다음 UI는 **첫 세로 여정**: 파일 결과와 **거래** 확인 필요를 구분하고, 필터된 자료대조원장에서만
+확정한 뒤 세비서 진행상황 카드를 재조회한다.
+HTML Preview: [20_sebiseo_first_vertical_journey.html](./previews/20_sebiseo_first_vertical_journey.html)
+(오너 화면 확인 대기 · DB/API/runtime 변경 없음). 카드·대화에서 확정하지 않으며 구조화 확정은 CUI-5다.
+거래 단위 read model·deep link는 CUI-4d Brief 이후다.
 
 ```text
-대화에서 요청·파일 업로드
-  -> 기존 자료수집·AI·도메인 서비스 실행
-  -> canonical 상태에서 결과 카드 생성
-  -> 실제 확인 필요 행이 있는 워크스페이스로 이동
-  -> 사용자가 표·원본·snapshot에서 수정·확정
-  -> 대화 홈의 상태 요약 갱신
+파일 업로드 결과 카드 (파일 수)
+  -> 확인 필요 거래 카드 (거래 수) · CTA
+  -> 필터된 자료대조원장 (needs_review)
+  -> 확인 전 / 적용 직전 / stale / 성공 / undo / 부분 실패
+  -> 세비서 진행상황 카드 재조회
+  -> 사이드바·AI 장애 시에도 표로 복구
 ```
 
 채팅 메시지는 정본이 아니다. 미확정 건수·Ready·신고 상태는 DB read model에서 표시하고,
-최종 확정은 구조화 화면의 서버 gate를 통과해야 한다. 상세 화면은
-[Conversational Tax Workspace Product Direction](../01_Concept_Design/04_CONVERSATIONAL_TAX_WORKSPACE_PRODUCT_DIRECTION.md)의
-CUI-1 HTML Preview를 오너가 승인한 뒤 이 문서에 확정한다.
+최종 확정은 구조화 화면의 서버 gate를 통과해야 한다.
 
 ## 3. 진입 · 전환 · 이탈
 
