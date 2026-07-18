@@ -989,10 +989,10 @@ Technical, and QA docs first, then prepare a short implementation brief.
 
 ### JC-043 · 대화형 세무 작업공간 — 첫 화면·오케스트레이션
 
-- Status: `in_progress` (CUI-4a runtime 머지 PR #273 · R-04/R-09 unit PASS · **Browser Pending** on logged-in staging)
+- Status: `in_progress` (CUI-4 Closeout 완료 · QA 13 R-01~R-12 PASS · **S2 첫 세로 여정 Preview draft 오너 확인 대기**)
 - Related Concept Docs: [Conversational Tax Workspace Product Direction](../01_Concept_Design/04_CONVERSATIONAL_TAX_WORKSPACE_PRODUCT_DIRECTION.md) - 대화 진입과 구조화 확정의 역할 방향. [Sebiseo Operating Model](../01_Concept_Design/05_SEBISEO_OPERATING_MODEL.md) - 업무 식별·상태·blocker·Ready·확인·복구 운영 정본.
 - Related UI Docs: [Screen Flow](../02_UI_Screens/00_SCREEN_FLOW.md) · [UI Design](../02_UI_Screens/01_UI_DESIGN.md) - 세비서 첫 진입과 회사 홈 유지 경계.
-- Related HTML Preview: [세비서 Preview](../02_UI_Screens/previews/19_sebiseo.html) - 중립 첫 화면은 유지하고, 접힌 CUI-4 상태 예시에서 최근 업로드 결과 카드 1개만 검토한다.
+- Related HTML Preview: [세비서 Preview](../02_UI_Screens/previews/19_sebiseo.html) · [첫 세로 여정 S2](../02_UI_Screens/previews/20_sebiseo_first_vertical_journey.html) - 파일/거래 구분·필터 원장·확정 상태·세비서 재조회.
 - Related Technical Docs: [62 CUI-3 Pre-Code Brief](../03_Technical_Specs/62_JC043_CUI3_SEBISEO_UPLOAD_CHAT_PRE_CODE_BRIEF.md) - 자료수집 API 재사용·대화 범위·실패 상태·tenant·가드레일·Component/Library Plan.
 - Related QA Docs: [12 CUI-3 Test Scenarios](../05_QA_Validation/12_JC043_CUI3_SEBISEO_TEST_SCENARIOS.md) - trust 회귀·업로드·대화·라우팅·격리.
 - Related Execution Plan: [Sebiseo CUI-4 Closeout to CUI-6](./01_EXECUTION_PLAN.md) - CUI-4 마감·CUI-4d·CUI-5·부가세 Readiness·CUI-6 고정 작업순서와 Gate.
@@ -1024,11 +1024,13 @@ Technical, and QA docs first, then prepare a short implementation brief.
   - [x] CUI-4 HTML Preview: 최근 업로드 세션 결과 카드 1개·DB 정본 건수·`period + sessionId` 필터 CTA 오너 승인(PR #271)
   - [x] CUI-4 Pre-Code Brief: [63](../03_Technical_Specs/63_JC043_CUI4_SEBISEO_UPLOAD_RESULT_CARD_PRE_CODE_BRIEF.md) 오너 승인(PR #272)
   - [x] CUI-4a runtime: period 역산·표시 헬퍼 + 결과 카드 + §4.3 import 표 세션 필터 (PR #273)
-  - [ ] 세비서 운영모델 Draft PR 승인·머지
-  - [ ] CUI-4d·CUI-5 실행계획 오너 승인
-  - [ ] CUI-4a browser follow-up: 로그인 staging에서 카드 표시·CTA 이동·R-04/R-09 실측
-  - [ ] CUI-4b: 업로드 직후 refresh·system 링크 일원화 잔여 확인(필요 시)
-  - [ ] CUI-4c: QA 13 잔여 시나리오 + 자료수집 회귀
+  - [x] 세비서 운영모델·실행계획 머지(#278/#279)
+  - [x] CUI-4 Closeout: QA 13 R-01~R-12 Preview 실측 PASS (#280~#284)
+  - [x] S2 첫 세로 여정 HTML Preview draft — [20](../02_UI_Screens/previews/20_sebiseo_first_vertical_journey.html) 오너 화면 확인 대기
+  - [ ] S2 HTML UI Preview Gate·UI-First Gate 오너 승인
+  - [ ] CUI-4d Pre-Code Brief·QA Draft (S2 승인 후)
+  - [ ] CUI-4d runtime (Brief 승인 후)
+  - [ ] CUI-5 Brief·runtime (CUI-4d 후)
 - Acceptance Criteria:
   - [x] 사이드바 최상단이 세비서이고 회사 홈이 그 아래에 유지된다.
   - [x] 로그인·온보딩 완료 후 `/dashboard/sebiseo`로 진입한다.
@@ -1059,6 +1061,7 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - Document Sync Check (2026-07-17, CUI-4 Brief approved): Brief 63 §4.2.1·§4.2.2 period 역산·순수 표시 라벨, §4.3 sessionId import 필터, Owner Decisions 1~8 오너 승인(PR #272). 다음은 CUI-4a runtime.
 - Document Sync Check (2026-07-17, CUI-4a merged): PR #273 — 결과 카드 runtime, session deep-link helpers, R-04/R-09 unit PASS. Browser 실측은 로그인 staging에서 카드·CTA만 후속 확인.
 - Document Sync Check (2026-07-18, operating model and execution order): 세비서 운영모델을 JC-043 구현 입력으로 연결하고, 다음 순서를 CUI-4 마감 → CUI-4d 거래 read-only 연결 → CUI-5 구조화 확정 → 부가세 Readiness → CUI-6으로 고정했다. CUI-4d·CUI-5 runtime은 신규 HTML Preview와 각 Pre-Code Brief·QA 승인 전 착수하지 않는다.
+- Document Sync Check (2026-07-19, S2 first vertical journey Preview draft): [20_sebiseo_first_vertical_journey.html](../02_UI_Screens/previews/20_sebiseo_first_vertical_journey.html)에 파일/거래 구분, 필터 원장 CTA, 확인 전·적용 직전·stale·성공·undo·부분 실패, 확정 후 세비서 재조회, 사이드바·AI 장애 복구를 담았다. DB/API/runtime 변경 없음. 오너 화면 확인 대기.
 
 ### JC-045 · 전역 라이트·다크 테마 시스템
 
