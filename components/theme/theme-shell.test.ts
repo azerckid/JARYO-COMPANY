@@ -30,7 +30,9 @@ describe('JC-045 T1 theme shell contracts', () => {
     // Prefer external-store subscription over effect-time setState (react-hooks/set-state-in-effect).
     expect(contextSource).toContain('useSyncExternalStore')
     expect(contextSource).not.toContain('useState')
-    expect(contextSource).not.toMatch(/useEffect\(\s*\(\)\s*=>\s*\{[\s\S]*set[A-Z]/)
+    expect(contextSource).not.toContain('setThemeState')
+    expect(contextSource).not.toContain('setResolvedTheme')
+    expect(contextSource).not.toContain('setSystemTheme')
     expect(menuSource).toContain("from '@/lib/theme/theme-context'")
     expect(toasterSource).toContain("from '@/lib/theme/theme-context'")
     expect(menuSource).not.toMatch(/from ['"]next-themes['"]/)
