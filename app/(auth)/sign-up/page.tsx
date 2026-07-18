@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signUp } from '@/lib/auth-client'
+import { AUTH_INPUT_CLASS } from '../_components/auth-field-classes'
 import { PasswordVisibilityInput } from '../_components/password-visibility-input'
 
 export default function SignUpPage() {
@@ -52,7 +53,7 @@ export default function SignUpPage() {
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={AUTH_INPUT_CLASS}
             placeholder="홍길동"
           />
         </div>
@@ -64,7 +65,7 @@ export default function SignUpPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={AUTH_INPUT_CLASS}
             placeholder="name@example.com"
           />
         </div>
