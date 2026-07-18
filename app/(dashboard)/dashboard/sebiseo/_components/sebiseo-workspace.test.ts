@@ -59,9 +59,11 @@ describe('세비서 workspace shell (JC-043 CUI-3b)', () => {
     expect(pageSource).not.toContain('anthropic')
   })
 
-  it('keeps chat ephemeral and redacts before the client request', () => {
+  it('restores only same-tab redacted chat messages and keeps them out of durable storage', () => {
     expect(workspaceSource).toContain("useState<SebiseoThreadItem[]>([])")
     expect(workspaceSource).toContain('redactAssistantText(message)')
+    expect(workspaceSource).toContain('sessionStorage')
+    expect(workspaceSource).toContain("item.kind === \u0027user\u0027 || item.kind === \u0027assistant\u0027")
     expect(workspaceSource).not.toContain('localStorage')
     expect(workspaceSource).not.toContain('indexedDB')
   })
