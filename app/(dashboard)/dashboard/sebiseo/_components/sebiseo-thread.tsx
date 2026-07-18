@@ -12,6 +12,8 @@ export type SebiseoThreadItem = {
   hrefLabel?: string
   // CUI-3c: 허용된 답변 아래 표시하는 화면 이동 버튼(최대 2). 이동만 하고 데이터 변경은 없다.
   actions?: readonly SebiseoSuggestedAction[]
+  /** false면 같은 탭 복원분 — typewriter를 다시 재생하지 않는다. 신규 답변은 생략(기본 재생). */
+  animate?: boolean
 }
 
 function AssistantActions({ actions }: { readonly actions: readonly SebiseoSuggestedAction[] }) {
@@ -47,7 +49,8 @@ export function SebiseoThread({ items }: { readonly items: readonly SebiseoThrea
   return (
     <div className='space-y-3'>
       {items.map((item) => {
-        const animateAssistant = item.kind === 'assistant' && item.tone === 'normal'
+        const animateAssistant =
+          item.kind === 'assistant' && item.tone === 'normal' && item.animate !== false
 
         return (
           <div

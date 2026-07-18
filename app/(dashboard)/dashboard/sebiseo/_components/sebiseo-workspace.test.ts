@@ -79,9 +79,15 @@ describe('세비서 workspace shell (JC-043 CUI-3b)', () => {
   it("animates only normal assistant answers and respects reduced motion", () => {
     expect(threadSource).toContain("SebiseoTypewriter")
     expect(threadSource).toContain("item.tone ===")
+    expect(threadSource).toContain("item.animate !== false")
     expect(threadSource).toContain("complete ? <AssistantActions")
     expect(typewriterSource).toContain("prefers-reduced-motion: reduce")
     expect(typewriterSource).toContain("aria-live={isComplete")
+  })
+
+  it('skips typewriter replay for same-tab restored assistant messages', () => {
+    expect(workspaceSource).toContain('animate: false')
+    expect(workspaceSource).toContain('readSebiseoSessionThread')
   })
 
 })

@@ -70,7 +70,13 @@ export function SebiseoWorkspace({
       return
     }
 
-    setThread(readSebiseoSessionThread(window.sessionStorage, sessionThreadStorageKey))
+    // 복원분은 이미 읽은 답변이므로 typewriter를 다시 돌리지 않는다(CTA 지연 방지).
+    setThread(
+      readSebiseoSessionThread(window.sessionStorage, sessionThreadStorageKey).map((item) => ({
+        ...item,
+        animate: false,
+      })),
+    )
   }, [sessionThreadStorageKey])
 
   useEffect(() => {
