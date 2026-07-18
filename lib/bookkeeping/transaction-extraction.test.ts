@@ -174,6 +174,7 @@ describe('extractTransactionCandidates', () => {
     })
 
     expect(candidates).toHaveLength(3)
+    expect(candidates.map((candidate) => candidate.sourceType)).toEqual(['bank', 'bank', 'bank'])
     expect(candidates.map((candidate) => candidate.amountKrw)).toEqual([2561569, 440000, 275000])
     expect(candidates.map((candidate) => candidate.transactionDate)).toEqual(['2026-04-01', '2026-04-01', '2026-04-01'])
   })
@@ -374,6 +375,32 @@ describe('extractTransactionCandidates', () => {
         grossAmountKrw: 110000,
         sourceReference: 'file-tax-invoice-exact:매입:2',
       },
+    })
+  })
+
+  it('derives ordinary taxation from exact supply, tax, and gross amounts when the source has no tax-type column', () => {
+    const buffer = workbookBuffer({
+      '매출': [
+        ['작성일자', '매입매출구분', '거래처', '공급가액', '세액', '합계금액'],
+        ['2026-06-10', '매출', '주식회사 테스트', '100,000', '10,000', '110,000'],
+      ],
+    })
+
+    const candidates = extractTransactionCandidates({
+      file: {
+        id: 'file-tax-invoice-inferred-taxable',
+        originalFilename: '홈택스_매출_전자세금계산서.xlsx',
+        fileType: 'excel',
+      },
+      buffer,
+    })
+
+    expect(candidates[0]?.vatFact).toMatchObject({
+      direction: 'sale',
+      taxType: 'taxable',
+      supplyAmountKrw: 100000,
+      taxAmountKrw: 10000,
+      grossAmountKrw: 110000,
     })
   })
 

@@ -83,14 +83,31 @@ function normalizeDate(value: string): string | null {
   return null
 }
 
-function inferSourceType(file: UploadFileLike, row: string[]): SourceType {
-  const text = `${file.originalFilename}\n${row.join(' ')}`.toLowerCase()
+function inferSourceTypeFromFilename(filename: string): SourceType | null {
+  if (/지출\s*결의|지출결의/.test(filename)) return 'other'
+  if (/카드|card/.test(filename)) return 'card'
+  if (/세금계산서|tax.?invoice/.test(filename)) return 'tax_invoice'
+  if (/영수증|receipt/.test(filename)) return 'receipt'
+  if (/통장|은행|bank|statement|거래내역/.test(filename)) return 'bank'
+  return null
+}
+
+function inferSourceTypeFromRow(text: string): SourceType {
   if (/지출\s*결의|지출결의|결재방법|집행일자|지출금액/.test(text)) return 'other'
   if (/카드|card/.test(text)) return 'card'
   if (/세금계산서|tax.?invoice/.test(text)) return 'tax_invoice'
   if (/영수증|receipt/.test(text)) return 'receipt'
   if (/통장|은행|bank|statement|거래내역/.test(text)) return 'bank'
   return 'other'
+}
+
+function inferSourceType(file: UploadFileLike, row: string[]): SourceType {
+  // A recognized original filename is stronger evidence than a transaction memo.
+  // For example, a bank row can legitimately say "카드 결제대금" or
+  // "세금계산서 대금" without becoming a card or tax-invoice row.
+  const fileSourceType = inferSourceTypeFromFilename(file.originalFilename.toLowerCase())
+  if (fileSourceType !== null) return fileSourceType
+  return inferSourceTypeFromRow(row.join(' ').toLowerCase())
 }
 
 function inferDirection(row: string[], amount: number | null): Direction {
@@ -385,7 +402,12 @@ function buildParsedVatFact(params: {
   const supplyAmountKrw = pickByIndexes(params.row, params.headerMap.supplyAmountIndexes, normalizeAmount)
   const taxAmountKrw = pickByIndexes(params.row, params.headerMap.taxAmountIndexes, normalizeAmount)
   const grossAmountKrw = pickByIndexes(params.row, params.headerMap.grossAmountIndexes, normalizeAmount)
-  const taxType = pickByIndexes(params.row, params.headerMap.taxTypeIndexes, normalizeVatTaxType)
+  const explicitTaxType = pickByIndexes(params.row, params.headerMap.taxTypeIndexes, normalizeVatTaxType)
+  const taxType = explicitTaxType ?? inferTaxableFromExactAmounts(
+    supplyAmountKrw,
+    taxAmountKrw,
+    grossAmountKrw,
+  )
   if (supplyAmountKrw === null || taxAmountKrw === null || grossAmountKrw === null || taxType === null) return undefined
 
   const parsed = parsedVatFactSchema.safeParse({
@@ -397,6 +419,17 @@ function buildParsedVatFact(params: {
     sourceReference: `${params.file.id}:${params.sheetName}:${params.rowNumber}`,
   })
   return parsed.success ? parsed.data : undefined
+}
+
+function inferTaxableFromExactAmounts(
+  supplyAmountKrw: number | null,
+  taxAmountKrw: number | null,
+  grossAmountKrw: number | null,
+): ParsedVatFact['taxType'] | null {
+  if (supplyAmountKrw === null || taxAmountKrw === null || grossAmountKrw === null) return null
+  if (supplyAmountKrw <= 0 || taxAmountKrw !== Math.round(supplyAmountKrw * 0.1)) return null
+  if (grossAmountKrw !== supplyAmountKrw + taxAmountKrw) return null
+  return 'taxable'
 }
 
 function isSummaryRow(row: string[]) {
