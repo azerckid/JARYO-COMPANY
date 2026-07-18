@@ -6,7 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react'
 import { SEMUAGENT_THEME_STORAGE_KEY } from '@/lib/theme/init-script'
@@ -24,6 +24,8 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
+const THEME_CHANGE_EVENT = 'semuagent-theme-change'
+
 function readSystemTheme(): ResolvedTheme {
   if (typeof window === 'undefined') return 'light'
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
@@ -38,35 +40,59 @@ function applyDocumentTheme(mode: ThemeMode): ResolvedTheme {
   return resolved
 }
 
+function subscribeThemePreference(onStoreChange: () => void) {
+  window.addEventListener('storage', onStoreChange)
+  window.addEventListener(THEME_CHANGE_EVENT, onStoreChange)
+  return () => {
+    window.removeEventListener('storage', onStoreChange)
+    window.removeEventListener(THEME_CHANGE_EVENT, onStoreChange)
+  }
+}
+
+function getThemePreferenceSnapshot(): ThemeMode {
+  return parseThemeMode(window.localStorage.getItem(SEMUAGENT_THEME_STORAGE_KEY))
+}
+
+function getThemePreferenceServerSnapshot(): ThemeMode {
+  return 'system'
+}
+
+function subscribeSystemTheme(onStoreChange: () => void) {
+  const media = window.matchMedia('(prefers-color-scheme: dark)')
+  media.addEventListener('change', onStoreChange)
+  return () => media.removeEventListener('change', onStoreChange)
+}
+
+function getSystemThemeSnapshot(): ResolvedTheme {
+  return readSystemTheme()
+}
+
+function getSystemThemeServerSnapshot(): ResolvedTheme {
+  return 'light'
+}
+
 export function AppThemeProvider({ children }: { readonly children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>('system')
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('light')
-  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>('light')
+  const theme = useSyncExternalStore(
+    subscribeThemePreference,
+    getThemePreferenceSnapshot,
+    getThemePreferenceServerSnapshot,
+  )
+  const systemTheme = useSyncExternalStore(
+    subscribeSystemTheme,
+    getSystemThemeSnapshot,
+    getSystemThemeServerSnapshot,
+  )
+  const resolvedTheme: ResolvedTheme = theme === 'system' ? systemTheme : theme
 
+  // Sync document class/color-scheme only — no React setState in this effect.
   useEffect(() => {
-    const stored = parseThemeMode(window.localStorage.getItem(SEMUAGENT_THEME_STORAGE_KEY))
-    setThemeState(stored)
-    setSystemTheme(readSystemTheme())
-    setResolvedTheme(applyDocumentTheme(stored))
-
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const onSystemChange = () => {
-      const nextSystem = readSystemTheme()
-      setSystemTheme(nextSystem)
-      const current = parseThemeMode(window.localStorage.getItem(SEMUAGENT_THEME_STORAGE_KEY))
-      if (current === 'system') {
-        setResolvedTheme(applyDocumentTheme('system'))
-      }
-    }
-    media.addEventListener('change', onSystemChange)
-    return () => media.removeEventListener('change', onSystemChange)
-  }, [])
+    applyDocumentTheme(theme)
+  }, [theme, systemTheme])
 
   const setTheme = useCallback((value: string) => {
     const mode = parseThemeMode(value)
     window.localStorage.setItem(SEMUAGENT_THEME_STORAGE_KEY, mode)
-    setThemeState(mode)
-    setResolvedTheme(applyDocumentTheme(mode))
+    window.dispatchEvent(new Event(THEME_CHANGE_EVENT))
   }, [])
 
   const value = useMemo<ThemeContextValue>(() => ({
