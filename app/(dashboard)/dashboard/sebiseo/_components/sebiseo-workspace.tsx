@@ -11,7 +11,6 @@ import {
   findSebiseoPeriodOption,
   type SebiseoPeriodOption,
 } from '@/lib/sebiseo/period-options'
-import type { SebiseoUploadResultCard } from '@/lib/sebiseo/upload-result-schema'
 import {
   createSebiseoUploadSession,
   uploadSebiseoFiles,
@@ -23,7 +22,6 @@ import {
   SebiseoThread,
   type SebiseoThreadItem,
 } from './sebiseo-thread'
-import { SebiseoUploadResultCardView } from './sebiseo-upload-result-card'
 import {
   buildSebiseoSessionThreadStorageKey,
   readSebiseoSessionThread,
@@ -37,7 +35,6 @@ export type SebiseoWorkspaceProps = {
   readonly businessEntity: { readonly id: string; readonly name: string } | null
   readonly periodOptions: readonly SebiseoPeriodOption[]
   readonly defaultPeriodKey: string
-  readonly initialUploadResult: SebiseoUploadResultCard | null
 }
 
 export function SebiseoWorkspace({
@@ -46,7 +43,6 @@ export function SebiseoWorkspace({
   businessEntity,
   periodOptions,
   defaultPeriodKey,
-  initialUploadResult,
 }: SebiseoWorkspaceProps) {
   const router = useRouter()
   const [thread, setThread] = useState<SebiseoThreadItem[]>([])
@@ -221,15 +217,8 @@ export function SebiseoWorkspace({
     <div className="flex min-h-[calc(100dvh-3.5rem)] flex-1 flex-col bg-company-bg text-foreground md:min-h-screen">
       <div className="px-6 pt-3.5 pb-2 text-[15px] font-semibold">세비서</div>
 
-      <div className="mx-auto flex w-full max-w-[768px] flex-col gap-4 px-6 pb-4 sm:flex-row sm:items-stretch">
-        <div className="w-full sm:max-w-[300px]">
-          <ReferenceTaxScheduleCard item={upcoming} />
-        </div>
-        {initialUploadResult ? (
-          <div className="min-w-0 flex-1">
-            <SebiseoUploadResultCardView card={initialUploadResult} />
-          </div>
-        ) : null}
+      <div className="mx-auto w-full max-w-[768px] px-6 pb-4">
+        <ReferenceTaxScheduleRow item={upcoming} />
       </div>
 
       <div className="flex-1 overflow-auto px-6 pb-[150px]">
@@ -277,16 +266,18 @@ export function SebiseoWorkspace({
   )
 }
 
-function ReferenceTaxScheduleCard({ item }: { readonly item: UpcomingScheduleItem | null }) {
+/**
+ * 기존 세무 일정 카드와 같은 정보.
+ * 여러 줄 큰 카드가 아니라, 한 줄로 읽기 쉽게 보여 준다.
+ */
+function ReferenceTaxScheduleRow({ item }: { readonly item: UpcomingScheduleItem | null }) {
   if (!item) {
     return (
-      <div className="h-full w-full rounded-xl border border-company-border bg-company-surface px-3.5 py-3">
-        <p className="text-[11.5px] font-semibold text-company-fg-subtle">세무 일정(참고)</p>
-        <p className="mt-1.5 text-lg font-bold tracking-tight">일정 없음</p>
-        <p className="mt-1 text-xs text-company-fg-muted">가까운 공통 법정 일정이 없습니다</p>
-        <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
-          공통 세무 일정입니다. 회사별 준비 상태가 아닙니다.
-        </p>
+      <div className="flex items-center gap-3 rounded-xl border border-company-border bg-company-surface px-4 py-3">
+        <span className="shrink-0 text-[12px] font-semibold text-company-fg-subtle">
+          세무 일정
+        </span>
+        <span className="text-[14px] text-company-fg-muted">가까운 일정이 없습니다</span>
       </div>
     )
   }
@@ -294,16 +285,22 @@ function ReferenceTaxScheduleCard({ item }: { readonly item: UpcomingScheduleIte
   return (
     <Link
       href={item.href}
-      className="block h-full w-full rounded-xl border border-company-border bg-company-surface px-3.5 py-3 transition-colors hover:border-company-border-strong"
+      className="flex items-center gap-3 rounded-xl border border-company-border bg-company-surface px-4 py-3 transition-colors hover:border-company-border-strong"
+      aria-label={`세무 일정 ${item.dateLabel} ${item.title} D-${item.dDay}`}
     >
-      <p className="text-[11.5px] font-semibold text-company-fg-subtle">세무 일정(참고)</p>
-      <p className="mt-1.5 text-lg font-bold tracking-tight">{item.dateLabel}</p>
-      <p className="mt-1 text-xs text-company-fg-muted">
-        {item.title} · D-{item.dDay}
-      </p>
-      <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
-        공통 세무 일정입니다. 회사별 준비 상태가 아닙니다.
-      </p>
+      <span className="shrink-0 text-[12px] font-semibold text-company-fg-subtle">
+        세무 일정
+      </span>
+      <span className="shrink-0 text-[15px] font-bold tracking-tight text-foreground">
+        {item.dateLabel}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-[14px] text-foreground">
+        {item.title}
+      </span>
+      <span className="shrink-0 text-[13px] text-company-fg-muted">
+        D-
+        {item.dDay}
+      </span>
     </Link>
   )
 }
