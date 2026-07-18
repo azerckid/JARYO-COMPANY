@@ -1054,6 +1054,32 @@ Technical, and QA docs first, then prepare a short implementation brief.
 - Document Sync Check (2026-07-17, CUI-4 Brief approved): Brief 63 §4.2.1·§4.2.2 period 역산·순수 표시 라벨, §4.3 sessionId import 필터, Owner Decisions 1~8 오너 승인(PR #272). 다음은 CUI-4a runtime.
 - Document Sync Check (2026-07-17, CUI-4a merged): PR #273 — 결과 카드 runtime, session deep-link helpers, R-04/R-09 unit PASS. Browser 실측은 로그인 staging에서 카드·CTA만 후속 확인.
 
+### JC-045 · 전역 라이트·다크 테마 시스템
+
+- Status: todo (문서 Draft · 구현 미승인)
+- Related UI Docs: [UI Design §2.1](../02_UI_Screens/01_UI_DESIGN.md) · [Screen Flow §1.1](../02_UI_Screens/00_SCREEN_FLOW.md) - 전체 인증 화면의 System/Light/Dark 계약.
+- Related Technical Docs: [App Theme System Pre-Code Brief](../03_Technical_Specs/64_JC045_APP_THEME_SYSTEM_PRE_CODE_BRIEF.md) - token, provider, rollout, non-goal, failure-safe 계약.
+- Related QA Docs: [Theme System Test Scenarios](../05_QA_Validation/14_JC045_APP_THEME_SYSTEM_TEST_SCENARIOS.md) - 양 테마의 shell·세무 워크플로·접근성·무변경 검증.
+- Origin: 세비서만 고정 다크이고 나머지 SemuAgent는 라이트인 단절을 없앤다. ChatGPT의 차분한 dark conversation language는 친숙성 참고로만 쓰며, 세무 표·상태·브랜드를 복제하거나 대체하지 않는다.
+- Fixed Order:
+  1. T0: Brief·QA 오너 승인, literal color audit, 필요 시 작은 token Preview.
+  2. T1: root ThemeProvider, System/Light/Dark selector, global/company/shadcn token completion, dashboard shell 및 overlay 전환.
+  3. T2: Sebiseo·회사 홈 -> 자료수집·기장/자료대조 -> 급여/지급 -> VAT·연간신고/설정 순으로 workspace 전환.
+  4. T3: two-theme browser, mobile, keyboard, contrast, mutation-in-flight regression QA.
+- Implementation Preconditions:
+  - [ ] System/Light/Dark, OS 기본값, Sidebar 하단 selector를 승인한다.
+  - [ ] browser-local preference만 사용하고 tenant/user DB setting은 만들지 않음을 승인한다.
+  - [ ] Sebiseo가 전역 테마를 따르고 dark-only literal palette를 없애는 것을 승인한다.
+  - [ ] 한 번의 global flip 대신 token foundation부터 화면군별로 전환하는 순서를 승인한다.
+  - [ ] public/sign-in surface는 첫 slice에서 제외하는 것을 승인한다.
+- Acceptance Criteria:
+  - [ ] 모든 인증 후 화면에서 System/Light/Dark 선택·복원·OS fallback이 동작한다.
+  - [ ] Sidebar·table·form·dialog·toast·Sebiseo와 주요 세무 화면이 양 테마에서 같은 semantic token을 사용한다.
+  - [ ] 상태 텍스트·disabled·focus·hover·경계·선택 행이 양 테마에서 구분되며 색상만으로 상태를 전달하지 않는다.
+  - [ ] 테마 전환이 API/AI/DB mutation, 세무 계산, 신고 gate, 권한 또는 현재 form state를 바꾸지 않는다.
+  - [ ] desktop/mobile/keyboard/reduced-motion QA가 양 테마에서 통과한다.
+- Document Sync Check: 2026-07-18 - UI Design·Screen Flow·Component Plan·Brief 64·QA 14를 연결했다. 현재 globals.css의 base/dark token은 존재하지만 provider·selector·company dark token·workspace literal migration은 구현하지 않았다.
+
 ### JC-044 · SemuAgent↔JARYO 직접 A2A 전달
 
 - Status: `todo` (제품 방향 승인, A2A 질의응답 진행 중, 구현 미승인)
