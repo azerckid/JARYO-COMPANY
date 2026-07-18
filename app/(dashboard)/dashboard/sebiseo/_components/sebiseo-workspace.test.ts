@@ -40,7 +40,13 @@ describe('세비서 workspace shell (JC-043 CUI-3b)', () => {
   it('keeps trust shell and enables attach with period confirm gate', () => {
     expect(workspaceSource).toContain('bg-company-bg')
     expect(workspaceSource).not.toContain('bg-[#171717]')
-    expect(workspaceSource).toContain('세무 일정(참고)')
+    expect(workspaceSource).toContain('ReferenceTaxScheduleRow')
+    expect(workspaceSource).toContain('세무 일정')
+    expect(workspaceSource).not.toContain('세무 일정(참고)')
+    expect(workspaceSource).not.toContain('SebiseoUploadResultCardView')
+    expect(workspaceSource).not.toContain('SebiseoMonthTodoList')
+    expect(workspaceSource).not.toContain('ReferenceTaxScheduleCard')
+    expect(workspaceSource).not.toContain('회사별 준비 상태가 아닙니다')
     expect(composerSource).toContain('bg-company-surface')
     expect(threadSource).toContain('bg-company-surface')
     expect(composerSource).toContain('세비서에게 묻기')
@@ -52,13 +58,12 @@ describe('세비서 workspace shell (JC-043 CUI-3b)', () => {
     expect(periodConfirmSource).toContain('확인 후 업로드')
   })
 
-  it('places the latest upload progress beside the reference schedule on wider screens', () => {
-    expect(workspaceSource).toContain('sm:flex-row sm:items-stretch')
-    expect(workspaceSource).toContain('sm:max-w-[300px]')
-    expect(workspaceSource.indexOf('<ReferenceTaxScheduleCard item={upcoming} />'))
-      .toBeLessThan(workspaceSource.indexOf('<SebiseoUploadResultCardView card={initialUploadResult} />'))
-    expect(workspaceSource.indexOf('<SebiseoUploadResultCardView card={initialUploadResult} />'))
+  it('shows the existing tax schedule as one friendly row above the thread', () => {
+    expect(workspaceSource).toContain('<ReferenceTaxScheduleRow item={upcoming} />')
+    expect(workspaceSource.indexOf('<ReferenceTaxScheduleRow'))
       .toBeLessThan(workspaceSource.indexOf('<SebiseoThread items={thread} />'))
+    expect(pageSource).toContain('buildUpcomingSchedule')
+    expect(pageSource).not.toContain('loadCompanyHomeSummary')
   })
 
   it('keeps Instant/Mic/Voice disabled and enables explicit chat only', () => {
