@@ -28,7 +28,7 @@ Out of scope: 기장검토 거래 건수 카드, CUI-5 확정, 법령 참고 int
 
 | ID | 시나리오 | 단계 | 기대 결과 | 상태 |
 |:---|:---|:---|:---|:---|
-| R-01 | 카드 미표시 | 세션 없는 tenant로 `/dashboard/sebiseo` 진입 | 결과 카드 없음. LLM 미호출 | Pending |
+| R-01 | 카드 미표시 | 세션 없는 tenant로 `/dashboard/sebiseo` 진입 | 결과 카드 없음. LLM 미호출 | **PASS · Preview browser (2026-07-18)** |
 | R-02 | 카드 집계 | session 1건·파일 2건(`matched` 1, `needs_review` 1) | 카드 meta `정상 1건 · 확인 필요 1건`. 배지 `확인 필요 1` | **PASS · Preview browser (2026-07-18)** |
 | R-03 | CTA href | 최근 업로드 결과 카드 CTA 확인 | `/dashboard/direct-upload?period={key}&sessionId={id}` 형태 | **PASS · Preview browser (2026-07-18)** |
 | R-04 | **같은 기간 다른 세션 혼입 없음** | (1) period P에 session S1(파일 A), S2(파일 B) 업로드. **fixture: `S1.createdAt > S2.createdAt`** 로 S1이 최근 세션 1건으로 선택되게 고정 (2) 카드가 S1을 표시하는지 확인 후 CTA 클릭 (3) 가져오기 상태 표 행 확인 | 카드 sessionId = S1. 표에 **S1 소속 파일만** 표시. S2 파일 B **미표시**. 행 수 = 카드 `totalCount` | **PASS · Preview browser (2026-07-18)** |
@@ -57,6 +57,7 @@ Out of scope: 기장검토 거래 건수 카드, CUI-5 확정, 법령 참고 int
 - 같은 날 Preview fixture에서 S1(최신 `needs_review`)·S2(이전 `matched`)를 만들고, 카드가 S1 CTA만 표시하며 자료수집 표가 S1 파일 1건만 표시함을 확인했다. 다른 tenant·사업장 sessionId는 모두 `period` 기본 URL로 strip됐다. fixture와 임시 Preview deployment는 검증 직후 삭제했고 staging alias는 기존 검증 deployment로 복구했다.
 - 별도 Preview fixture에서 최신 세션의 `matched` 1건과 `needs_review` 1건을 확인했다. 카드는 `자료 2건`, `정상 1건 · 확인 필요 1건`, 배지 `확인 필요 1`을 표시했다. fixture와 임시 Preview deployment는 즉시 삭제했고 staging alias를 복구했다.
 - 세비서에서 합성 PDF 1건을 실제 업로드해 새 `sessionId`의 결과 카드로 즉시 갱신되는 것을 확인했다. 채팅 영역에는 상태 문장만 남았고, 별도 system 링크는 생기지 않았다. 분석·검증 하위 레코드, 파일, Blob을 정리한 뒤 카드가 기존 session으로 돌아온 것도 확인했다.
+- R-01은 현재 사업장의 `staff_direct` 세션을 일시 숨겨 카드 미표시를 확인한 뒤, 원래 `deletedAt` 값으로 즉시 복구했다. 파일·분석 데이터는 삭제하지 않았고, 임시 Preview deployment도 삭제했다.
 - localhost Blob callback 한계는 CUI-3d와 동일. `needs_review` 실측은 staging DB 권장.
 - period 역산·표시 단위 테스트(월·H1·H2·과거 연도·fail-closed)는 Brief §4.2.1·§4.2.2 / CUI-4a에 포함. QA 표의 별도 ID는 두지 않는다.
 - 카드 라벨은 `formatSebiseoPeriodLabel`만 사용한다. `buildSebiseoPeriodOptions` 후보에 없는 과거 세션도 라벨이 나와야 한다.
