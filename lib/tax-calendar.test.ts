@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DateTime } from '@/lib/time'
 import {
-  buildCurrentMonthScheduleSummary,
+  buildCurrentMonthScheduleItems,
   buildTaxCalendarMonth,
   expandTaxSchedulesForMonth,
   parseTaxCalendarMonth,
@@ -65,17 +65,16 @@ describe('expandTaxSchedulesForMonth', () => {
   })
 })
 
-describe('buildCurrentMonthScheduleSummary', () => {
-  it('keeps the full month count and shows the next two deadline groups in one line', () => {
+describe('buildCurrentMonthScheduleItems', () => {
+  it('returns one row per applicable monthly schedule and keeps elapsed deadlines visible', () => {
     const today = DateTime.fromISO('2026-07-19', { zone: 'Asia/Seoul' })
-    const summary = buildCurrentMonthScheduleSummary(today)
+    const items = buildCurrentMonthScheduleItems(today, { vat: true, payroll: true })
 
-    expect(summary.monthLabel).toBe('7월 세무 일정')
-    expect(summary.totalCount).toBe(9)
-    expect(summary.detail).toBe('등록 9건 · 다음 7/27 부가가치세 확정신고 · 7/31 5건')
-    expect(summary.href).toBe('/dashboard/calendar?month=2026-07')
-    expect(summary.ariaLabel).toContain('7/10 원천세 신고')
-    expect(summary.ariaLabel).toContain('7/31 재산세 납부')
+    expect(items).toEqual([
+      expect.objectContaining({ dateLabel: '7/10', title: '원천세 신고', dDay: -9 }),
+      expect.objectContaining({ dateLabel: '7/27', title: '부가가치세 확정신고', dDay: 8 }),
+      expect.objectContaining({ dateLabel: '7/31', title: '간이지급명세서(근로소득)', dDay: 12 }),
+    ])
   })
 })
 

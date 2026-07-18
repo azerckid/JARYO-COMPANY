@@ -245,65 +245,49 @@ export function expandTaxSchedulesForMonth(
   )
 }
 
-export type CurrentMonthScheduleSummary = {
-  monthLabel: string
-  totalCount: number
-  detail: string
-  ariaLabel: string
+export type CompanyScheduleItem = {
+  id: string
+  dateLabel: string
+  title: string
+  dDay: number
   href: string
 }
 
-/**
- * 세비서 첫 화면용 한 줄 요약.
- * 이번 달 전체 법정·운영 일정을 유지해 이미 지난 기한도 사라지지 않게 하고,
- * 오늘 이후 가장 가까운 기한과 같은 날의 나머지 건수를 강조한다.
- */
-export function buildCurrentMonthScheduleSummary(
+export type CompanyScheduleApplicability = {
+  vat: boolean
+  payroll: boolean
+}
+
+const VAT_SCHEDULE_IDS = new Set([
+  'january-vat-final',
+  'april-vat-preliminary',
+  'july-vat-final',
+  'october-vat-preliminary',
+])
+
+const PAYROLL_SCHEDULE_IDS = new Set([
+  'monthly-withholding-tax',
+  'july-2026-wage-income-simple-statement',
+])
+
+/** 세비서 첫 화면: 회사 자료로 확인된 이번 달 일정을 한 건당 한 줄로 반환한다. */
+export function buildCurrentMonthScheduleItems(
   today: DateTime,
-): CurrentMonthScheduleSummary {
+  applicability: CompanyScheduleApplicability,
+): CompanyScheduleItem[] {
   const start = today.setZone(DEFAULT_TZ).startOf('day')
-  const schedules = expandTaxSchedulesForMonth(start.year, start.month)
-  const monthLabel = `${start.month}월 세무 일정`
-  const href = `/dashboard/calendar?month=${start.toFormat('yyyy-MM')}`
-
-  if (schedules.length === 0) {
-    return {
-      monthLabel,
-      totalCount: 0,
-      detail: '등록된 일정이 없습니다',
-      ariaLabel: `${monthLabel}, 등록된 일정이 없습니다`,
-      href,
-    }
-  }
-
-  const future = schedules.filter((schedule) => schedule.date.startOf('day') >= start)
-  const next = future[0]
-  const nextDateCount = next
-    ? future.filter((schedule) => schedule.dateISO === next.dateISO).length
-    : 0
-  const nextText = next
-    ? `다음 ${next.date.month}/${next.date.day} ${next.title}${nextDateCount > 1 ? ` 외 ${nextDateCount - 1}건` : ''}`
-    : '이번 달 남은 기한 없음'
-  const following = next
-    ? future.find((schedule) => schedule.dateISO !== next.dateISO)
-    : null
-  const followingDateCount = following
-    ? future.filter((schedule) => schedule.dateISO === following.dateISO).length
-    : 0
-  const followingText = following
-    ? ` · ${following.date.month}/${following.date.day} ${followingDateCount}건`
-    : ''
-  const fullSchedule = schedules
-    .map((schedule) => `${schedule.date.month}/${schedule.date.day} ${schedule.title}`)
-    .join(', ')
-
-  return {
-    monthLabel,
-    totalCount: schedules.length,
-    detail: `등록 ${schedules.length}건 · ${nextText}${followingText}`,
-    ariaLabel: `${monthLabel}, ${fullSchedule}. 회사별 해당 여부는 각 업무 화면에서 확인`,
-    href,
-  }
+  return expandTaxSchedulesForMonth(start.year, start.month)
+    .filter((schedule) =>
+      (applicability.vat && VAT_SCHEDULE_IDS.has(schedule.id))
+      || (applicability.payroll && PAYROLL_SCHEDULE_IDS.has(schedule.id)),
+    )
+    .map((schedule) => ({
+      id: `${schedule.id}-${schedule.dateISO}`,
+      dateLabel: `${schedule.date.month}/${schedule.date.day}`,
+      title: schedule.title,
+      dDay: Math.ceil(schedule.date.startOf('day').diff(start, 'days').days),
+      href: SCHEDULE_RULE_HREF[schedule.id] ?? '/dashboard/filing-preparation',
+    }))
 }
 
 export function buildTaxCalendarMonth(params: {
