@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SemuAgent · 첫 세로 여정 (UI Preview · S2)</title>
+<style>
+  :root {
+    --app-bg: #f6f6f7;
+    --app-surface: #ffffff;
+    --app-border: #e4e4e7;
+    --app-fg: #18181b;
+    --app-fg-muted: #71717a;
+    --app-fg-subtle: #a1a1aa;
+    --app-brand: #18181b;
+    --accent: #2563eb;
+    --accent-soft: #eff6ff;
+    --warn: #d97706;
+    --warn-soft: #fffbeb;
+    --ok: #16a34a;
+    --ok-soft: #f0fdf4;
+    --danger: #dc2626;
+    --danger-soft: #fef2f2;
+    --chat-bg: #171717;
+    --chat-surface: #212121;
+    --chat-surface-2: #2a2a2a;
+    --chat-fg: #ececec;
+    --chat-fg-muted: #b4b4b4;
+    --chat-fg-subtle: #8e8e8e;
+    --chat-border: #303030;
+    --radius: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", "Apple SD Gothic Neo", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--app-bg); color: var(--app-fg); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+  .page { max-width: 1120px; margin: 0 auto; padding: 24px 20px 64px; display: flex; flex-direction: column; gap: 20px; }
+  .doc-banner {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 14px 16px;
+    color: #92400e; font-size: 13px;
+  }
+  .doc-banner strong { color: #78350f; }
+  .doc-banner code { font-size: 12px; background: #fff7ed; padding: 1px 6px; border-radius: 4px; }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .lead { color: var(--app-fg-muted); font-size: 14px; max-width: 68ch; }
+  .flow {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px;
+  }
+  .flow-step {
+    background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 10px;
+    padding: 10px 12px; font-size: 12px;
+  }
+  .flow-step .n { font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .flow-step .t { font-weight: 650; color: var(--app-fg); }
+  .flow-step .d { color: var(--app-fg-subtle); margin-top: 4px; font-size: 11.5px; }
+
+  .section-label {
+    font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--app-fg-subtle); margin-bottom: 8px;
+  }
+  .panel {
+    background: var(--app-surface); border: 1px solid var(--app-border); border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .panel-head {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    padding: 14px 18px; border-bottom: 1px solid var(--app-border); background: #fafafa;
+  }
+  .panel-head h2 { font-size: 15px; font-weight: 650; }
+  .panel-head .hint { font-size: 12px; color: var(--app-fg-subtle); }
+  .panel-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+  .chip {
+    font-size: 11.5px; font-weight: 650; padding: 3px 9px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .chip.ok { color: var(--ok); background: var(--ok-soft); border: 1px solid #bbf7d0; }
+  .chip.warn { color: var(--warn); background: var(--warn-soft); border: 1px solid #fde68a; }
+  .chip.danger { color: var(--danger); background: var(--danger-soft); border: 1px solid #fecaca; }
+  .chip.muted { color: var(--app-fg-muted); background: #f4f4f5; border: 1px solid var(--app-border); }
+  .chip.accent { color: var(--accent); background: var(--accent-soft); border: 1px solid #bfdbfe; }
+
+  /* Mini sebiseo shell */
+  .sebiseo {
+    background: var(--chat-bg); color: var(--chat-fg); border-radius: 10px; padding: 14px;
+    display: grid; grid-template-columns: 160px 1fr; gap: 12px; min-height: 280px;
+  }
+  .sebiseo-nav {
+    border-right: 1px solid var(--chat-border); padding-right: 10px; font-size: 12px; color: var(--chat-fg-muted);
+  }
+  .sebiseo-nav .brand { font-weight: 700; color: var(--chat-fg); margin-bottom: 12px; }
+  .sebiseo-nav a {
+    display: block; padding: 6px 8px; border-radius: 6px; color: var(--chat-fg-muted); margin-bottom: 2px;
+  }
+  .sebiseo-nav a.active { background: var(--chat-surface-2); color: var(--chat-fg); font-weight: 650; }
+  .sebiseo-nav .note {
+    margin-top: 14px; font-size: 11px; color: var(--chat-fg-subtle); line-height: 1.4;
+  }
+  .sebiseo-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .sebiseo-title { font-size: 14px; font-weight: 650; }
+
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .result-card {
+    background: var(--chat-surface); border: 1px solid var(--chat-border); border-radius: 10px; padding: 12px;
+  }
+  .result-card .label { font-size: 11px; color: var(--chat-fg-subtle); font-weight: 650; }
+  .result-card .title { font-size: 13.5px; font-weight: 650; margin-top: 4px; }
+  .result-card .meta { font-size: 12px; color: var(--chat-fg-muted); margin-top: 6px; }
+  .result-card .unit {
+    display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 650;
+    color: #93c5fd; border: 1px solid #1e3a5f; background: #0f172a; border-radius: 999px; padding: 2px 8px;
+  }
+  .result-card .unit.tx { color: #fcd34d; border-color: #78350f; background: #1c1917; }
+  .result-card .actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+  .result-card .actions a, .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px; padding: 7px 11px; font-size: 12.5px; font-weight: 650;
+  }
+  .btn-primary, .result-card .actions a {
+    background: #2a2a2a; border: 1px solid #404040; color: #93c5fd;
+  }
+  .btn-primary:hover, .result-card .actions a:hover { background: #303030; }
+  .btn-solid {
+    background: var(--accent); color: #fff; border: 1px solid var(--accent);
+  }
+  .btn-ghost {
+    background: #fff; border: 1px solid var(--app-border); color: var(--app-fg);
+  }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .callout {
+    border-radius: 8px; padding: 10px 12px; font-size: 12.5px;
+    background: #0f172a; border: 1px solid #1e3a5f; color: #bfdbfe;
+  }
+  .callout.warn { background: #1c1917; border-color: #78350f; color: #fde68a; }
+  .callout.ok { background: #052e16; border-color: #166534; color: #bbf7d0; }
+  .callout.danger { background: #450a0a; border-color: #991b1b; color: #fecaca; }
+
+  /* Ledger */
+  .ledger-bar {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    padding: 10px 12px; background: #fafafa; border: 1px solid var(--app-border); border-radius: 8px;
+  }
+  .ledger-bar .filter {
+    font-size: 12px; font-weight: 650; color: var(--warn);
+    background: var(--warn-soft); border: 1px solid #fde68a; border-radius: 999px; padding: 4px 10px;
+  }
+  table.ledger {
+    width: 100%; border-collapse: collapse; font-size: 12.5px;
+  }
+  table.ledger th, table.ledger td {
+    text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--app-border); vertical-align: top;
+  }
+  table.ledger th { font-size: 11px; color: var(--app-fg-subtle); font-weight: 650; }
+  table.ledger .amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .state-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .state-card {
+    border: 1px solid var(--app-border); border-radius: 10px; padding: 12px; background: #fff;
+  }
+  .state-card h3 { font-size: 13px; font-weight: 650; margin-bottom: 6px; }
+  .state-card p { font-size: 12.5px; color: var(--app-fg-muted); }
+  .state-card .foot { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+
+  details.alt {
+    border: 1px solid var(--app-border); border-radius: 10px; background: #fff; overflow: hidden;
+  }
+  details.alt summary {
+    cursor: pointer; list-style: none; padding: 12px 14px; font-weight: 650; font-size: 13px;
+    background: #fafafa; border-bottom: 1px solid transparent;
+  }
+  details.alt[open] summary { border-bottom-color: var(--app-border); }
+  details.alt summary::-webkit-details-marker { display: none; }
+  details.alt .inner { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+
+  .compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;
+  }
+  .compare div {
+    border: 1px solid var(--app-border); border-radius: 8px; padding: 8px 10px; background: #fafafa;
+  }
+  .compare .k { color: var(--app-fg-subtle); font-size: 11px; }
+  .compare .v { font-weight: 650; margin-top: 2px; }
+
+  .progress-card {
+    background: var(--chat-surface); border: 1px solid var(--chat-border); border-radius: 10px; padding: 12px;
+  }
+  .progress-card .label { font-size: 11px; color: var(--chat-fg-subtle); font-weight: 650; }
+  .progress-card .title { font-size: 13.5px; font-weight: 650; margin-top: 4px; }
+  .progress-card .rows { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .progress-card .row {
+    display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--chat-fg-muted);
+  }
+  .progress-card .row b { color: var(--chat-fg); font-weight: 650; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  @media (max-width: 900px) {
+    .flow { grid-template-columns: 1fr 1fr; }
+    .cards, .state-grid, .compare, .two-col { grid-template-columns: 1fr; }
+    .sebiseo { grid-template-columns: 1fr; }
+    .sebiseo-nav { border-right: 0; border-bottom: 1px solid var(--chat-border); padding-right: 0; padding-bottom: 10px; }
+  }
+  @media (max-width: 520px) {
+    .page { padding: 16px 12px 48px; }
+    .flow { grid-template-columns: 1fr; }
+    .result-card .actions a, .btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="doc-banner">
+    <strong>S2 HTML UI Preview · 오너 화면 확인용</strong><br />
+    이 HTML 파일을 브라우저로 직접 연다 (앱 URL·staging 아님). DB·API·runtime 변경 없음.
+    확정은 표(자료대조원장)에서만 하고, 세비서는 조회·화면 이동만 한다.
+    파일 수와 거래 수를 섞어 쓰지 않는다. base: main after shell PR #286.
+    파일: <code>docs/02_UI_Screens/previews/20_sebiseo_first_vertical_journey.html</code>
+  </div>
+
+  <div>
+    <h1>첫 세로 여정 · 세비서 → 거래 검토 → 확정 → 상태 재조회</h1>
+    <p class="lead">
+      업로드 결과(파일)를 본 뒤, 확인 필요 거래만 필터된 자료대조원장에서 검토·확정하고,
+      세비서 진행상황 카드가 canonical 상태를 다시 읽도록 설계한다.
+    </p>
+  </div>
+
+  <div class="flow" aria-label="여정 단계">
+    <div class="flow-step"><div class="n">1</div><div class="t">업로드 결과</div><div class="d">파일 단위 카드</div></div>
+    <div class="flow-step"><div class="n">2</div><div class="t">확인 필요 거래</div><div class="d">거래 수·CTA</div></div>
+    <div class="flow-step"><div class="n">3</div><div class="t">필터 원장</div><div class="d">표에서만 확정</div></div>
+    <div class="flow-step"><div class="n">4</div><div class="t">성공·undo·부분실패</div><div class="d">상태별 문구</div></div>
+    <div class="flow-step"><div class="n">5</div><div class="t">세비서 재조회</div><div class="d">진행상황 카드</div></div>
+  </div>
+
+  <!-- 1. Sebiseo: file vs transaction -->
+  <section>
+    <div class="section-label">1 · 세비서 — 파일 결과와 거래 검토를 구분</div>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>세비서 홈 (확인 전)</h2>
+        <span class="hint">채팅·카드에서 확정 버튼 없음 · OD-02 read-only</span>
+        <span class="chip warn">REVIEW_REQUIRED</span>
+      </div>
+      <div class="panel-body">
+        <div class="sebiseo">
+          <nav class="sebiseo-nav" aria-label="사이드바">
+            <div class="brand">SemuAgent</div>
+            <a class="active" href="19_sebiseo.html">세비서</a>
+            <a href="00_company_home.html">회사 홈</a>
+            <a href="01_source_collection.html">자료수집</a>
+            <a href="12_reconciliation_ledger.html">자료대조원장</a>
+            <p class="note">AI 장애 시에도 사이드바·자료대조원장으로 직접 진입할 수 있습니다.</p>
+          </nav>
+          <div class="sebiseo-main">
+            <div class="sebiseo-title">세비서</div>
+            <div class="callout warn">
+              파일 업로드는 끝났지만, 거래 3건은 아직 표에서 확인이 필요합니다.
+              대화의 “진행해줘”는 확정이 아닙니다.
+            </div>
+            <div class="cards">
+              <article class="result-card" aria-label="파일 단위 업로드 결과">
+                <div class="label">2026년 하반기 · 직접 업로드</div>
+                <div class="title">카드·통장 자료 2건을 정리했습니다</div>
+                <div class="meta">정상 1건 · 확인 필요 1건</div>
+                <span class="unit">집계 단위: 파일</span>
+                <div class="actions">
+                  <a href="01_source_collection.html">자료수집에서 파일 보기</a>
+                </div>
+              </article>
+              <article class="result-card" aria-label="거래 단위 확인 필요">
+                <div class="label">같은 기간 · 기장 검토</div>
+                <div class="title">확인 필요 거래 3건</div>
+                <div class="meta">계정·증빙 매칭을 표에서 확인하세요</div>
+                <span class="unit tx">집계 단위: 거래</span>
+                <div class="actions">
+                  <a href="#ledger-review">확인 필요 거래 3건 보기</a>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+        <p style="font-size:12.5px;color:var(--app-fg-muted);">
+          CTA는 mutation을 하지 않고, 동일 tenant·사업장·기간·검토 필요 필터의 자료대조원장만 연다 (CUI-4d 계약 예정).
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Filtered ledger - before confirm -->
+  <section id="ledger-review">
+    <div class="section-label">2 · 자료대조원장 — 확인 전 (필터된 진입)</div>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>자료대조원장 · 확인 필요만</h2>
+        <span class="hint">사이드바 전체 원장과 동일 화면 · 필터만 다름</span>
+        <span class="chip accent">filter: needs_review</span>
+      </div>
+      <div class="panel-body">
+        <div class="ledger-bar">
+          <span class="filter">검토 필요 3건만 표시 중</span>
+          <span class="chip muted">기간 2026-H2</span>
+          <span class="chip muted">세션 연계 · read-only 진입</span>
+          <a class="btn btn-ghost" href="12_reconciliation_ledger.html" style="margin-left:auto;">전체 원장 보기</a>
+        </div>
+        <table class="ledger">
+          <thead>
+            <tr>
+              <th>일자</th>
+              <th>상대</th>
+              <th>제안 계정</th>
+              <th>금액</th>
+              <th>근거</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>07-03</td>
+              <td>카페○○</td>
+              <td>복리후생비 <span class="chip warn">제안</span></td>
+              <td class="amt">12,000</td>
+              <td>카드 · 영수증 일치</td>
+              <td><span class="chip warn">확인 전</span></td>
+            </tr>
+            <tr>
+              <td>07-08</td>
+              <td>△△상사</td>
+              <td>소모품비 <span class="chip warn">제안</span></td>
+              <td class="amt">84,700</td>
+              <td>세금계산서 · 통장 대기</td>
+              <td><span class="chip warn">확인 전</span></td>
+            </tr>
+            <tr>
+              <td>07-12</td>
+              <td>주유□□</td>
+              <td>차량유지비 <span class="chip warn">제안</span></td>
+              <td class="amt">55,000</td>
+              <td>카드 · 용도 불명확</td>
+              <td><span class="chip warn">확인 전</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="btn-row">
+          <button class="btn btn-solid" type="button">선택 3건 확인·적용 준비</button>
+          <button class="btn btn-ghost" type="button">행에서 계정 수정</button>
+        </div>
+        <p style="font-size:12.5px;color:var(--app-fg-muted);">
+          이 화면의 확인만 canonical을 바꾼다. 세비서 카드에는 확정 버튼이 없다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. State variants -->
+  <section>
+    <div class="section-label">3 · 확정 흐름 상태 (표 쪽)</div>
+    <div class="state-grid">
+      <div class="state-card">
+        <h3>적용 직전</h3>
+        <p>서버가 fingerprint를 다시 읽고, 적용 대상 3건·현재값/제안값을 한 번 더 보여 준다.</p>
+        <div class="compare" style="margin-top:10px;">
+          <div><div class="k">현재</div><div class="v">미확정 · 제안 계정</div></div>
+          <div><div class="k">적용 예정</div><div class="v">계정 확정 · 감사 기록</div></div>
+        </div>
+        <div class="foot">
+          <span class="chip muted">fingerprint 일치</span>
+          <button class="btn btn-solid" type="button">적용</button>
+          <button class="btn btn-ghost" type="button">취소</button>
+        </div>
+      </div>
+      <div class="state-card">
+        <h3>Stale · 다시 확인</h3>
+        <p>다른 탭·작업으로 원본이 바뀌어 fingerprint가 맞지 않는다. 이전 값을 적용하지 않는다.</p>
+        <div class="foot">
+          <span class="chip danger">stale</span>
+          <button class="btn btn-ghost" type="button">최신 값으로 다시 불러오기</button>
+        </div>
+      </div>
+      <div class="state-card">
+        <h3>성공</h3>
+        <p>3건이 확정됐다. 세비서로 돌아가면 진행상황 카드가 같은 DB 상태를 다시 읽는다.</p>
+        <div class="foot">
+          <span class="chip ok">적용 완료</span>
+          <a class="btn btn-primary" href="#after-confirm">세비서에서 상태 보기</a>
+          <button class="btn btn-ghost" type="button">방금 적용 되돌리기</button>
+        </div>
+      </div>
+      <div class="state-card">
+        <h3>되돌리기 (undo)</h3>
+        <p>직전 확정만 안전하게 되돌린다. 채팅에서 undo하지 않는다.</p>
+        <div class="foot">
+          <span class="chip muted">감사 로그 유지</span>
+          <button class="btn btn-ghost" type="button">되돌리기 확인</button>
+        </div>
+      </div>
+      <div class="state-card" style="grid-column: 1 / -1;">
+        <h3>부분 실패</h3>
+        <p>2건 성공 · 1건 실패. 성공 건은 유지하고, 실패 건만 표에 남겨 다시 확인한다. 전체를 성공처럼 보이게 하지 않는다.</p>
+        <div class="foot">
+          <span class="chip ok">성공 2</span>
+          <span class="chip danger">실패 1</span>
+          <button class="btn btn-solid" type="button">실패 1건만 다시 보기</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. After confirm sebiseo -->
+  <section id="after-confirm">
+    <div class="section-label">4 · 확정 후 세비서 — 진행상황 재조회</div>
+    <div class="panel">
+      <div class="panel-head">
+        <h2>세비서 홈 (확정 후)</h2>
+        <span class="hint">canonical 재계산 결과만 표시 · mutation 없음</span>
+        <span class="chip ok">IN_PROGRESS → 다음 행동 갱신</span>
+      </div>
+      <div class="panel-body">
+        <div class="sebiseo">
+          <nav class="sebiseo-nav" aria-label="사이드바">
+            <div class="brand">SemuAgent</div>
+            <a class="active" href="19_sebiseo.html">세비서</a>
+            <a href="12_reconciliation_ledger.html">자료대조원장</a>
+            <p class="note">직접 진입 경로 유지</p>
+          </nav>
+          <div class="sebiseo-main">
+            <div class="sebiseo-title">세비서</div>
+            <div class="callout ok">
+              확인 필요 거래 0건입니다. 업로드 파일 상태는 그대로이며, 거래 검토만 반영됐습니다.
+            </div>
+            <div class="progress-card" aria-label="진행상황 카드">
+              <div class="label">2026년 하반기 · 진행상황</div>
+              <div class="title">부가세 준비 · 다음: 누락 증빙 점검</div>
+              <div class="rows">
+                <div class="row"><span>파일 결과</span><b>자료 2건 · 확인 필요 파일 0</b></div>
+                <div class="row"><span>거래 검토</span><b>확인 필요 0건</b></div>
+                <div class="row"><span>다음 행동</span><b>자료수집에서 누락 유형 확인</b></div>
+              </div>
+            </div>
+            <div class="cards" style="margin-top:4px;">
+              <article class="result-card">
+                <div class="label">파일 단위 (유지)</div>
+                <div class="title">카드·통장 자료 2건</div>
+                <div class="meta">정상 2건 · 확인 필요 0건</div>
+                <span class="unit">집계 단위: 파일</span>
+              </article>
+              <article class="result-card">
+                <div class="label">거래 단위 (갱신됨)</div>
+                <div class="title">확인 필요 거래 없음</div>
+                <div class="meta">직전 확정 3건 반영</div>
+                <span class="unit tx">집계 단위: 거래</span>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Recovery paths -->
+  <section>
+    <div class="section-label">5 · 복구 경로</div>
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-head"><h2>사이드바 직접 진입</h2></div>
+        <div class="panel-body">
+          <p style="font-size:13px;color:var(--app-fg-muted);">
+            세비서 CTA 없이도 <a href="12_reconciliation_ledger.html" style="color:var(--accent);text-decoration:underline;">자료대조원장</a>·
+            <a href="01_source_collection.html" style="color:var(--accent);text-decoration:underline;">자료수집</a>으로 들어간다.
+            필터는 서버가 다시 검증한다.
+          </p>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>AI 장애 시</h2></div>
+        <div class="panel-body">
+          <div class="callout danger" style="color:#7f1d1d;background:var(--danger-soft);border-color:#fecaca;">
+            세비서 응답을 받지 못해도 표·메뉴로 업무를 이어갈 수 있습니다.
+            장애 안내 문구만 보이고, 확정은 여전히 자료대조원장에서 합니다.
+          </div>
+          <div class="btn-row" style="margin-top:10px;">
+            <a class="btn btn-ghost" href="12_reconciliation_ledger.html">자료대조원장 열기</a>
+            <a class="btn btn-ghost" href="00_company_home.html">회사 홈</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <details class="alt">
+    <summary>다른 상태 묶음 · Preview 검수용</summary>
+    <div class="inner">
+      <p style="font-size:12.5px;color:var(--app-fg-muted);">
+        runtime은 현재 발생한 상태만 렌더한다. 아래는 설계 검토용 예시이다.
+      </p>
+      <ul style="padding-left:18px;font-size:13px;color:var(--app-fg-muted);display:flex;flex-direction:column;gap:6px;">
+        <li>확인 전: 파일 카드 + 거래 카드 동시 노출, 단위 라벨 분리</li>
+        <li>적용 직전: fingerprint·대상 건수 재표시</li>
+        <li>stale / 성공 / undo / 부분 실패</li>
+        <li>확정 후: 진행상황 카드 재조회, 거래 확인 필요 0</li>
+        <li>사이드바·AI 장애 복구</li>
+      </ul>
+    </div>
+  </details>
+
+  <p style="font-size:12px;color:var(--app-fg-subtle);">
+    Related: <a href="19_sebiseo.html" style="text-decoration:underline;">19_sebiseo.html</a> ·
+    <a href="12_reconciliation_ledger.html" style="text-decoration:underline;">12_reconciliation_ledger.html</a> ·
+    <a href="../00_SCREEN_FLOW.md" style="text-decoration:underline;">Screen Flow</a> ·
+    Execution Plan S2
+  </p>
+</div>
+</body>
+</html>

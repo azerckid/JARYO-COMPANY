@@ -1,7 +1,7 @@
 # SemuAgent Execution Plan - Sebiseo CUI-4 Closeout to CUI-6
 > Created: 2026-07-18 19:34
-> Last Updated: 2026-07-18 19:34
-> Status: Draft - owner review pending
+> Last Updated: 2026-07-19
+> Status: S1 Closeout·#286 완료 · S2 Preview 오너 화면 확인 대기
 
 ## 1. Context
 
@@ -76,15 +76,15 @@ Gate Out:
 
 ### S2. First Vertical Journey HTML Preview
 
-- [ ] 업로드 결과에서 거래 단위 확인 필요 상태로 전환되는 화면 설계
-- [ ] 파일 건수와 거래 건수를 시각적·문구상 구분
-- [ ] 확인 필요 거래 CTA와 필터된 자료대조원장 진입 설계
-- [ ] 확인 전, 적용 직전, stale, 성공, undo, 부분 실패 상태 설계
-- [ ] 확정 후 세비서 상태 카드 재조회 결과 설계
-- [ ] 직접 사이드바 진입과 AI 장애 복구 경로 유지
-- [ ] 데스크톱·모바일 HTML Preview 제작
-- [ ] 오너 화면 확인과 피드백 기록
-- [ ] Screen Flow·UI Design·Prototype Review 링크 동기화
+- [x] 업로드 결과에서 거래 단위 확인 필요 상태로 전환되는 화면 설계
+- [x] 파일 건수와 거래 건수를 시각적·문구상 구분
+- [x] 확인 필요 거래 CTA와 필터된 자료대조원장 진입 설계
+- [x] 확인 전, 적용 직전, stale, 성공, undo, 부분 실패 상태 설계
+- [x] 확정 후 세비서 상태 카드 재조회 결과 설계
+- [x] 직접 사이드바 진입과 AI 장애 복구 경로 유지
+- [x] 데스크톱·모바일 HTML Preview 제작 — [20_sebiseo_first_vertical_journey.html](../02_UI_Screens/previews/20_sebiseo_first_vertical_journey.html)
+- [ ] 오너 화면 확인과 피드백 기록 — [Prototype Review](../02_UI_Screens/19_SEBISEO_FIRST_VERTICAL_JOURNEY_PROTOTYPE_REVIEW.md)
+- [x] Screen Flow·Prototype Review 링크 동기화 (UI Design 세부는 오너 확인 후)
 
 Gate Out:
 
