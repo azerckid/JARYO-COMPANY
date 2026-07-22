@@ -75,6 +75,7 @@ export function SampleDataBanner({ state }: Readonly<SampleDataBannerProps>) {
             {confirmOpen ? (
               <div className="mt-2 space-y-2 rounded-lg border border-[#fed7aa] bg-white p-3 text-[13px] text-[#9a3412]">
                 <p className="font-semibold text-[#431407]">샘플 데이터를 삭제할까요?</p>
+                <p>샘플만 삭제되며, 직접 올린 회사 자료는 그대로 둡니다.</p>
                 <p>삭제 후에는 자동으로 다시 생성되지 않습니다.</p>
                 <div className="flex flex-wrap gap-2 pt-1">
                   <Button
